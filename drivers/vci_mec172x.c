@@ -11,7 +11,7 @@
 #include "soc.h"
 
 /* Set bits 0,1 and 2 to enable BGPO0, BGPO1 and BGPO2 */
-#define BGPO_EN_MASK	0x7U
+#define BGPO_EN_MASK	0x3EU
 
 static uintptr_t vci_regbase = DT_REG_ADDR(DT_NODELABEL(vci0));
 static uintptr_t wktmr_regbase = DT_REG_ADDR(DT_NODELABEL(weektmr0));
@@ -52,4 +52,3 @@ void bgpo_disable(void)
 	data &= ~(BGPO_EN_MASK);
 	regs->BGPO_PWR = data;
 }
-

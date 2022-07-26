@@ -1,0 +1,288 @@
+/*
+ * Copyright (c) 2022, Silicom Connectivity Solutions
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <microchip/mec172xnsz.dtsi>
+#include <microchip/mec172x/mec172xnsz-pinctrl.dtsi>
+#include <microchip/mec172x/mec172xnlj-pinctrl.dtsi>
+
+/ {
+	model = "Silicom Arizona Beach MEC172X EC";
+	compatible = "microchip,mec172x_azbeach", "microchip,mec172xnsz";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &uart0;
+	};
+
+	aliases {
+		led0 = &fp_red_left;	/* strictly for testing */
+		led1 = &fp_green_left;
+		led2 = &fp_blue_left;
+		led3 = &fp_red_ctr;	/* strictly for testing */
+		led4 = &fp_green_ctr;
+		led5 = &fp_blue_ctr;
+		led6 = &fp_red_right;
+		led7 = &fp_green_right;
+		led8 = &fp_blue_right;
+		led9 = &fp_amber_left;
+		led10 = &fp_amber_ctr;
+		led11 = &fp_amber_right;
+		i2c0 = &i2c_smb_0;
+		i2c-0 = &i2c_smb_0;
+		i2c3 = &i2c_smb_1;
+		i2c11 = &i2c_smb_2;
+		pwm-0 = &pwm0;
+		peci-0 = &peci0;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		fp_red_left: led_0 {
+			/* GPIO001/PWM4_ALT */
+			gpios = <&gpio_000_036 1 GPIO_ACTIVE_LOW>;
+			label = "FP RED LT";
+		};
+		fp_green_left: led_1 {
+			/* GPIO002/PWM5/SHD_CS1# */
+			gpios = <&gpio_000_036 2 GPIO_ACTIVE_LOW>;
+			label = "FP GRN LT";
+		};
+		fp_blue_left: led_2 {
+			/* GPIO014/PWM6/SLV_SPI_IO1/GPTP_IN2 */
+			gpios = <&gpio_000_036 12 GPIO_ACTIVE_LOW>;
+			label = "FP BL LT";
+		};
+		fp_red_ctr: led_3 {
+			/* GPIO033/TACH3/RC_ID0 */
+			gpios = <&gpio_000_036 27 GPIO_ACTIVE_LOW>;
+			label = "FP RED CTR";
+		};
+		fp_green_ctr: led_4 {
+			/* GPIO034/GPSPI_IO2/RC_ID1/SPI0_CLK */
+			gpios = <&gpio_000_036 28 GPIO_ACTIVE_LOW>;
+			label = "FP GRN CTR";
+		};
+		fp_blue_ctr: led_5 {
+			/* GPIO133/PWM9 */
+			gpios = <&gpio_100_136 27 GPIO_ACTIVE_LOW>;
+			label = "FP BL CTR";
+		};
+		fp_red_right: led_6 {
+			/* GPIO156/LED0 */
+			gpios = <&gpio_140_176 14 GPIO_ACTIVE_LOW>;
+			label = "FP RED RT";
+		};
+		fp_green_right: led_7 {
+			/* GPIO046/KSO02/ICT11/BCM1_DAT */
+			gpios = <&gpio_040_076 6 GPIO_ACTIVE_LOW>;
+			label = "FP GRN RT";
+		};
+		fp_blue_right: led_8 {
+			/* GPIO047/KSO03/PWM3_ALT/ICT13/BCM1_CLK */
+			gpios = <&gpio_040_076 7 GPIO_ACTIVE_LOW>;
+			label = "FP BL RT";
+		};
+		fp_amber_left: led_9 {
+			/* GPIO032/KSI7/GPTP_OUT0/UART0_RI# */
+			gpios = <&gpio_000_036 26 GPIO_ACTIVE_LOW>;
+			label = "FP AMB LT";
+		};
+		fp_amber_ctr: led_10 {
+			/* GPIO040/GPTP_OUT2/KSO00 */
+			gpios = <&gpio_040_076 0 GPIO_ACTIVE_LOW>;
+			label = "FP AMB CTR";
+		};
+		fp_amber_right: led_11 {
+			/* GPIO041 */
+			gpios = <&gpio_040_076 1 GPIO_ACTIVE_LOW>;
+			label = "FP AMB RT";
+		};
+	};
+	bgpo0: bgpo@4000ac9c {
+		compatible = "microchip,xec-bgpo";
+		reg = < 0x4000ac9c 0xc >;
+		status = "okay";
+		label = "BGPO";
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <6>;
+	};
+
+};
+
+&cpu0 {
+	clock-frequency = <96000000>;
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_tx_gpio104 &uart0_rx_gpio105>;
+	pinctrl-names = "default";
+};
+
+&adc0 {
+	status = "okay";
+	pinctrl-0 = <&adc04_gpio204 &adc05_gpio205
+		     &adc06_gpio206 &adc10_gpio212>;
+	pinctrl-names = "default";
+};
+
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_gpio053>;
+	pinctrl-names = "default";
+};
+
+&pwm1 {
+	status = "okay";
+	pinctrl-0 = <&pwm1_gpio054>;
+	pinctrl-names = "default";
+};
+
+&tach0 {
+	status = "okay";
+	pinctrl-0 = <&tach0_gpio050>;
+	pinctrl-names = "default";
+};
+
+&tach1 {
+	status = "okay";
+	pinctrl-0 = <&tach1_gpio051>;
+	pinctrl-names = "default";
+};
+
+/* Initialize ECIA. Does not initialize child devices */
+&ecia {
+	status = "okay";
+};
+
+/* Enable aggregated GIRQ24 and GIRQ25 for eSPI virtual wires interrupts */
+&girq24 {
+	status = "okay";
+};
+
+&girq25 {
+	status = "okay";
+};
+
+&rtimer {
+	status = "okay";
+};
+
+&pcr {
+	status = "okay";
+};
+
+&espi0 {
+	status = "okay";
+	pinctrl-0 = < &espi_reset_n_gpio061 &espi_cs_n_gpio066
+		      &espi_alert_n_gpio063 &espi_clk_gpio065
+		      &espi_io0_gpio070 &espi_io1_gpio071
+		      &espi_io2_gpio072 &espi_io3_gpio073 >;
+	pinctrl-names = "default";
+};
+
+&acpi_ec0 {
+	status = "okay";
+};
+
+&acpi_ec1 {
+	status = "okay";
+};
+
+/* I2C */
+&i2c_smb_0 {
+	status = "okay";
+	label = "I2C0";
+	port_sel = <0>;
+
+	pinctrl-0 = < &i2c00_scl_gpio004 &i2c00_sda_gpio003 >;
+	pinctrl-names = "default";
+
+	mp2964@20 {
+		label = "IMVP9";
+
+		reg = <0x20>;
+	};
+};
+
+&i2c00_scl_gpio004 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c00_sda_gpio003 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c_smb_1 {
+	status = "okay";
+	label = "I2C3";
+	port_sel = <3>;
+	pinctrl-0 = <&i2c03_scl_gpio010 &i2c03_sda_gpio007>;
+	pinctrl-names = "default";
+
+	eeprom0: at24@56 {
+		compatible = "atmel,at24";
+		reg = <0x56>;
+
+		label = "FRU EEPROM";
+		size = <256>;
+		pagesize = <8>;
+		address-width = <8>;
+		timeout = <5>;
+	};
+ 
+};
+
+&i2c03_scl_gpio010 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c03_sda_gpio007 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c_smb_2 {
+	status = "okay";
+	label = "I2C11";
+	port_sel = <11>;
+	pinctrl-0 = <&i2c11_scl_alt_gpio006 &i2c11_sda_alt_gpio005>;
+	pinctrl-names = "default";
+};
+
+&i2c11_scl_alt_gpio006 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c11_sda_alt_gpio005 {
+	drive-open-drain;
+	output-high;
+};
+
+&pinctrl {
+	gpio101: gpio101 {
+		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
+	};
+	gpio102: gpio102 {
+		pinmux = < MCHP_XEC_PINMUX(0102, MCHP_AF0) >;
+	};
+	gpio172: gpio172 {
+		pinmux = < MCHP_XEC_PINMUX(0172, MCHP_AF0) >;
+	};
+	gpio173: gpio173 {
+		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
+	};
+};

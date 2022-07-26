@@ -1,0 +1,10 @@
+# Copyright (c) 2022, Silicom Connectivity Solutions
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_MEC172X_AZBEACH
+	bool "Silicom Arizona Beach MEC172X EC"
+	depends on SOC_MEC172X_NSZ
+
+config EC_ONBOARD_SWITCHES_DISABLE
+	bool "Disable onboard switches support"
+	depends on BOARD_MEC172X_AZBEACH

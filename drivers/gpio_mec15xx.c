@@ -12,7 +12,11 @@
 #endif
 #include <logging/log.h>
 #include "gpio_ec.h"
+#ifdef CONFIG_SOC_MEC172X_NSZ
+#include "common_mec172x.h"
+#else
 #include "common_mec1501.h"
+#endif
 
 LOG_MODULE_REGISTER(gpio_ec, CONFIG_GPIO_EC_LOG_LEVEL);
 
@@ -42,6 +46,9 @@ static struct gpio_device ports[] = {
 	{ DT_LABEL(DT_NODELABEL(gpio_140_176)), NULL},
 	{ DT_LABEL(DT_NODELABEL(gpio_200_236)), NULL},
 	{ DT_LABEL(DT_NODELABEL(gpio_240_276)), NULL},
+#if DT_NODE_HAS_STATUS(weektmr0, okay)
+	{ DT_LABEL(DT_NODELABEL(weektmr0)), NULL},
+#endif
 	/* Handle 1 or more IO expanders */
 #ifdef CONFIG_GPIO_PCA95XX
 #if DT_NODE_HAS_STATUS(DT_INST(0, nxp_pca95xx), okay)

@@ -121,7 +121,7 @@ static void smc_mode(void)
 static void get_switch_status(void)
 {
 	uint8_t sw_status = 0;
-
+#if !CONFIG_EC_ONBOARD_SWITCHES_DISABLE
 	WRITE_BIT(sw_status, SWITCH_STATUS_VIRTUAL_DOCK_POS,
 		  gpio_read_pin(VIRTUAL_DOCK));
 	WRITE_BIT(sw_status, SWITCH_STATUS_AC_POWER_POS,
@@ -132,7 +132,7 @@ static void get_switch_status(void)
 		  gpio_read_pin(VIRTUAL_BAT));
 	WRITE_BIT(sw_status, SWITCH_STATUS_LEGACY_LID,
 		  gpio_read_pin(SMC_LID));
-
+#endif
 	send_to_host(&sw_status, 1);
 }
 

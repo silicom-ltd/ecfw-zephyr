@@ -22,6 +22,8 @@ extern uint8_t boot_mode_maf;
 #include "adl_mec1501.h"
 #elif defined(CONFIG_BOARD_MEC1501_ADL_P)
 #include "adl_p_mec1501.h"
+#elif defined(CONFIG_BOARD_MEC172X_AZBEACH)
+#include "azbeach_mec172x.h"
 #else
 #error "Platform not supported"
 #endif /* CONFIG_BOARD_MEC1501MODULAR_ASSY6885 */
