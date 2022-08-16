@@ -341,4 +341,6 @@ int espihub_read_flash(struct espi_flash_packet *pckt);
  * @retval -EIO General input / output error, failed request to master.
  */
 int espihub_erase_flash(struct espi_flash_packet *pckt);
+
+void espihub_set_boot_mode(enum boot_config_mode);
 #endif /* __ESPI_HUB_H__ */

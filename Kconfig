@@ -20,6 +20,7 @@ menu "EC optional features"
 
 rsource "app/power_management/Kconfig"
 rsource "app/dnx/Kconfig"
+rsource "app/vrtt/Kconfig"
 rsource "app/soc_debug_awareness/Kconfig"
 rsource "boards/Kconfig"
 

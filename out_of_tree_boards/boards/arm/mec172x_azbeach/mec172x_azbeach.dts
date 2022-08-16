@@ -190,6 +190,18 @@
 	pinctrl-names = "default";
 };
 
+&spi0 {
+	status = "okay";
+	pinctrl-0 = < &pvt_cs_n_gpio124
+		      &pvt_clk_gpio125
+		      &pvt_io0_gpio121
+		      &pvt_io1_gpio122
+		      &pvt_io2_gpio123
+		      &pvt_io3_gpio126 >;
+
+	pinctrl-names = "default";
+};
+
 &acpi_ec0 {
 	status = "okay";
 };
@@ -273,6 +285,9 @@
 };
 
 &pinctrl {
+	gpio000: gpio000 {
+		pinmux = < MCHP_XEC_PINMUX(0000, MCHP_AF0) >;
+	};
 	gpio101: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
 	};

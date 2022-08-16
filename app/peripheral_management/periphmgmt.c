@@ -57,6 +57,10 @@ static struct btn_info btn_lst[] = {
 	{TIMEOUT_DISABLE, false, GPIO_DEBOUNCE_CNT, NULL, 1,
 					{{0}, NULL, 0}, "Timeout"},
 #endif
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH)
+	{BTN_RECESSED,    false, GPIO_DEBOUNCE_CNT, NULL, 1,
+		                        {{0}, NULL, 0}, "RecessedBtn"},
+#endif
 };
 
 static int debouncing_ongoing;

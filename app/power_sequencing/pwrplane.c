@@ -41,6 +41,7 @@
 #ifdef CONFIG_DNX_SUPPORT
 #include "dnx.h"
 #endif
+#include "vrtt.h"
 
 LOG_MODULE_REGISTER(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
 
@@ -367,6 +368,19 @@ static inline int pwrseq_task_init(void)
 			pwrseq_error(ERR_ESPIRESET);
 			return ret;
 		}
+#if CONFIG_BOARD_MEC172X_AZBEACH
+	} else if (espihub_boot_mode() == FLASH_BOOT_MODE_OWN) {
+		/* be aware that pvt flash boot mode is used in both VRTT test
+		 * and early board debug
+		 */
+		LOG_DBG("PM_RSMRST_PVT_BOOT");
+		ret = gpio_write_pin(PM_RSMRST, 1);
+		if (ret) {
+			LOG_ERR("Failed to write PM_RSMRST");
+			return ret;
+		}
+		vrtt_test_init();
+#endif
 	} else {
 		LOG_DBG("PM_RSMRST_G3SAF_P");
 		ret = gpio_write_pin(PM_RSMRST, 1);

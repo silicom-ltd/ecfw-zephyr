@@ -102,6 +102,11 @@ bool espihub_reset_status(void)
 	return hub.espi_rst_sts;
 }
 
+void espihub_set_boot_mode(enum boot_config_mode boot_mode)
+{
+	hub.spi_boot_mode = boot_mode;
+}
+
 bool espihub_dnx_status(void)
 {
 	int ret;

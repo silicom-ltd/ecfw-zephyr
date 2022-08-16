@@ -6,6 +6,7 @@ target_sources(app
     )
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/peripheral_management)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/vrtt)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/power_sequencing)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/dnx)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/power_management)
@@ -113,6 +114,13 @@ target_sources_ifdef(CONFIG_SAF_SPI_WINBOND app
     ${CMAKE_CURRENT_LIST_DIR}/saf/saf_spi_winbond.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/saf/saf_spi_winbond.h
+    )
+
+target_sources_ifdef(CONFIG_VRTT_TESTING app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/vrtt/vrtt.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/vrtt/vrtt.h
     )
 
 target_include_directories(app

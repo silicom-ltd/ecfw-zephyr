@@ -1,0 +1,21 @@
+# Kconfig - Config options for EC FW debug module
+#
+# Copyright (c) 2022 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config VRTT_TESTING
+	bool "Enable VRTT testing"
+	default y
+	help
+	  Indicate if VRTT testing sample code is enabled.
+
+config VRTT_LOG_LEVEL
+	int "VRTT testing log level"
+	depends on LOG
+	depends on VRTT_TESTING
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for VRTT testing.

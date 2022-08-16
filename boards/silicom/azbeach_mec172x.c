@@ -70,6 +70,10 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ DG2_PRESENT,		GPIO_INPUT },
 	{ PEG_RTD3_COLD_MOD_SW_R, GPIO_INPUT },
 	{ PROCHOT,		GPIO_OUTPUT_HIGH },
+	{ PVT_SPI_BOOT,		GPIO_INPUT },
+	{ BTN_RECESSED,		GPIO_INPUT },
+	{ SLP_S3_N,             GPIO_INPUT },
+	{ SLP_S4_N,             GPIO_INPUT },
 };
 
 struct gpio_ec_config mecc172x_cfg_sus[] =  {
@@ -153,6 +157,11 @@ int board_init(void)
 
 		/* LPM optimizations */
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_DISCONNECTED);
+	} else if (gpio_read_pin(PVT_SPI_BOOT) == 1) {
+		/* ensure no ESPI operations happen when in VTT testing mode */
+		espihub_set_boot_mode(FLASH_BOOT_MODE_OWN);
+
+		gpio_force_configure_pin(RSMRST_PWRGD_MAF_P, GPIO_INPUT | GPIO_PULL_UP);
 	} else {
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_OUTPUT_LOW);
 	}

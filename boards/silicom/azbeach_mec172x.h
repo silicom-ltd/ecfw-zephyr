@@ -35,9 +35,10 @@ extern uint8_t platformskutype;
 #define EC_PCH_SPI_OE_N			EC_GPIO_024
 #define PM_BAT_STATUS_LED2		EC_GPIO_035
 #define SYS_PWROK			EC_GPIO_043
+#define PVT_SPI_BOOT			EC_GPIO_045
 
-#define PM_RSMRST_G3SAF_P		EC_GPIO_054
 #define PM_RSMRST_MAF_P			EC_GPIO_055
+#define PM_RSMRST_G3SAF_P		EC_GPIO_133
 #define PM_RSMRST			((boot_mode_maf == 1) ? \
 					 PM_RSMRST_MAF_P : \
 					 PM_RSMRST_G3SAF_P)
@@ -48,12 +49,15 @@ extern uint8_t platformskutype;
  */
 #define ESPI_RESET_MAF			EC_GPIO_061
 
+#define BTN_RECESSED			EC_GPIO_166 
 #define PM_PWRBTN			EC_GPIO_101
 #define EC_SMI				EC_GPIO_102
 #define PCH_PWROK			EC_GPIO_106
 #define WAKE_SCI			EC_GPIO_114
 #define DNX_FORCE_RELOAD_EC		EC_GPIO_115
 #define CATERR_LED_DRV			EC_GPIO_153
+#define SLP_S3_N			EC_GPIO_171
+#define SLP_S4_N			EC_GPIO_172
 #define SX_EXIT_HOLDOFF_N		EC_GPIO_175
 #define PWRBTN_EC_IN_N			EC_DUMMY_GPIO_HIGH
 #define PM_DS3				EC_DUMMY_GPIO_HIGH
@@ -97,6 +101,7 @@ extern uint8_t platformskutype;
 #define HOME_INIT_POS			1
 #define VIRTUAL_DOCK_INIT_POS		1
 #define VIRTUAL_BAT_INIT_POS		1
+#define BTN_RECESSED_INIT_POS		1
 
 /* Minimum Adapter power(Milli Watts) for proceeding with boot */
 #define ADP_CRIT_POWERUP		26000
