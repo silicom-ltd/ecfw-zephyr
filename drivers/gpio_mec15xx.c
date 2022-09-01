@@ -46,8 +46,8 @@ static struct gpio_device ports[] = {
 	{ DT_LABEL(DT_NODELABEL(gpio_140_176)), NULL},
 	{ DT_LABEL(DT_NODELABEL(gpio_200_236)), NULL},
 	{ DT_LABEL(DT_NODELABEL(gpio_240_276)), NULL},
-#if DT_NODE_HAS_STATUS(weektmr0, okay)
-	{ DT_LABEL(DT_NODELABEL(weektmr0)), NULL},
+#if DT_NODE_HAS_STATUS(bgpo0, okay)
+	{ DT_LABEL(DT_NODELABEL(bgpo0)), NULL},
 #endif
 	/* Handle 1 or more IO expanders */
 #ifdef CONFIG_GPIO_PCA95XX

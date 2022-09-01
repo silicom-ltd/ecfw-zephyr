@@ -284,6 +284,12 @@
 	output-high;
 };
 
+&peci0 {
+	status = "okay";
+	pinctrl-0 = <&peci_dat_gpio042>;
+	pinctrl-names = "default";
+};
+
 &pinctrl {
 	gpio000: gpio000 {
 		pinmux = < MCHP_XEC_PINMUX(0000, MCHP_AF0) >;
