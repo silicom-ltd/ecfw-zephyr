@@ -663,7 +663,11 @@ static void power_off(void)
 	port80_display_off();
 #endif
 
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+	gpio_write_pin(EC_PWRBTN_LED, HIGH);
+#else
 	gpio_write_pin(EC_PWRBTN_LED, LOW);
+#endif
 	LOG_DBG("Power off complete");
 }
 
@@ -761,8 +765,11 @@ static int power_on(void)
 		pwrseq_error(ERR_PLT_RST);
 		return ret;
 	}
-
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+	gpio_write_pin(EC_PWRBTN_LED, LOW);
+#else
 	gpio_write_pin(EC_PWRBTN_LED, HIGH);
+#endif
 
 #ifdef CONFIG_ESPI_PERIPHERAL_8042_KBC
 	kbc_enable_interface();

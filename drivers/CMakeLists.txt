@@ -51,12 +51,12 @@ target_sources_ifdef(CONFIG_THERMAL_MANAGEMENT app
 target_sources(app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/eeprom.c
-    ${CMAKE_CURRENT_LIST_DIR}/i2c_hub.c
+    #    ${CMAKE_CURRENT_LIST_DIR}/i2c_hub.c
     ${CMAKE_CURRENT_LIST_DIR}/espi_hub.c
     ${CMAKE_CURRENT_LIST_DIR}/espioob_mngr.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/eeprom.h
-    ${CMAKE_CURRENT_LIST_DIR}/i2c_hub.h
+    #    ${CMAKE_CURRENT_LIST_DIR}/i2c_hub.h
     ${CMAKE_CURRENT_LIST_DIR}/espi_hub.h
     ${CMAKE_CURRENT_LIST_DIR}/espioob_mngr.h
     ${CMAKE_CURRENT_LIST_DIR}/gpio_ec.h

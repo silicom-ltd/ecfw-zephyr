@@ -39,7 +39,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ SMC_LID,		GPIO_INPUT },
 	{ EC_GPIO_035,		GPIO_INPUT },
 	{ EC_GPIO_036,		GPIO_INPUT },
-	{ SYS_PWROK,		GPIO_OUTPUT_LOW | GPIO_OPEN_DRAIN },
+	{ SYS_PWROK,		GPIO_OUTPUT_LOW },
 	{ EC_GPIO_050,		GPIO_INPUT },
 	{ EC_GPIO_052,		GPIO_INPUT },
 	{ ALL_SYS_PWRGD,	GPIO_INPUT },
@@ -47,8 +47,8 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ EC_GPIO_067,		GPIO_INPUT },
 	{ EC_GPIO_100,		GPIO_INPUT },
 	{ EC_GPIO_104,		GPIO_INPUT },
-	{ PCH_PWROK,		GPIO_OUTPUT_LOW },
-	{ WAKE_SCI,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ PCH_PWROK,		GPIO_OUTPUT_LOW | GPIO_OPEN_DRAIN },
+	{ WAKE_SCI,		GPIO_OUTPUT_HIGH },
 #ifdef CONFIG_DNX_EC_ASSISTED_TRIGGER
 	{ DNX_FORCE_RELOAD_EC,	GPIO_OUTPUT_LOW},
 #else
@@ -72,6 +72,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 //	{ PROCHOT,		GPIO_OUTPUT_HIGH },
 	{ PVT_SPI_BOOT,		GPIO_INPUT },
 	{ BTN_RECESSED,		GPIO_INPUT },
+	{ SOC_RSTBTN_N,		GPIO_OUTPUT_HIGH },
 	{ SLP_S3_N,             GPIO_INPUT },
 	{ SLP_S4_N,             GPIO_INPUT },
 };
@@ -132,11 +133,12 @@ int board_init(void)
 		LOG_ERR("Failed to initialize gpio devs: %d", ret);
 		return ret;
 	}
-
+#if 0
 	ret = i2c_hub_config(I2C_0);
 	if (ret) {
 		return ret;
 	}
+#endif
 
 	detect_boot_mode();
 

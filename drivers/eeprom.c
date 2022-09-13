@@ -35,6 +35,7 @@ LOG_MODULE_REGISTER(eeprom, CONFIG_EEPROM_LOG_LEVEL);
 
 int eeprom_read_byte(uint16_t offset, uint8_t *data)
 {
+#if 0
 	uint8_t ret;
 	uint8_t buf = OFS_MSB(offset);
 
@@ -46,12 +47,13 @@ int eeprom_read_byte(uint16_t offset, uint8_t *data)
 		LOG_ERR("Fail to read: %d", ret);
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
 int eeprom_write_byte(uint16_t offset, uint8_t data)
 {
+#if 0
 	uint8_t ret;
 	uint8_t buf[] = { OFS_LSB(offset), data };
 
@@ -63,12 +65,13 @@ int eeprom_write_byte(uint16_t offset, uint8_t data)
 	}
 
 	k_msleep(EEPROM_WR_MSDELAY);
-
+#endif
 	return 0;
 }
 
 int eeprom_read_word(uint16_t offset, uint16_t *data)
 {
+#if 0
 	uint8_t ret;
 	uint8_t buf = { OFS_LSB(offset) };
 	uint8_t rbuf[] = {EEPROM_DEFAULT_DATA, EEPROM_DEFAULT_DATA};
@@ -84,12 +87,13 @@ int eeprom_read_word(uint16_t offset, uint16_t *data)
 
 	/* Adjust endianness */
 	*data = ((rbuf[0] << 8) | rbuf[1]);
-
+#endif
 	return 0;
 }
 
 int eeprom_write_word(uint16_t offset, uint16_t data)
 {
+#if 0
 	uint16_t ret;
 	uint8_t buf[] = { OFS_LSB(offset),
 		       OFS_MSB(data), OFS_LSB(data) };
@@ -103,13 +107,14 @@ int eeprom_write_word(uint16_t offset, uint16_t data)
 
 	/* Delay to wait for write completion */
 	k_msleep(EEPROM_WR_MSDELAY);
-
+#endif
 	return 0;
 }
 
 int eeprom_read_block(uint16_t offset, uint8_t len, uint8_t *data)
 {
-	uint16_t ret;
+	uint16_t ret = 0;
+#if 0
 	uint8_t buf = { OFS_LSB(offset) };
 
 	if (len > DATA_MAX_LEN) {
@@ -124,13 +129,14 @@ int eeprom_read_block(uint16_t offset, uint8_t len, uint8_t *data)
 		LOG_ERR("Fail to read: %d", ret);
 		return -EIO;
 	}
-
+#endif
 	return ret;
 }
 
 int eeprom_write_block(uint16_t offset, uint8_t len, uint8_t *data)
 {
-	int ret;
+	int ret = 0;
+#if 0
 	uint8_t buf[DATA_MAX_LEN + sizeof(offset)];
 
 	if (len > DATA_MAX_LEN) {
@@ -153,6 +159,6 @@ int eeprom_write_block(uint16_t offset, uint8_t len, uint8_t *data)
 	}
 
 	k_msleep(EEPROM_WR_MSDELAY);
-
+#endif
 	return ret;
 }

@@ -30,6 +30,7 @@ extern uint8_t platformskutype;
 					 RSMRST_PWRGD_G3SAF_P)
 
 #define G3_SAF_DETECT			EC_GPIO_013
+#define SOC_RSTBTN_N			EC_GPIO_020
 #define CPU_C10_GATE			EC_GPIO_022
 #define PS_ON_OUT			EC_GPIO_023
 #define EC_PCH_SPI_OE_N			EC_GPIO_024
@@ -59,7 +60,7 @@ extern uint8_t platformskutype;
 #define SLP_S3_N			EC_GPIO_171
 #define SLP_S4_N			EC_GPIO_172
 #define SX_EXIT_HOLDOFF_N		EC_GPIO_175
-#define PWRBTN_EC_IN_N			EC_DUMMY_GPIO_HIGH
+#define PWRBTN_EC_IN_N			EC_GPIO_166
 #define PM_DS3				EC_DUMMY_GPIO_HIGH
 #define TIMEOUT_DISABLE			EC_DUMMY_GPIO_LOW
 #define FAN_PWR_DISABLE_N		EC_DUMMY_GPIO_LOW

@@ -210,80 +210,6 @@
 	status = "okay";
 };
 
-/* I2C */
-&i2c_smb_0 {
-	status = "okay";
-	label = "I2C0";
-	port_sel = <0>;
-
-	pinctrl-0 = < &i2c00_scl_gpio004 &i2c00_sda_gpio003 >;
-	pinctrl-names = "default";
-
-	mp2964@20 {
-		label = "IMVP9";
-
-		reg = <0x20>;
-	};
-};
-
-&i2c00_scl_gpio004 {
-	drive-open-drain;
-	output-high;
-};
-
-&i2c00_sda_gpio003 {
-	drive-open-drain;
-	output-high;
-};
-
-&i2c_smb_1 {
-	status = "okay";
-	label = "I2C3";
-	port_sel = <3>;
-	pinctrl-0 = <&i2c03_scl_gpio010 &i2c03_sda_gpio007>;
-	pinctrl-names = "default";
-
-	eeprom0: at24@56 {
-		compatible = "atmel,at24";
-		reg = <0x56>;
-
-		label = "FRU EEPROM";
-		size = <256>;
-		pagesize = <8>;
-		address-width = <8>;
-		timeout = <5>;
-	};
- 
-};
-
-&i2c03_scl_gpio010 {
-	drive-open-drain;
-	output-high;
-};
-
-&i2c03_sda_gpio007 {
-	drive-open-drain;
-	output-high;
-};
-
-&i2c_smb_2 {
-	status = "okay";
-	label = "I2C11";
-	port_sel = <11>;
-	pinctrl-0 = <&i2c11_scl_alt_gpio006 &i2c11_sda_alt_gpio005>;
-	pinctrl-names = "default";
-};
-
-&i2c11_scl_alt_gpio006 {
-	drive-open-drain;
-	output-high;
-};
-
-&i2c11_sda_alt_gpio005 {
-	drive-open-drain;
-	output-high;
-};
-
 &peci0 {
 	status = "okay";
 	pinctrl-0 = <&peci_dat_gpio042>;
@@ -291,9 +217,6 @@
 };
 
 &pinctrl {
-	gpio000: gpio000 {
-		pinmux = < MCHP_XEC_PINMUX(0000, MCHP_AF0) >;
-	};
 	gpio101: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
 	};
@@ -306,4 +229,8 @@
 	gpio173: gpio173 {
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
 	};
+};
+
+&gpio101 {
+	output-high;
 };
