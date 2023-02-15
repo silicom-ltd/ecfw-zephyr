@@ -23,6 +23,7 @@
 
 LOG_MODULE_REGISTER(thermal, CONFIG_THERMAL_MGMT_LOG_LEVEL);
 
+#define FAN_CPU FAN_LEFT
 /**
  * DTT threshold default values upon init in degree celsius:
  * - low trip temp = 95c
@@ -230,7 +231,11 @@ static void init_fans(void)
 	}
 
 	fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+	fan_duty_cycle[FAN_RIGHT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
+#endif
 	fan_duty_cycle_change = 1;
+
 }
 
 static void init_therm_sensors(void)
@@ -316,11 +321,16 @@ static void manage_fan(void)
 	if (!is_fan_controlled_by_host()) {
 		/* EC Self control fan based on CPU thermal info */
 		uint8_t cpu_fan_speed = GET_FAN_SPEED_FOR_TEMP(cpu_temp);
-
 		if (fan_duty_cycle[FAN_CPU] != cpu_fan_speed) {
 			fan_duty_cycle[FAN_CPU] = cpu_fan_speed;
 			fan_duty_cycle_change = 1;
 		}
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+		if (fan_duty_cycle[FAN_RIGHT] != cpu_fan_speed) {
+			fan_duty_cycle[FAN_RIGHT] = cpu_fan_speed;
+			fan_duty_cycle_change = 1;
+		}
+#endif
 	}
 
 	/* HW/KConfig override takes precedence over every control method
@@ -328,6 +338,9 @@ static void manage_fan(void)
 	 */
 	if (fan_override) {
 		fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+		fan_duty_cycle[FAN_RIGHT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
+#endif
 		fan_duty_cycle_change = 1;
 	}
 

@@ -1,0 +1,277 @@
+/*
+ * Copyright (c) 2022, Silicom Connectivity Solutions
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <microchip/mec170xqtn.dtsi>
+#include <microchip/mec170x/mec170xqtn-pinctrl.dtsi>
+#include <dt-bindings/pwm/pwm.h>
+
+/ {
+	model = "Silicom Cordoba MEC170X EC";
+	compatible = "microchip,mec170x_cordoba", "microchip,mec170xqtn";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &uart0;
+	};
+
+	aliases {
+/*
+		led0 = &led3;
+		led1 = &led1;
+		led2 = &led2;
+*/
+		i2c0 = &i2c_smb_0;
+		i2c-0 = &i2c_smb_0;
+		i2c3 = &i2c_smb_1;
+		i2c11 = &i2c_smb_2;
+		pwm-0 = &pwm0;
+		peci-0 = &peci0;
+		sw0 = &protruding_btn;
+		red-pwm-led = &pwm_led4;
+		green-pwm-led = &pwm_led5;
+		blue-pwm-led = &pwm_led6;
+		pwm-led0 = &pwm_led6;
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		recessed_btn: button_0 {
+			gpios = <&gpio_140_176 0 GPIO_ACTIVE_LOW>;
+			label = "Recessed button";
+		};
+		protruding_btn: button_1 {
+			gpios = <&gpio_140_176 9 GPIO_ACTIVE_LOW>;
+			label = "Protruding button";
+		};
+	};
+
+	pwm-leds {
+		compatible = "pwm-leds";
+
+		pwm_led4: pwm_led4 {
+			pwms = <&pwm4 0 PWM_USEC(100)>;
+		};
+		pwm_led5: pwm_led5 {
+			pwms = <&pwm5 0 PWM_USEC(100)>;
+			status = "disabled";
+		};
+
+		pwm_led6: pwm_led6 {
+			pwms = <&pwm6 0 PWM_USEC(20)>;
+			status = "disabled";
+		};
+	};
+	leds {
+		compatible = "gpio-leds";
+
+			/* GPIO001/PWM4 */
+/*
+		led0: led_0 {
+			gpios = <&gpio_000_036 1 GPIO_ACTIVE_LOW>;
+			label = "FP RED LT";
+		};
+
+*/
+			/* GPIO002/PWM5 */
+/*
+		led1: led_1 {
+			gpios = <&gpio_000_036 2 GPIO_ACTIVE_LOW>;
+			label = "FP GRN LT";
+		};
+*/
+
+			/* GPIO014/PWM6/GPTP_IN6 */
+/*
+		led2: led_2 {
+			gpios = <&gpio_000_036 12 GPIO_ACTIVE_LOW>;
+			label = "FP BL LT";
+		};
+*/
+		led3: led_3 {
+			/* GPIO042/PECI_DAT */
+			gpios = <&gpio_040_076 2 GPIO_ACTIVE_LOW>;
+			label = "FP AMB LT";
+		};
+		led4: led_4 {
+			/* GPIO040/GPTP-OUT2/KSO00 */
+			gpios = <&gpio_040_076 0 GPIO_ACTIVE_LOW>;
+			label = "FP AMB CTR";
+		};
+		led5: led_5 {
+			/* GPIO041 */
+			gpios = <&gpio_040_076 1 GPIO_ACTIVE_LOW>;
+			label = "FP AMB RT";
+		};
+		led6: led_6 {
+			/* GPIO000/VCI_IN3# */
+			gpios = <&gpio_000_036 0 GPIO_ACTIVE_LOW>;
+			label = "FP RED CTR";
+		};
+		led7: led_7 {
+			/* GPIO007/IC203_SDA/PS2_CLK0B */
+			gpios = <&gpio_000_036 7 GPIO_ACTIVE_LOW>;
+			label = "FP GRN CTR";
+		};
+		led8: led_8 {
+			/* GPIO010/IC203_SCL/PS2_DAT0B */
+			gpios = <&gpio_000_036 8 GPIO_ACTIVE_LOW>;
+			label = "FP BL CTR";
+		};
+		led9: led_9 {
+			/* GPIO011/NSMI */
+			gpios = <&gpio_000_036 9 GPIO_ACTIVE_LOW>;
+			label = "FP RED RT";
+		};
+		led10: led_10 {
+			/* GPIO012/I2C07_SDA/TOUT3 */
+			gpios = <&gpio_000_036 10 GPIO_ACTIVE_LOW>;
+			label = "FP GRN RT";
+		};
+		led11: led_11 {
+			/* GPIO013/I2C07_SCL/TOUT2 */
+			gpios = <&gpio_000_036 11 GPIO_ACTIVE_LOW>;
+			label = "FP BL RT";
+		};
+	};
+};
+
+&cpu0 {
+	clock-frequency = <48000000>;
+	status = "okay";
+};
+
+&pcr {
+	/* Use external crystal */
+	pll-32k-src = <MCHP_XEC_CLK32K_SRC_XTAL>;
+	periph-32k-src = <MCHP_XEC_CLK32K_SRC_XTAL>;
+};
+
+&flash0 {
+	/* this means the smaller device */
+	reg = <0x000E0000 0x38000>;
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_tx_gpio104 &uart0_rx_gpio105>;
+	pinctrl-names = "default";
+};
+
+&adc0 {
+	status = "okay";
+	pinctrl-0 = <&adc08_gpio210
+		     &adc10_gpio212>;
+	pinctrl-names = "default";
+};
+
+&pwm0 {
+	status = "disabled";
+	pinctrl-0 = <&pwm0_gpio053>;
+	pinctrl-names = "default";
+};
+&pwm4 {
+	status = "okay";
+	pinctrl-0 = <&pwm4_gpio001>;
+	pinctrl-names = "default";
+};
+&pwm5 {
+	status = "okay";
+	pinctrl-0 = <&pwm5_gpio002>;
+	pinctrl-names = "default";
+};
+&pwm6 {
+	status = "okay";
+	pinctrl-0 = <&pwm6_gpio014>;
+	pinctrl-names = "default";
+};
+
+&tach0 {
+	status = "okay";
+	pinctrl-0 = <&tach0_gpio050>;
+	pinctrl-names = "default";
+};
+
+/* Initialize ECIA. Does not initialize child devices */
+&ecia {
+	status = "okay";
+};
+
+&rtimer {
+	status = "okay";
+};
+
+&pcr {
+	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+ 
+	pinctrl-0 = < &pvt_cs_n_gpio124
+		      &pvt_clk_gpio125
+		      &pvt_io0_gpio121
+		      &pvt_io1_gpio122
+		      &pvt_io2_gpio123
+		      &pvt_io3_gpio126 >;
+
+	pinctrl-names = "default";
+};
+
+&acpi_ec0 {
+	status = "okay";
+};
+
+&acpi_ec1 {
+	status = "okay";
+};
+
+&pinctrl {
+	ps_on_uc: gpio23 {
+		pinmux = < MCHP_XEC_PINMUX(023, MCHP_AF0) >;
+	};
+
+	rsmrst_n: gpio22 {
+		pinmux = < MCHP_XEC_PINMUX(022, MCHP_AF0) >;
+	};
+
+	soc_pwrbtn_n: gpio17 {
+		pinmux = < MCHP_XEC_PINMUX(017, MCHP_AF0) >;
+	};
+
+	soc_rstbtn_n: gpio20 {
+		pinmux = < MCHP_XEC_PINMUX(020, MCHP_AF0) >;
+	};
+
+	pltrst_n: gpio64 {
+		pinmux = < MCHP_XEC_PINMUX(064, MCHP_AF0) >;
+	};
+
+};
+
+&pltrst_n {
+	output-low;
+};
+
+&ps_on_uc {
+	output-low;
+};
+
+&rsmrst_n {
+	output-high;
+};
+
+&soc_pwrbtn_n {
+	drive-open-drain;
+};
+
+&soc_rstbtn_n {
+	drive-open-drain;
+};

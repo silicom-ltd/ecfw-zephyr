@@ -266,7 +266,12 @@ struct acpi_tbl {
 	/* [201/C9] button SCIs enable/disable offset */
 	struct acpi_hid_btn_sci acpi_btn_cntrl;
 	/* [202/CA] */
-	uint8_t acpi_unused_v[7];
+	uint8_t acpi_pwm_led_idx;
+	uint8_t acpi_pwm_led_val;
+	uint8_t acpi_gpio_led_idx;
+	uint8_t acpi_gpio_led_val;
+	/* [206/CC] */
+	uint8_t acpi_unused_v[3];
 	/* [209/D1] Battery B design capacity in mW */
 	uint16_t acpi_bat1_design_cap;
 	/* [211/D3] Battery A design capacity in mW */

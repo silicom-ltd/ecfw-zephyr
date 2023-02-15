@@ -11,7 +11,7 @@ struct ksc_img_hdr {
 	uint16_t checksum;
 	uint8_t signature[4];
 	uint8_t version[4];
-	uint8_t copyright[0x60 - 10];
+	uint8_t copyright[0x80 - 10];
 	uint32_t img_size;
 	uint8_t platform_str[8];
 	uint16_t platform_id[74];

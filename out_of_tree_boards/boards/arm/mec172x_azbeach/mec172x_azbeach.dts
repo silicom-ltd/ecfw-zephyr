@@ -9,6 +9,7 @@
 #include <microchip/mec172xnsz.dtsi>
 #include <microchip/mec172x/mec172xnsz-pinctrl.dtsi>
 #include <microchip/mec172x/mec172xnlj-pinctrl.dtsi>
+#include <dt-bindings/pwm/pwm.h>
 
 / {
 	model = "Silicom Arizona Beach MEC172X EC";
@@ -21,18 +22,6 @@
 	};
 
 	aliases {
-		led0 = &fp_red_left;	/* strictly for testing */
-		led1 = &fp_green_left;
-		led2 = &fp_blue_left;
-		led3 = &fp_red_ctr;	/* strictly for testing */
-		led4 = &fp_green_ctr;
-		led5 = &fp_blue_ctr;
-		led6 = &fp_red_right;
-		led7 = &fp_green_right;
-		led8 = &fp_blue_right;
-		led9 = &fp_amber_left;
-		led10 = &fp_amber_ctr;
-		led11 = &fp_amber_right;
 		i2c0 = &i2c_smb_0;
 		i2c-0 = &i2c_smb_0;
 		i2c3 = &i2c_smb_1;
@@ -41,67 +30,79 @@
 		peci-0 = &peci0;
 	};
 
-	leds {
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		/* make a DT entry for the ESPI_RESET# input */
+		espi_rst_maf: espi_rst {
+			gpios = <&gpio_040_076 16 GPIO_ACTIVE_LOW>;
+			label = "ESPI_RST_MAF";
+		};
+	};
+
+	leds_pwm: leds_pwm {
+		compatible = "pwm-leds";
+		fp_green_l: green {
+			pwms = <&pwm5 0 20000000 PWM_POLARITY_INVERTED>;
+			label = "FP_GREEN_L";
+		};
+		fp_red_l: red {
+			/* PWM4 */
+			pwms = <&pwm4 0 20000000 PWM_POLARITY_INVERTED>;
+			label = "FP_RED_L";
+		};
+		fp_blue_l: blue {
+			pwms = <&pwm6 0 20000000 PWM_POLARITY_INVERTED>;
+			label = "FP_BLUE_L";
+		};
+	};
+
+	leds: leds {
 		compatible = "gpio-leds";
-		fp_red_left: led_0 {
-			/* GPIO001/PWM4_ALT */
-			gpios = <&gpio_000_036 1 GPIO_ACTIVE_LOW>;
-			label = "FP RED LT";
-		};
-		fp_green_left: led_1 {
-			/* GPIO002/PWM5/SHD_CS1# */
-			gpios = <&gpio_000_036 2 GPIO_ACTIVE_LOW>;
-			label = "FP GRN LT";
-		};
-		fp_blue_left: led_2 {
-			/* GPIO014/PWM6/SLV_SPI_IO1/GPTP_IN2 */
-			gpios = <&gpio_000_036 12 GPIO_ACTIVE_LOW>;
-			label = "FP BL LT";
-		};
 		fp_red_ctr: led_3 {
 			/* GPIO033/TACH3/RC_ID0 */
 			gpios = <&gpio_000_036 27 GPIO_ACTIVE_LOW>;
-			label = "FP RED CTR";
+			label = "FP_RED_CTR";
 		};
 		fp_green_ctr: led_4 {
 			/* GPIO034/GPSPI_IO2/RC_ID1/SPI0_CLK */
 			gpios = <&gpio_000_036 28 GPIO_ACTIVE_LOW>;
-			label = "FP GRN CTR";
+			label = "FP_GRN_CTR";
 		};
 		fp_blue_ctr: led_5 {
-			/* GPIO133/PWM9 */
-			gpios = <&gpio_100_136 27 GPIO_ACTIVE_LOW>;
-			label = "FP BL CTR";
+			/* GPIO035/PWM8/CTOUT1/ICT15/LED3 */
+			gpios = <&gpio_000_036 29 GPIO_ACTIVE_LOW>;
+			label = "FP_BL_CTR";
 		};
 		fp_red_right: led_6 {
 			/* GPIO156/LED0 */
 			gpios = <&gpio_140_176 14 GPIO_ACTIVE_LOW>;
-			label = "FP RED RT";
+			label = "FP_RED_RT";
 		};
 		fp_green_right: led_7 {
 			/* GPIO046/KSO02/ICT11/BCM1_DAT */
 			gpios = <&gpio_040_076 6 GPIO_ACTIVE_LOW>;
-			label = "FP GRN RT";
+			label = "FP_GRN_RT";
 		};
 		fp_blue_right: led_8 {
 			/* GPIO047/KSO03/PWM3_ALT/ICT13/BCM1_CLK */
 			gpios = <&gpio_040_076 7 GPIO_ACTIVE_LOW>;
-			label = "FP BL RT";
+			label = "FP_BL_RT";
 		};
 		fp_amber_left: led_9 {
 			/* GPIO032/KSI7/GPTP_OUT0/UART0_RI# */
 			gpios = <&gpio_000_036 26 GPIO_ACTIVE_LOW>;
-			label = "FP AMB LT";
+			label = "FP_AMB_LT";
 		};
 		fp_amber_ctr: led_10 {
 			/* GPIO040/GPTP_OUT2/KSO00 */
 			gpios = <&gpio_040_076 0 GPIO_ACTIVE_LOW>;
-			label = "FP AMB CTR";
+			label = "FP_AMB_CTR";
 		};
 		fp_amber_right: led_11 {
 			/* GPIO041 */
 			gpios = <&gpio_040_076 1 GPIO_ACTIVE_LOW>;
-			label = "FP AMB RT";
+			label = "FP_AMB_RT";
 		};
 	};
 	bgpo0: bgpo@4000ac9c {
@@ -112,6 +113,12 @@
 		gpio-controller;
 		#gpio-cells = <2>;
 		ngpios = <6>;
+	};
+	
+	zephyr,user {
+		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
+		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173>;
+		pinctrl-names = "default";
 	};
 
 };
@@ -139,11 +146,31 @@
 	status = "okay";
 	pinctrl-0 = <&pwm0_gpio053>;
 	pinctrl-names = "default";
+	label = "FAN0";
 };
 
 &pwm1 {
 	status = "okay";
 	pinctrl-0 = <&pwm1_gpio054>;
+	pinctrl-names = "default";
+	label = "FAN1";
+};
+
+&pwm4 {
+	status = "okay";
+	pinctrl-0 = <&pwm4_alt_gpio001>;
+	pinctrl-names = "default";
+};
+
+&pwm5 {
+	status = "okay";
+	pinctrl-0 = <&pwm5_gpio002>;
+	pinctrl-names = "default";
+};
+
+&pwm6 {
+	status = "okay";
+	pinctrl-0 = <&pwm6_gpio014>;
 	pinctrl-names = "default";
 };
 
@@ -151,12 +178,14 @@
 	status = "okay";
 	pinctrl-0 = <&tach0_gpio050>;
 	pinctrl-names = "default";
+	label = "TACH0";
 };
 
 &tach1 {
 	status = "okay";
 	pinctrl-0 = <&tach1_gpio051>;
 	pinctrl-names = "default";
+	label = "TACH1";
 };
 
 /* Initialize ECIA. Does not initialize child devices */
@@ -216,6 +245,10 @@
 	pinctrl-names = "default";
 };
 
+&vci0 {
+	status = "okay";
+};
+
 &pinctrl {
 	gpio101: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
@@ -229,8 +262,4 @@
 	gpio173: gpio173 {
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
 	};
-};
-
-&gpio101 {
-	output-high;
 };

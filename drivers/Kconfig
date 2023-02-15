@@ -147,6 +147,14 @@ config I2C_HUB_LOG_LEVEL
 	help
 	  Set log level for i2c hub driver.
 
+config VCI_LOG_LEVEL
+	int "vci log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for vci interface.
+
 endmenu
 
 menu "EC optional drivers logging control"

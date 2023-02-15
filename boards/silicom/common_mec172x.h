@@ -11,6 +11,7 @@
 #ifndef __COMMON_MEC172X_H__
 #define __COMMON_MEC172X_H__
 
+#define EC_VCI_PORT		MCHP_GPIO_MAX_PORT
 #define EC_BGPO_PORT		MCHP_GPIO_MAX_PORT
 
 /* Dummy gpio port */

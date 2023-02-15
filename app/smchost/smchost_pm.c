@@ -9,11 +9,11 @@
 #include "port80display.h"
 #include "board.h"
 #include "board_config.h"
+#include "smc.h"
 #include "smchost.h"
 #include "smchost_commands.h"
 #include "scicodes.h"
 #include "sci.h"
-#include "acpi.h"
 #include "pwrplane.h"
 #include "pwrseq_utils.h"
 #include "dswmode.h"
@@ -54,7 +54,7 @@ void smchost_pwrbtn_handler(uint8_t pwrbtn_sts)
 
 	if (!check_btn_sci_sts(HID_BTN_SCI_PWR))
 		return;
-
+#if 1
 	/* Power button press/release only in ACPI mode */
 	if (g_acpi_state_flags.acpi_mode) {
 		if (pwrbtn_sts) {
@@ -63,6 +63,7 @@ void smchost_pwrbtn_handler(uint8_t pwrbtn_sts)
 			enqueue_sci(SCI_PWRBTN_DOWN);
 		}
 	}
+#endif
 
 	switch (pwrseq_system_state()) {
 	case SYSTEM_S3_STATE:
@@ -175,6 +176,7 @@ static void change_dsw_mode(void)
 	dsw_update_mode(host_req[1]);
 }
 
+#ifdef CONFIG_PWRMGMT_PG3_EXIT_WAKE_FROM_SX
 static void change_pg3_mode(void)
 {
 	pseudo_g3_enable(host_req[1]);
@@ -185,6 +187,7 @@ static void pg3_prog_counter(void)
 	pseudo_g3_program_counter(g_acpi_tbl.acpi_pg3_counter,
 				  g_acpi_tbl.acpi_pg3_wake_timer);
 }
+#endif
 
 static void config_ssd_pln(void)
 {
@@ -287,12 +290,14 @@ void smchost_cmd_pm_handler(uint8_t command)
 	case SMCHOST_GET_DSW_MODE:
 		retrieve_dsw_mode();
 		break;
+#ifdef CONFIG_PWRMGMT_PG3_EXIT_WAKE_FROM_SX
 	case SMCHOST_PG3_SET_MODE:
 		change_pg3_mode();
 		break;
 	case SMCHOST_PG3_PROG_COUNTER:
 		pg3_prog_counter();
 		break;
+#endif
 	case SMCHOST_CS_LOW_PWR_MODE_SET:
 		enable_cs_lpm_mode();
 		break;

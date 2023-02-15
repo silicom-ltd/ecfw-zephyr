@@ -1,0 +1,24 @@
+# Kconfig - Config options for EC FW
+#
+# Copyright (c) 2021 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "LED management"
+
+config LED_MANAGEMENT
+	bool "Enable led management"
+	help
+	  Indicate if EC supports management of leds.
+
+config LED_MGMT_LOG_LEVEL
+	int "Led management log level"
+	depends on LOG
+	depends on LED_MANAGEMENT
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for thermal management module.
+
+endmenu

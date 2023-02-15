@@ -18,7 +18,12 @@
 #include "periphmgmt.h"
 #include "espi_hub.h"
 #include "peci_hub.h"
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+#include "led_mec172x.h"
+#else
 #include "led.h"
+#endif
+
 #ifdef CONFIG_DNX_SUPPORT
 #include "dnx.h"
 #endif
@@ -39,7 +44,9 @@ static void proc_acpi_burst(void);
 static void service_system_acpi_cmds(void);
 static uint8_t smchost_req_length(uint8_t command);
 static void smchost_cmd_handler(uint8_t command);
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 static void handle_kb_backlight_pwm(void);
+#endif
 
 /* Track OS requests for different ACPI modes */
 static uint8_t acpi_burst_flag;
@@ -135,6 +142,7 @@ static void smchost_acpi_handler(void)
 #endif
 }
 
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 static void smchost_volbtnup_handler(uint8_t volbtn_sts)
 {
 	LOG_DBG("%s", __func__);
@@ -197,7 +205,7 @@ static void smchost_lid_handler(uint8_t lid_sts)
 		}
 	}
 }
-
+#endif
 #ifdef EC_SLATEMODE_HALLOUT_SNSR_R
 static void smchost_slatemode_handler(uint8_t slatemode_sts)
 {
@@ -254,6 +262,7 @@ static void smchost_virtualdock_handler(uint8_t virdock_sts)
 		g_acpi_tbl.acpi_flags2.pcie_docked = level;
 	}
 }
+
 #endif
 
 static void smchost_pltrst_handler(uint8_t pltrst_sts)
@@ -278,6 +287,7 @@ static void smchost_pltrst_handler(uint8_t pltrst_sts)
 static void smchost_host_rst_warn_handler(uint8_t host_rst_wrn_sts)
 {
 	if (host_rst_wrn_sts) {
+		LOG_DBG("SCI disabled %d", g_acpi_state_flags.sci_enabled);
 		g_acpi_state_flags.sci_enabled = 0;
 		sci_queue_flush();
 	}
@@ -297,6 +307,7 @@ static inline int smchost_task_init(void)
 
 	/* Register event handler */
 	pwrbtn_register_handler(smchost_pwrbtn_handler);
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 #ifdef EC_M_2_SSD_PLN
 	pwrbtn_register_handler(smchost_pwrbtn_pln_handler);
 #endif
@@ -312,6 +323,7 @@ static inline int smchost_task_init(void)
 	periph_register_button(EC_SLATEMODE_HALLOUT_SNSR_R,
 				smchost_slatemode_handler);
 #endif
+#endif
 	espihub_add_acpi_handler(ESPIHUB_ACPI_PUBLIC, smchost_acpi_handler);
 	espihub_add_warn_handler(ESPIHUB_RESET_WARNING,
 				 smchost_host_rst_warn_handler);
@@ -323,7 +335,9 @@ static inline int smchost_task_init(void)
 	g_acpi_tbl.acpi_flags.lid_open = 1;
 	g_acpi_tbl.kb_bklt_pwm_duty = 0;
 	prev_kb_bklt_pwm_duty = 0;
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 	led_init(LED_KBD_BKLT);
+#endif
 
 #ifdef EC_M_2_SSD_PLN
 	/* Default PLN state as no change, driven by gpio initialization */
@@ -355,8 +369,9 @@ static bool smchost_process_tasks(void)
 	check_sci_queue();
 	service_system_acpi_cmds();
 	pend_data = proc_host_send();
-
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 	handle_kb_backlight_pwm();
+#endif
 
 	return (sci_pending() || pend_data);
 }
@@ -369,10 +384,12 @@ void smchost_thread(void *p1, void *p2, void *p3)
 #endif
 
 	smchost_task_init();
+#if defined(VIRTUAL_BAT) || defined(VIRTUAL_DOCK)
 	/* Update virtual bat and doc status to reflect
 	 * the correct switch status after G3
 	 */
 	update_virtual_bat_dock_status();
+#endif
 
 #ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 	while (true) {
@@ -505,7 +522,7 @@ static void change_peci_access_mode(void)
 {
 #ifndef CONFIG_DEPRECATED_HW_STRAP_BASED_PECI_MODE_SEL
 	LOG_DBG("%s:Host peci_mode : %x", __func__, host_req[1]);
-	peci_access_mode_config(host_req[1]);
+//	peci_access_mode_config(host_req[1]);
 #endif /* CONFIG_DEPRECATED_HW_STRAP_BASED_PECI_MODE_SEL */
 }
 #endif
@@ -550,6 +567,7 @@ static void enable_acpi(void)
 {
 	g_acpi_state_flags.acpi_mode = 1;
 
+	LOG_DBG("Enable ACPI");
 	/* Disengage throttling */
 	gpio_write_pin(PROCHOT, 1);
 
@@ -588,11 +606,11 @@ static uint8_t smchost_req_length(uint8_t command)
 	case SMCHOST_PG3_SET_MODE:
 	case SMCHOST_ACPI_READ:
 	case SMCHOST_READ_ACPI_SPACE:
-	case SMCHOST_SET_PECI_ACCESS_MODE:
 	case SMCHOST_HID_BTN_SCI_CONTROL:
 #ifdef CONFIG_THERMAL_MANAGEMENT
 	case SMCHOST_BIOS_FAN_CONTROL:
 	case SMCHOST_SET_SHDWN_THRESHOLD:
+	case SMCHOST_SET_PECI_ACCESS_MODE:
 #endif
 		return 1;
 
@@ -657,6 +675,13 @@ static void smchost_cmd_handler(uint8_t command)
 		smchost_cmd_thermal_handler(command);
 		break;
 #endif
+#ifdef CONFIG_LED_MANAGEMENT
+	case SMCHOST_GET_LED_PWM_OFS:
+	case SMCHOST_GET_LED_PERIPHERALS_STS:
+	case SMCHOST_UPDATE_LED_PWM:
+		smchost_cmd_led_handler(command);
+		break;
+#endif
 	/* Handlers for commands 80h to 8Fh */
 	case SMCHOST_ACPI_READ:
 		acpi_read_ec();
@@ -701,6 +726,7 @@ static void smchost_cmd_handler(uint8_t command)
 	}
 }
 
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 static void handle_kb_backlight_pwm(void)
 {
 	if (prev_kb_bklt_pwm_duty != g_acpi_tbl.kb_bklt_pwm_duty) {
@@ -708,3 +734,4 @@ static void handle_kb_backlight_pwm(void)
 		prev_kb_bklt_pwm_duty = g_acpi_tbl.kb_bklt_pwm_duty;
 	}
 }
+#endif

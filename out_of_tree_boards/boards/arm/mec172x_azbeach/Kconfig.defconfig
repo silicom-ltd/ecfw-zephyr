@@ -40,4 +40,7 @@ config TACH_XEC
 	default y
 	depends on SENSOR
 
+#config VCI_XEC_V2
+#	default y
+
 endif # BOARD_MEC172X_AZBEACH

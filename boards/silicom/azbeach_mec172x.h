@@ -44,6 +44,7 @@ extern uint8_t platformskutype;
 					 PM_RSMRST_MAF_P : \
 					 PM_RSMRST_G3SAF_P)
 
+#define PLTRST_N			EC_GPIO_052
 #define ALL_SYS_PWRGD			EC_GPIO_057
 /* We poll this GPIO in MAF mode in order to sense the input signal040_076.
  * This pin was already configured in pinmux as ALT mode 1 NOT GPIO
@@ -60,30 +61,44 @@ extern uint8_t platformskutype;
 #define SLP_S3_N			EC_GPIO_171
 #define SLP_S4_N			EC_GPIO_172
 #define SX_EXIT_HOLDOFF_N		EC_GPIO_175
-#define PWRBTN_EC_IN_N			EC_GPIO_166
+//#define PWRBTN_EC_IN_N			EC_GPIO_166
 #define PM_DS3				EC_DUMMY_GPIO_HIGH
 #define TIMEOUT_DISABLE			EC_DUMMY_GPIO_LOW
 #define FAN_PWR_DISABLE_N		EC_DUMMY_GPIO_LOW
-#define PM_BATLOW			EC_DUMMY_GPIO_HIGH
+#define PM_BATLOW			EC_GPIO_140
 #define THERM_STRAP			EC_DUMMY_GPIO_LOW
 
 #define PM_SLP_S0_CS			EC_GPIO_221
 #define PM_SLP_S0_EC_N			EC_GPIO_240		/* ADL-M */
-#define EC_PWRBTN_LED			EC_GPIO_014		/* FP Left Blue */
+#define EC_PWRBTN_LED			EC_DUMMY_GPIO_LOW
 
-#define EC_PG3_EXIT			EC_DUMMY_GPIO_LOW
+/* M.2 Slots */
+#define W_DISABLE_M2_SLOT3_N		EC_GPIO_015
+#define W_DISABLE_M2_SLOT1_N		EC_GPIO_026
+#define W_DISABLE_M2_SLOT2_N		EC_GPIO_027
+#define SIM_M2_SLOT1_MUX_SEL		EC_GPIO_030
+#define SIM_M2_SLOT2_MUX_SEL		EC_GPIO_031
+#define SLOT0_LED1_OUT			EC_GPIO_130
+#define SLOT0_LED2_OUT			EC_GPIO_131
+#define SIM_M2_SLOT2A_DET_N		EC_GPIO_152
+#define SIM_M2_SLOT1A_DET_N		EC_GPIO_154
+#define SIM_M2_SLOT1B_DET_N		EC_GPIO_155
+#define RST_CTL_M2_SLOT1_N		EC_GPIO_230
+#define RST_CTL_M2_SLOT2_N		EC_GPIO_231
+#define SIM_M2_SLOT2B_DET_N		EC_GPIO_232
+#define SLOT1_LED_OUT			EC_GPIO_242
+#define SLOT2_LED_OUT			EC_GPIO_243
+
 #define BC_ACOK				EC_DUMMY_GPIO_HIGH
-#define VOL_UP				EC_DUMMY_GPIO_HIGH
-#define VOL_DOWN			EC_DUMMY_GPIO_HIGH
-#define HOME_BUTTON			EC_DUMMY_GPIO_HIGH
-#define SMC_LID				EC_DUMMY_GPIO_HIGH
 #define DG2_PRESENT			EC_DUMMY_GPIO_LOW
 #define PEG_RTD3_COLD_MOD_SW_R		EC_DUMMY_GPIO_LOW
-#define VIRTUAL_DOCK			EC_DUMMY_GPIO_LOW
-#define VIRTUAL_BAT			EC_DUMMY_GPIO_LOW
 
 /* XXX JJD, only an output and can't be a GPIO */
-#define PROCHOT				EC_BGPO_000
+//#define PROCHOT				EC_BGPO_000
+#define PROCHOT				EC_DUMMY_GPIO_LOW
+
+/* rev A0 has power button on VCI0# which makes it a pain */
+#define PWRBTN_EC_IN_N			EC_VCI_000
 
 /* Device instance names */
 #define I2C_BUS_0			DT_LABEL(DT_NODELABEL(i2c_smb_0))
@@ -96,21 +111,7 @@ extern uint8_t platformskutype;
 
 /* Button/Switch Initial positions */
 #define PWR_BTN_INIT_POS		1
-#define VOL_UP_INIT_POS			1
-#define VOL_DN_INIT_POS			1
-#define LID_INIT_POS			1
-#define HOME_INIT_POS			1
-#define VIRTUAL_DOCK_INIT_POS		1
-#define VIRTUAL_BAT_INIT_POS		1
 #define BTN_RECESSED_INIT_POS		1
-
-/* Minimum Adapter power(Milli Watts) for proceeding with boot */
-#define ADP_CRIT_POWERUP		26000
-
-#define TIPD_PORT_0_I2C_ADDR	0x20U
-#define TIPD_PORT_1_I2C_ADDR	0x24U
-#define TIPD_PORT_2_I2C_ADDR	0x21U
-#define TIPD_PORT_3_I2C_ADDR	0x25U
 
 /* PD version: MSB byte represent Major version and
  * LSB byte represent Minor version

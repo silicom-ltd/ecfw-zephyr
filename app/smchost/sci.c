@@ -23,6 +23,7 @@ K_MSGQ_DEFINE(sci_msgq, sizeof(uint8_t), SCIQ_SIZE, sizeof(uint8_t));
 
 void sci_queue_init(void)
 {
+	LOG_DBG("sci_enabled flag set");
 	g_acpi_state_flags.sci_enabled = 1;
 }
 
@@ -45,7 +46,7 @@ void generate_sci(void)
 
 	if ((!g_acpi_state_flags.sci_enabled) ||
 	    (!g_acpi_state_flags.acpi_mode)) {
-		LOG_DBG("SCI is disabled");
+		LOG_DBG("SCI is disabled, acpi_mode: %d, sci_enabled %d",g_acpi_state_flags.acpi_mode, g_acpi_state_flags.sci_enabled);
 		return;
 	}
 

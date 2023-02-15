@@ -61,7 +61,12 @@ static void update_pwm_with_override(uint8_t speed)
 {
 #ifndef CONFIG_THERMAL_FAN_OVERRIDE
 		host_set_bios_fan_override(speed ? 1 : 0, speed);
+#if 1
+		host_update_fan_speed(FAN_LEFT, speed);
+		host_update_fan_speed(FAN_RIGHT, speed);
+#else
 		host_update_fan_speed(FAN_CPU, speed);
+#endif
 #endif
 }
 

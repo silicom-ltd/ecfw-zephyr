@@ -16,6 +16,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/debug)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/kbchost)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/saf)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/soc_debug_awareness)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/rstbtn)
 
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
@@ -31,16 +32,21 @@ target_sources_ifdef(CONFIG_PWRMGMT app
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pwrplane.c
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/dswmode.c
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/deepsx.c
-    ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pseudog3.c
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pmc.c
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pwrseq_utils.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pwrplane.h
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/dswmode.h
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/deepsx.h
-    ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pseudog3.h
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pmc.h
     ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pwrseq_utils.h
+    )
+
+target_sources_ifdef(CONFIG_PWRMGMT_PG3_EXIT_WAKE_FROM_SX app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pseudog3.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/power_sequencing/pseudog3.h
     )
 
 target_sources_ifdef(CONFIG_DNX_SUPPORT app
@@ -121,6 +127,13 @@ target_sources_ifdef(CONFIG_VRTT_TESTING app
     ${CMAKE_CURRENT_LIST_DIR}/vrtt/vrtt.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/vrtt/vrtt.h
+    )
+
+target_sources_ifdef(CONFIG_RESET_BUTTON app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/rstbtn/rstbutton.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/rstbtn/rstbutton.h
     )
 
 target_include_directories(app

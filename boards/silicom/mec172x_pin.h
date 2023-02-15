@@ -9,6 +9,7 @@
 #define __MEC172X_PIN_H__
 
 #include "gpio_ec.h"
+#include "vci_ec.h"
 
 /**
  * @brief Microchip EC generic gpio pin definitions.
@@ -202,5 +203,7 @@
 #define EC_BGPO_003	EC_GPIO_PORT_PIN(EC_BGPO_PORT, 3)
 #define EC_BGPO_004	EC_GPIO_PORT_PIN(EC_BGPO_PORT, 4)
 #define EC_BGPO_005	EC_GPIO_PORT_PIN(EC_BGPO_PORT, 5)
+
+#define EC_VCI_000	EC_GPIO_PORT_PIN(EC_VCI_PORT, 0)
 
 #endif /* __MEC172X_PIN_H__ */

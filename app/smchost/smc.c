@@ -859,6 +859,13 @@ void smc_update_pch_dts_temperature(int temp)
 void smc_update_fan_tach(uint8_t fan_idx, uint16_t rpm)
 {
 	switch (fan_idx) {
+#if 1
+	case FAN_LEFT:
+		g_acpi_tbl.acpi_cpu_fan_rpm = rpm;
+		break;
+	default:
+		break;
+#else
 	case FAN_CPU:
 		g_acpi_tbl.acpi_cpu_fan_rpm = rpm;
 		break;
@@ -868,6 +875,8 @@ void smc_update_fan_tach(uint8_t fan_idx, uint16_t rpm)
 	default:
 		LOG_WRN("Missing acpi fields for fan %d", fan_idx);
 		break;
+#endif
+
 	}
 }
 

@@ -32,21 +32,36 @@ endif()
 
 target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
     PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/max6958.c
-    ${CMAKE_CURRENT_LIST_DIR}/port80display.c
+    #    ${CMAKE_CURRENT_LIST_DIR}/max6958.c
+    #    ${CMAKE_CURRENT_LIST_DIR}/port80display.c
+    ${CMAKE_CURRENT_LIST_DIR}/port80display_dummy.c
     PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/max6958.h
-    ${CMAKE_CURRENT_LIST_DIR}/port80display.h
+    #    ${CMAKE_CURRENT_LIST_DIR}/max6958.h
+    #    ${CMAKE_CURRENT_LIST_DIR}/port80display.h
+    ${CMAKE_CURRENT_LIST_DIR}/port80display_dummy.h
     )
 
-target_sources_ifdef(CONFIG_THERMAL_MANAGEMENT app
-    PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.c
-    ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
-    PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
-    ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+if (CONFIG_BOARD_MEC172X_AZBEACH)
+    if (CONFIG_THERMAL_MANAGEMENT)
+	target_sources(app
+	PRIVATE
+	${CMAKE_CURRENT_LIST_DIR}/thermal_sensor_azbeach.c
+	${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+	PUBLIC
+	${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
+	${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
     )
+    else()
+        target_sources(app
+        PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.c
+        ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+        PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
+        ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+    )
+    endif()
+endif()
 
 target_sources(app
     PRIVATE
@@ -61,30 +76,31 @@ target_sources(app
     ${CMAKE_CURRENT_LIST_DIR}/espioob_mngr.h
     ${CMAKE_CURRENT_LIST_DIR}/gpio_ec.h
     ${CMAKE_CURRENT_LIST_DIR}/fan.h
-    ${CMAKE_CURRENT_LIST_DIR}/led.h
-    ${CMAKE_CURRENT_LIST_DIR}/vci.h
+//    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.h
     ${CMAKE_CURRENT_LIST_DIR}/acpi.h
     )
 
-target_sources_ifdef(CONFIG_SOC_FAMILY_MEC app
-    PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/led.c
-    PUBLIC
-    )
+#target_sources_ifdef(CONFIG_SOC_FAMILY_MEC app
+#    PRIVATE
+#    ${CMAKE_CURRENT_LIST_DIR}/led.c
+#    PUBLIC
+#    ${CMAKE_CURRENT_LIST_DIR}/led.h
+#    )
 
 target_sources_ifdef(CONFIG_SOC_SERIES_MEC1501X app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/gpio_mec15xx.c
     ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
-    ${CMAKE_CURRENT_LIST_DIR}/vci_mec15xx.c
+    ${CMAKE_CURRENT_LIST_DIR}/vci.c
     ${CMAKE_CURRENT_LIST_DIR}/acpi_mec15xx.c
     PUBLIC
     )
 
 target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
     PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/gpio_mec15xx.c
+    ${CMAKE_CURRENT_LIST_DIR}/gpio_mec172x.c
     ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
+    #    ${CMAKE_CURRENT_LIST_DIR}/led_mec172x.c
     # Require Soc-HW access via device tree
     ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.c
     ${CMAKE_CURRENT_LIST_DIR}/acpi_mec172x.c

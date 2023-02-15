@@ -30,6 +30,14 @@ enum tach_ch_num {
 	TACH_CH_UNDEF = 0xFF,
 };
 
+#if 1
+enum fan_type {
+	FAN_LEFT,
+	FAN_RIGHT,
+	FAN_DEV_TOTAL,
+	FAND_DEV_UNDEF = 0xFF,
+};
+#else
 enum fan_type {
 	FAN_CPU,
 	FAN_REAR,
@@ -38,6 +46,7 @@ enum fan_type {
 	FAN_DEV_TOTAL,
 	FAN_DEV_UNDEF = 0xFF,
 };
+#endif
 
 struct fan_dev {
 	enum pwm_ch_num pwm_ch;

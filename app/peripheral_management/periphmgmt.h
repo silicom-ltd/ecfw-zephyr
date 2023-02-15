@@ -6,7 +6,7 @@
 
 #ifndef __PERIPH_MGMT_H__
 #define __PERIPH_MGMT_H__
-
+#if defined(VIRTUAL_BAT) || defined(VIRTUAL_DOCK)
 /**
  * @brief Returns virtual battery presence status.
  *
@@ -26,7 +26,7 @@ bool is_virtual_dock_prsnt(void);
  *
  */
 void update_virtual_bat_dock_status(void);
-
+#endif
 typedef void (*btn_handler_t)(uint8_t btn_sts);
 
 /**

@@ -387,7 +387,7 @@ void deep_sx_enter(void)
 	if (espihub_reset_status() && !sus_wrn) {
 		gpio_write_pin(PM_DS3, 1);
 
-		vci_enable();
+// XXX JJD		vci_enable();
 
 		ret = ack_deep_sleep_transition(SUS_WRN_LOW);
 		if (ret) {

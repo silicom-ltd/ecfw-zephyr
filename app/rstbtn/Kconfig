@@ -1,0 +1,21 @@
+# Kconfig - Config options for EC FW reset button
+#
+# Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config RESET_BUTTON
+	bool "Enable Reset Button function"
+	default y
+	help
+	  Indicate if Reset button functionality is enabled.
+
+config RESET_BUTTON_LOG_LEVEL
+	int "Reset button log level"
+	depends on LOG
+	depends on RESET_BUTTON
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for Reset button.

@@ -12,6 +12,9 @@
 #include "gpio_ec.h"
 #include "periphmgmt.h"
 #include "pwrbtnmgmt.h"
+#if CONFIG_RESET_BUTTON
+#include "rstbutton.h"
+#endif
 #include "board_config.h"
 #include "acpi_region.h"
 #include "smchost.h"
@@ -32,6 +35,7 @@ struct btn_info {
 	char		*name;
 };
 
+#ifndef CONFIG_BOARD_MEC172X_AZBEACH
 static struct btn_info btn_lst[] = {
 	{VOL_UP,          false, GPIO_DEBOUNCE_CNT, NULL, VOL_UP_INIT_POS,
 					{{0}, NULL, 0}, "VolUp"},
@@ -39,7 +43,7 @@ static struct btn_info btn_lst[] = {
 					{{0}, NULL, 0}, "PwrBtn"},
 	{VOL_DOWN,        false, GPIO_DEBOUNCE_CNT, NULL, VOL_DN_INIT_POS,
 					{{0}, NULL, 0}, "VolDown"},
-	{HOME_BUTTON,		false, GPIO_DEBOUNCE_CNT, NULL, HOME_INIT_POS,
+	{HOME_BUTTON,	false, GPIO_DEBOUNCE_CNT, NULL, HOME_INIT_POS,
 					{{0}, NULL, 0}, "hmbtn"},
 	{SMC_LID,        false, GPIO_DEBOUNCE_CNT, NULL, LID_INIT_POS,
 					{{0}, NULL, 0}, "LidBtn"},
@@ -57,14 +61,25 @@ static struct btn_info btn_lst[] = {
 	{TIMEOUT_DISABLE, false, GPIO_DEBOUNCE_CNT, NULL, 1,
 					{{0}, NULL, 0}, "Timeout"},
 #endif
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH)
-	{BTN_RECESSED,    false, GPIO_DEBOUNCE_CNT, NULL, 1,
-		                        {{0}, NULL, 0}, "RecessedBtn"},
-#endif
 };
+#else
+static struct btn_info btn_lst[] = {
+	{PWRBTN_EC_IN_N,  false, GPIO_DEBOUNCE_CNT, NULL, PWR_BTN_INIT_POS,
+					{{0}, NULL, 0}, "PwrBtn"},
+	{BTN_RECESSED, false, GPIO_DEBOUNCE_CNT, NULL, BTN_RECESSED_INIT_POS,
+					{{0}, NULL, 0}, "RstBtn"},
+};
+#endif
 
 static int debouncing_ongoing;
 static struct k_sem btn_debounce_lock;
+
+void reset_btn_levels(uint8_t btn_index, int level)
+{
+	if (level != btn_lst[btn_index].prev_level)
+		btn_lst[btn_index].prev_level = level;
+
+}
 
 static void notify_btn_handlers(uint8_t btn_idx)
 {
@@ -88,6 +103,24 @@ static void notify_btn_handlers(uint8_t btn_idx)
 			btn_lst[btn_idx].handler(level);
 			btn_lst[btn_idx].prev_level = level;
 		}
+#if 0
+		if (btn_lst[btn_idx].flags == GPIO_INT_EDGE_BOTH) {
+			if (btn_lst[btn_idx].prev_level != level) {
+				LOG_DBG("calling handler");
+				btn_lst[btn_idx].handler(level);
+				btn_lst[btn_idx].prev_level = level;
+			}
+		} else {
+			if (btn_lst[btn_idx].prev_level != level) {
+				LOG_DBG("calling handler");
+				btn_lst[btn_idx].handler(level);
+				btn_lst[btn_idx].prev_level = level;
+			} else {
+				btn_lst[btn_idx].handler(!level);
+				btn_lst[btn_idx].prev_level = !level;
+			}
+		}
+#endif
 	}
 }
 
@@ -155,7 +188,7 @@ static int periph_add_gpio_cb_for_button(int btn_index)
 	ret = gpio_interrupt_configure_pin(info->port_pin,
 						   GPIO_INT_EDGE_BOTH);
 	if (ret) {
-		LOG_ERR("Failed to configure isr for %s", info->name);
+		LOG_ERR("Failed to configure isr for %s: %d", info->name, ret);
 	}
 
 	LOG_DBG("Gpio callback registered for %s", info->name);
@@ -189,6 +222,8 @@ int periph_register_button(uint32_t port_pin, btn_handler_t handler)
 	/* Update button level from gpio pin status */
 	level = gpio_read_pin(btn_lst[i].port_pin);
 
+	LOG_DBG("Button %s initial level is %d", btn_lst[i].name, level);
+
 	if (level < 0) {
 		LOG_ERR("Failed to read %x",
 				gpio_get_pin(btn_lst[i].port_pin));
@@ -200,6 +235,7 @@ int periph_register_button(uint32_t port_pin, btn_handler_t handler)
 	return ret;
 }
 
+#if defined(VIRTUAL_DOCK) || defined(VIRTUAL_BAT)
 void update_virtual_bat_dock_status(void)
 {
 	int level;
@@ -230,6 +266,7 @@ bool is_virtual_dock_prsnt(void)
 {
 	return g_acpi_tbl.acpi_flags2.pcie_docked;
 }
+#endif
 
 void periph_thread(void *p1, void *p2, void *p3)
 {
@@ -237,6 +274,11 @@ void periph_thread(void *p1, void *p2, void *p3)
 
 	pwrbtn_init();
 
+#ifdef CONFIG_RESET_BUTTON
+	rstbutton_init();
+#else
+#error no RESET_BUTTON defined!
+#endif
 	k_sem_init(&btn_debounce_lock, 0, 1);
 	while (true) {
 		/* Wait until ISR occurs to start debouncing */
