@@ -4,13 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
 #include <errno.h>
 #ifndef CONFIG_PINCTRL
-#include <drivers/pinmux.h>
+#include <zephyr/drivers/pinmux.h>
 #endif
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "gpio_ec.h"
 #include "common_mec172x.h"
 
@@ -19,11 +19,14 @@ LOG_MODULE_REGISTER(gpio_ec, CONFIG_GPIO_EC_LOG_LEVEL);
 #define MAX_PINS_PER_PORT	32
 #define OCTAL_BASE		8
 
+#if 0
 struct gpio_device {
 	char name[Z_DEVICE_MAX_NAME_LEN];
 	const struct device *port;
 };
-
+#else
+typedef struct device gpio_device;
+#endif
 #ifndef CONFIG_PINCTRL
 static struct gpio_device pinmux_ports[] = {
 	{ "pinmux_000_036", DEVICE_DT_GET(DT_NODELABEL(pinmux_000_036)) },
@@ -35,21 +38,38 @@ static struct gpio_device pinmux_ports[] = {
 };
 #endif
 
+#if 0
 static struct gpio_device ports[] = {
-	{ DT_LABEL(DT_NODELABEL(gpio_000_036)), NULL},
-	{ DT_LABEL(DT_NODELABEL(gpio_040_076)), NULL},
-	{ DT_LABEL(DT_NODELABEL(gpio_100_136)), NULL},
-	{ DT_LABEL(DT_NODELABEL(gpio_140_176)), NULL},
-	{ DT_LABEL(DT_NODELABEL(gpio_200_236)), NULL},
-	{ DT_LABEL(DT_NODELABEL(gpio_240_276)), NULL},
+	{ DT_PROP(DT_NODELABEL(gpio_000_036), label), NULL},
+	{ DT_PROP(DT_NODELABEL(gpio_040_076), label), NULL},
+	{ DT_PROP(DT_NODELABEL(gpio_100_136), label), NULL},
+	{ DT_PROP(DT_NODELABEL(gpio_140_176), label), NULL},
+	{ DT_PROP(DT_NODELABEL(gpio_200_236), label), NULL},
+	{ DT_PROP(DT_NODELABEL(gpio_240_276), label), NULL},
+#else
+static const gpio_device *ports[] = {
+#if DT_NODE_HAS_STATUS(DT_INST(0, microchip_xec_gpio_v2), okay)
+	DEVICE_DT_GET(DT_INST(0, microchip_xec_gpio_v2)),
+#endif
+#if DT_NODE_HAS_STATUS(DT_INST(1, microchip_xec_gpio_v2), okay)
+	DEVICE_DT_GET(DT_INST(1, microchip_xec_gpio_v2)),
+#endif
+#if DT_NODE_HAS_STATUS(DT_INST(2, microchip_xec_gpio_v2), okay)
+	DEVICE_DT_GET(DT_INST(2, microchip_xec_gpio_v2)),
+#endif
+#if DT_NODE_HAS_STATUS(DT_INST(3, microchip_xec_gpio_v2), okay)
+	DEVICE_DT_GET(DT_INST(3, microchip_xec_gpio_v2)),
+#endif
+#if DT_NODE_HAS_STATUS(DT_INST(4, microchip_xec_gpio_v2), okay)
+	DEVICE_DT_GET(DT_INST(4, microchip_xec_gpio_v2)),
+#endif
+#if DT_NODE_HAS_STATUS(DT_INST(5, microchip_xec_gpio_v2), okay)
+	DEVICE_DT_GET(DT_INST(5, microchip_xec_gpio_v2)),
+#endif
 #if DT_NODE_HAS_STATUS(DT_INST(0, microchip_xec_vci_v2), okay)
-	{ DT_LABEL(DT_INST(0, microchip_xec_vci_v2)), NULL },
+	DEVICE_DT_GET(DT_INST(0, microchip_xec_vci_v2)),
 #else
 #error No vci node enabled!
-#endif
-#if 0
-#if DT_NODE_HAS_STATUS(bgpo0, okay)
-	{ DT_LABEL(DT_NODELABEL(bgpo0)), NULL},
 #endif
 #endif
 	/* Handle 1 or more IO expanders */
@@ -102,7 +122,7 @@ static int validate_device(uint32_t port_pin, struct gpio_port_pin *pp)
 	if (port_idx >= ARRAY_SIZE(ports)) {
 		return -EINVAL;
 	}
-
+#if 0
 	if (!ports[port_idx].port) {
 		LOG_ERR("Invalid gpio dev");
 		return -ENODEV;
@@ -112,6 +132,14 @@ static int validate_device(uint32_t port_pin, struct gpio_port_pin *pp)
 		__func__, port_idx, ports[port_idx].port, pin);
 
 	pp->gpio_dev = ports[port_idx].port;
+#else
+	if (!ports[port_idx]) {
+		LOG_ERR("Invalid gpio dev");
+		return -ENODEV;
+	}
+	
+	pp->gpio_dev = ports[port_idx];
+#endif
 	pp->pin = pin;
 
 	return 0;
@@ -132,6 +160,7 @@ static bool gpio_read_dummy_pin(uint32_t port_pin)
 
 int gpio_init(void)
 {
+#if 0
 	const struct device *gpio_dev;
 
 	for (int i = 0; i < ARRAY_SIZE(ports); i++) {
@@ -144,7 +173,7 @@ int gpio_init(void)
 		ports[i].port = gpio_dev;
 		LOG_DBG("[Port %c] %p", (i+0x31), gpio_dev);
 	}
-
+#endif
 	return 0;
 }
 

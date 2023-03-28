@@ -5,10 +5,9 @@
  */
 
 #include <errno.h>
-#include <kernel.h>
-#include <zephyr.h>
-#include <device.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/logging/log.h>
 #include "pwrplane.h"
 #include "espioob_mngr.h"
 #include "postcodemgmt.h"
@@ -18,6 +17,9 @@
 #include "task_handler.h"
 #ifdef CONFIG_THERMAL_MANAGEMENT
 #include "thermalmgmt.h"
+#endif
+#ifdef CONFIG_LED_MANAGEMENT
+#include "ledmgmt.h"
 #endif
 
 LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
@@ -75,6 +77,18 @@ K_THREAD_DEFINE(thermal_thrd_id, EC_TASK_STACK_SIZE, thermalmgmt_thread,
 		&thermal_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
 #endif
+#ifdef CONFIG_LED_MANAGEMENT
+const uint32_t led_thrd_period = 5;
+K_THREAD_DEFINE(led_thrd_id, EC_TASK_STACK_SIZE, ledmgmt_thread,
+		&led_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
+		K_INHERIT_PERMS, EC_WAIT_FOREVER);
+#ifdef CONFIG_LED_MANAGEMENT_POST
+const uint32_t led_thrd_post_period = 2000 ;
+K_THREAD_DEFINE(led_thrd_post_id, EC_TASK_STACK_SIZE, ledmgmt_post_thread,
+		&led_thrd_post_period, NULL, NULL, EC_TASK_PRIORITY,
+		K_INHERIT_PERMS, EC_WAIT_FOREVER);
+#endif
+#endif
 
 struct task_info {
 	k_tid_t thread_id;
@@ -116,6 +130,14 @@ static struct task_info tasks[] = {
 	  .tagname = THRML_MGMT_TASK_NAME },
 #endif
 
+#ifdef CONFIG_LED_MANAGEMENT
+	{ .thread_id = led_thrd_id, .can_suspend = false,
+	  .tagname = "LEDS" },
+#ifdef CONFIG_LED_MANAGEMENT_POST
+	{ .thread_id = led_thrd_post_id, .can_suspend = false,
+	  .tagname = "LEDS_POST" },
+#endif
+#endif
 };
 
 void start_all_tasks(void)

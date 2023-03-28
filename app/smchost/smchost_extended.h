@@ -29,6 +29,17 @@ void smchost_cmd_pm_handler(uint8_t command);
  * @param command identifier for the operation requested.
  */
 void smchost_cmd_thermal_handler(uint8_t command);
+
+#endif
+
+#ifdef CONFIG_LED_MANAGEMENT
+/**
+ * @brief Handle extended SMC commands for LED management.
+ *
+ * @param command identifier for the operation requested.
+ */
+void smchost_cmd_led_handler(uint8_t command);
+
 #endif
 
 /**
@@ -54,6 +65,5 @@ void smchost_pwrbtn_pln_handler(uint8_t pwrbtn_sts);
  * @brief platform reset deassert notification for pln.
  */
 void smchost_pln_pltreset_handler(void);
-
 
 #endif /* __SMCHOST_EXTENDED_H__ */

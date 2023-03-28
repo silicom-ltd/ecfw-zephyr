@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <device.h>
-#include <drivers/peci.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/peci.h>
+#include <zephyr/logging/log.h>
 #include "board_config.h"
 #include "errno.h"
 #include <soc.h>
@@ -297,12 +297,16 @@ static int espioob_peci_transfer(struct peci_msg *msg)
 	 * So exclude 2 byte for data.
 	 */
 	if (oob_resp.oob_byte_cnt > 2) {
+#if 0
 		ret = memcpys(msg->rx_buffer.buf, oob_resp.data,
 					oob_resp.oob_byte_cnt - 2);
 		if (ret) {
 			LOG_ERR("Failed while copying response buffer");
 			return ret;
 		}
+#endif
+		memcpy(msg->rx_buffer.buf, oob_resp.data,
+					oob_resp.oob_byte_cnt - 2);
 	}
 
 	return 0;
@@ -813,7 +817,7 @@ int peci_init(void)
 	detect_peci_over_espi_mode();
 #endif /* CONFIG_DEPRECATED_HW_STRAP_BASED_PECI_MODE_SEL */
 
-	peci_dev = device_get_binding(PECI_0_INST);
+	peci_dev = DEVICE_DT_GET(PECI_0_INST);
 	if (!peci_dev) {
 		LOG_ERR("PECI device not found");
 		return -ENODEV;

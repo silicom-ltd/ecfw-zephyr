@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <drivers/pwm.h>
-#include <drivers/sensor.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/logging/log.h>
 #include "gpio_ec.h"
 #include "board_config.h"
 #include "fan.h"
@@ -33,8 +33,8 @@ LOG_MODULE_REGISTER(fan, CONFIG_FAN_LOG_LEVEL);
 
 #define DT_PWM_INST(x)		DT_NODELABEL(pwm##x)
 #define DT_TACH_INST(x)		DT_NODELABEL(tach##x)
-#define PWM_LABEL(x)		DT_LABEL(DT_PWM_INST(x))
-#define TACH_LABEL(x)		DT_LABEL(DT_TACH_INST(x))
+#define PWM_LABEL(x)		DT_PROP(DT_PWM_INST(x), label)
+#define TACH_LABEL(x)		DT_PROP(DT_TACH_INST(x), label)
 
 #define	PWM_DEV_LIST_SIZE	(PWM_CH_08 + 1)
 #define	TACH_DEV_LIST_SIZE	(TACH_CH_03 + 1)
@@ -52,47 +52,47 @@ static struct fan_dev fan_table[] = {
 static void init_pwm_devices(void)
 {
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(0), okay)
-	pwm_dev[PWM_CH_00] = device_get_binding(PWM_LABEL(0));
+	pwm_dev[PWM_CH_00] = DEVICE_DT_GET(DT_PWM_INST(0));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(1), okay)
-	pwm_dev[PWM_CH_01] = device_get_binding(PWM_LABEL(1));
+	pwm_dev[PWM_CH_01] = DEVICE_DT_GET(DT_PWM_INST(1));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(2), okay)
-	pwm_dev[PWM_CH_02] = device_get_binding(PWM_LABEL(2));
+	pwm_dev[PWM_CH_02] = DEVICE_DT_GET(DT_PWM_INST(2));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(3), okay)
-	pwm_dev[PWM_CH_03] = device_get_binding(PWM_LABEL(3));
+	pwm_dev[PWM_CH_03] = DEVICE_DT_GET(DT_PWM_INST(3));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(4), okay)
-	pwm_dev[PWM_CH_04] = device_get_binding(PWM_LABEL(4));
+	pwm_dev[PWM_CH_04] = DEVICE_DT_GET(DT_PWM_INST(4));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(5), okay)
-	pwm_dev[PWM_CH_05] = device_get_binding(PWM_LABEL(5));
+	pwm_dev[PWM_CH_05] = DEVICE_DT_GET(DT_PWM_INST(5));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(6), okay)
-	pwm_dev[PWM_CH_06] = device_get_binding(PWM_LABEL(6));
+	pwm_dev[PWM_CH_06] = DEVICE_DT_GET(DT_PWM_INST(6));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(7), okay)
-	pwm_dev[PWM_CH_07] = device_get_binding(PWM_LABEL(7));
+	pwm_dev[PWM_CH_07] = DEVICE_DT_GET(DT_PWM_INST(7));
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_INST(8), okay)
-	pwm_dev[PWM_CH_08] = device_get_binding(PWM_LABEL(8));
+	pwm_dev[PWM_CH_08] = DEVICE_DT_GET(DT_PWM_INST(8));
 #endif
 }
 
 static void init_tach_devices(void)
 {
 #if DT_NODE_HAS_STATUS(DT_TACH_INST(0), okay)
-	tach_dev[TACH_CH_00] = device_get_binding(TACH_LABEL(0));
+	tach_dev[TACH_CH_00] = DEVICE_DT_GET(DT_TACH_INST(0));
 #endif
 #if DT_NODE_HAS_STATUS(DT_TACH_INST(1), okay)
-	tach_dev[TACH_CH_01] = device_get_binding(TACH_LABEL(1));
+	tach_dev[TACH_CH_01] = DEVICE_DT_GET(DT_TACH_INST(1));
 #endif
 #if DT_NODE_HAS_STATUS(DT_TACH_INST(2), okay)
-	tach_dev[TACH_CH_02] = device_get_binding(TACH_LABEL(2));
+	tach_dev[TACH_CH_02] = DEVICE_DT_GET(DT_TACH_INST(2));
 #endif
 #if DT_NODE_HAS_STATUS(DT_TACH_INST(3), okay)
-	tach_dev[TACH_CH_03] = device_get_binding(TACH_LABEL(3));
+	tach_dev[TACH_CH_03] = DEVICE_DT_GET(DT_TACH_INST(3));
 #endif
 }
 
@@ -154,7 +154,7 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t duty_cycle)
 		duty_cycle = MAX_DUTY_CYCLE;
 	}
 
-	ret = pwm_pin_set_cycles(pwm, 0, PWM_FREQ_MULT * MAX_DUTY_CYCLE,
+	ret = pwm_set_cycles(pwm, 0, PWM_FREQ_MULT * MAX_DUTY_CYCLE,
 		PWM_FREQ_MULT * duty_cycle, 0);
 	if (ret) {
 		LOG_WRN("Fan setting error: %d", ret);

@@ -5,18 +5,18 @@
  */
 
 #include <soc.h>
-#include <device.h>
+#include <zephyr/device.h>
 #include <errno.h>
-#include <drivers/led.h>
-#include <drivers/gpio.h>
-#include <drivers/pwm.h>
-#include <drivers/sensor.h>
-#include <drivers/adc.h>
-#include <sys/util.h>
+#include <zephyr/drivers/led.h>
+#include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/drivers/adc.h>
+#include <zephyr/sys/util.h>
 #include "i2c_hub.h"
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "gpio_ec.h"
-//#include "led_mec172x.h"
+#include "led_mec172x.h"
 #include "espi_hub.h"
 #include "board.h"
 #include "board_config.h"
@@ -90,6 +90,162 @@ struct gpio_ec_config mecc172x_cfg_sus[] =  {
 struct gpio_ec_config mecc172x_cfg_res[] =  {
 };
 
+#ifdef CONFIG_LED_MANAGEMENT
+#define DT_PWM_MC_LED_INST(x)	DT_NODELABEL(pwmmcled##x)
+#define DT_PWM_LED_INST(x)	DT_NODELABEL(pwmled##x)
+#define DT_GPIO_LED_INST(x)	DT_NODELABEL(gpioled##x)
+
+static struct led_dev led_tbl[32];
+static uint8_t max_led_dev;
+
+static void init_led_devices(void)
+{
+	int i = 0;
+
+#if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(0), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(0));
+	led_tbl[i].rgb = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(1), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(1));
+	led_tbl[i].rgb = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(2), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(2));
+	led_tbl[i].rgb = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(3), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(3));
+	led_tbl[i].rgb = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(0), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(0));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(1), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(1));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(2), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(2));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(3), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(3));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(4), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(4));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(5), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(5));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(6), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(6));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(7), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(7));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(8), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(8));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(9), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(9));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(10), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(10));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(11), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(11));
+	led_tbl[i].pwm = 1;
+	led_off(led_tbl[i].dev, 0); 
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(0), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(0));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(1), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(1));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(2), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(2));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(3), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(3));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(4), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(4));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(5), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(5));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(6), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(6));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+	max_led_dev = i;
+}
+
+void board_led_dev_tbl_init(uint8_t *max, const struct led_dev **tbl)
+{
+	init_led_devices();
+
+	*max = max_led_dev;
+	*tbl = led_tbl;
+}
+
+#endif
+
 #ifdef CONFIG_THERMAL_MANAGEMENT
 /**
  * @brief Fan device table.
@@ -119,27 +275,6 @@ static struct therm_sensor therm_sensor_tbl_azbeach[] = {
 	{ADC_CH_10,	ACPI_THRM_SEN_EXTCPU,	{0} },  /* ADC_CPU */
 	/* there is also a CPU temp sensor */
 };
-#if 0
-/*
- * Until the other RGB legs get connected to PWMs, they can't be RGBs
- * and are fairly unusable as separate LEDs.
- */
-static struct led_device led_devices[] = {
-	/* type		unit		group,	color */
-	{ LED_RGB, 	4, 		0, 	LED_RED },
-	{ LED_RGB, 	5, 		0, 	LED_GREEN },
-	{ LED_RGB, 	6, 		0, 	LED_BLUE },
-	{ LED_GPIO, 	EC_GPIO_033, 	0, 	LED_RED },
-	{ LED_GPIO, 	EC_GPIO_034, 	0, 	LED_GREEN },
-	{ LED_GPIO, 	EC_GPIO_035, 	0, 	LED_BLUE },
-	{ LED_GPIO, 	EC_GPIO_156, 	0, 	LED_RED },
-	{ LED_GPIO, 	EC_GPIO_046, 	0, 	LED_GREEN },
-	{ LED_GPIO, 	EC_GPIO_047, 	0, 	LED_BLUE },
-	{ LED_GPIO, 	EC_GPIO_032, 	0, 	LED_AMBER },
-	{ LED_GPIO, 	EC_GPIO_040, 	0, 	LED_AMBER },
-	{ LED_GPIO, 	EC_GPIO_041, 	0, 	LED_AMBER }
-};
-#endif
 
 void board_therm_sensor_tbl_init(uint8_t *p_max_adc_sensors,
 		struct therm_sensor **p_therm_sensor_tbl)
@@ -154,14 +289,6 @@ void board_fan_dev_tbl_init(uint8_t *pmax_fan, struct fan_dev **pfan_tbl)
 	*pmax_fan = ARRAY_SIZE(fan_tbl);
 }
 
-#if 0
-void board_led_dev_tbl_init(uint8_t *pmax_led, struct led_dev **pled_tbl)
-{
-	*pled_tbl = led_devices;
-	*pmax_led = ARRAY_SIZE(led_devices);
-
-}
-#endif
 #endif
 static int wait_for_pin_level(uint32_t port_pin, uint16_t timeout,
 			uint32_t exp_level)
@@ -222,21 +349,20 @@ const uint8_t gamma8[] = {
 	215, 218, 220, 223, 225, 228, 231, 233, 236, 239, 241, 244, 247, 249, 252, 255
 };
 
+#ifdef CONFIG_BOARD_POST 
 #undef DT_DRV_COMPAT
 #define DT_DRV_COMPAT gpio_leds
 void run_led_tests(void)
 {
-#define LED_GPIO_LABEL(child)	DT_GPIO_LABEL(child, gpios),
-	const char *led_label[] = {
-		DT_INST_FOREACH_CHILD(0, LED_GPIO_LABEL)
+#define LED_GPIO(child) DEVICE_DT_GET(child),
+	const struct device *leds[] = {
+		DT_INST_FOREACH_CHILD(0, LED_GPIO)
 	};
-	const int num_leds = ARRAY_SIZE(led_label);
-	const struct device *led_gpio;
+	const int num_leds = ARRAY_SIZE(leds);
+	const struct device *led_gpio = DEVICE_DT_INST_GET(0);
 	int i,err;
 
 	for (i = 0; i < num_leds; i++) {
-		led_gpio = DEVICE_DT_INST_GET(0);
-		LOG_INF("Testing LED %d - %s", i, (led_label[i] ? led_label[i]  : "no label"));
 		err = led_on(led_gpio, i);
 		if (err < 0) {
 			LOG_ERR("err=%d",err);
@@ -248,79 +374,42 @@ void run_led_tests(void)
 		k_sleep(K_MSEC(250));
 	}
 }
-#if 1
-#undef DT_DRV_COMPAT
-#define DT_DRV_COMPAT pwm_leds
+#define LED_PWM_NODE_ID DT_COMPAT_GET_ANY_STATUS_OKAY(pwm_leds)
 void run_pwm_led_tests(void)
 {
-#define PWM_LED_LABEL(led_node_id)	DT_LABEL(led_node_id),
-
-	const char *pwm_led_label[] = {
-		DT_INST_FOREACH_CHILD(0, PWM_LED_LABEL)
+	const char *led_label[] = {
+        	DT_FOREACH_CHILD_SEP_VARGS(LED_PWM_NODE_ID, DT_PROP_OR, (,), label, NULL)
 	};
-	const int num_pwm_leds = ARRAY_SIZE(pwm_led_label);
+
+	const int num_pwm_leds = ARRAY_SIZE(led_label);
 	const struct device *led_pwm;
 	int i,err;
-	uint32_t duty_cycle;
+	uint16_t duty_cycle;
 
-	led_pwm = DEVICE_DT_INST_GET(0);
+	led_pwm = DEVICE_DT_GET(LED_PWM_NODE_ID);
 	for (i = 0; i < num_pwm_leds; i++) {
-		LOG_INF("Turning off led %d - %s", i, (pwm_led_label[i] ? pwm_led_label[i] : "no label"));
+		LOG_INF("Turning off led %d - %s", i, (led_label[i] ? : "no label"));
 		led_off(led_pwm, i);
 	}
 	
-//	for (i = 0; i < num_pwm_leds; i++) {
-		LOG_INF("Testing PWM LED %d - %s", 0, (pwm_led_label[0] ? pwm_led_label[0] : "no label"));
-#if 0
-		for (duty_cycle = 100; duty_cycle >=0; duty_cycle--) {
-			//cycles = gamma8[duty_cycle];
-			err = led_set_brightness(led_pwm, 0, duty_cycle);
-			k_sleep(K_MSEC(10));
-			led_off(led_pwm,0);
-		}
-#endif
-		for (duty_cycle = 0; duty_cycle < 100; duty_cycle++) {
-			//cycles = gamma8[duty_cycle];
-			err = led_set_brightness(led_pwm, 0, duty_cycle);
-			k_sleep(K_MSEC(10));
-			led_off(led_pwm,0);
-		}
-		led_off(led_pwm, 0);
-		LOG_INF("Testing PWM LED %d - %s", 1, (pwm_led_label[1] ? pwm_led_label[1] : "no label"));
+	for (i = 0; i < num_pwm_leds; i++) {
+		LOG_INF("Testing PWM LED %d - %s", i, (led_label[i] ? : "no label"));
 
-		for (duty_cycle = 100; duty_cycle >=0; duty_cycle--) {
-			//cycles = gamma8[duty_cycle];
-			err = led_set_brightness(led_pwm, 1, duty_cycle);
+		for (duty_cycle = 100; duty_cycle >0; duty_cycle--) {
+			err = led_set_brightness(led_pwm, i, duty_cycle);
+			LOG_INF("duty_cycle %d", duty_cycle);
 			k_sleep(K_MSEC(10));
-			led_off(led_pwm,1);
 		}
-		for (duty_cycle = 0; duty_cycle < 100; duty_cycle++) {
-			//cycles = gamma8[duty_cycle];
-			err = led_set_brightness(led_pwm, 1, duty_cycle);
-			k_sleep(K_MSEC(10));
-			led_off(led_pwm,1);
-		}
-		led_off(led_pwm, 1);
-		LOG_INF("Testing PWM LED %d - %s", 2, (pwm_led_label[2] ? pwm_led_label[2] : "no label"));
 
-		for (duty_cycle = 100; duty_cycle >=0; duty_cycle--) {
-			//cycles = gamma8[duty_cycle];
-			err = led_set_brightness(led_pwm, 2, duty_cycle);
-			k_sleep(K_MSEC(10));
-			led_off(led_pwm,2);
-		}
 		for (duty_cycle = 0; duty_cycle < 100; duty_cycle++) {
-			//cycles = gamma8[duty_cycle];
-			err = led_set_brightness(led_pwm, 2, duty_cycle);
+			err = led_set_brightness(led_pwm, i, duty_cycle);
+			LOG_INF("duty_cycle %d", duty_cycle);
 			k_sleep(K_MSEC(10));
-			led_off(led_pwm,2);
 		}
-		led_off(led_pwm, 2);
-//	}
+		led_off(led_pwm, i);
+	}
 }
 
-#undef DT_DRV_COMPAT
-#endif
 #ifdef CONFIG_THERMAL_MANAGEMENT
 #define DT_FAN_INST(x)		DT_NODELABEL(pwm##x)
 #define FAN_LABEL(x)		DT_LABEL(DT_FAN_INST(x))
@@ -333,31 +422,35 @@ void run_fan_tests(const struct device *fan_pwm, const char *fan_label,
 		   const struct device *tach, const char *tach_label)
 {
 	struct sensor_value val;
-	int err,ret,duty_cycle;
+	int err,ret,i,seconds;
+	int duty_cycles[]  = {100, 50, 100};
 
-	LOG_INF("Testing FAN - %s", fan_label ? : "no label");
-
-	for (duty_cycle = 100; duty_cycle >= 0; duty_cycle-=10) {
-		LOG_INF("Duty Cycle = %d",duty_cycle);
-		err = pwm_pin_set_cycles(fan_pwm, 0, FAN_PWM_MULT * 100,
-				FAN_PWM_MULT * duty_cycle, 0);
+	for (i = 0; i < ARRAY_SIZE(duty_cycles); i++) {
+		LOG_INF("Duty Cycle = %d",duty_cycles[i]);
+		err = pwm_set_cycles(fan_pwm, 0, FAN_PWM_MULT * 100,
+				FAN_PWM_MULT * duty_cycles[i], 0);
 		if (err) {
 			LOG_ERR("Unable to set fan speed");
 			return;
 		}
-		k_sleep(K_MSEC(5000));
+		for (seconds = 0; seconds < 15; seconds++) {
+			k_sleep(K_MSEC(1000));
 
-		ret = sensor_sample_fetch_chan(tach, SENSOR_CHAN_RPM);
-		if (ret) {
-			LOG_ERR("Unable to read fan RPM");
-			return;
+			ret = sensor_sample_fetch_chan(tach, SENSOR_CHAN_RPM);
+			if (ret) {
+				LOG_ERR("Unable to read fan RPM");
+				return;
+			}
+			ret = sensor_channel_get(tach, SENSOR_CHAN_RPM, &val);
+			LOG_INF("Fan sample %d: %d RPM ", seconds, val.val1);
 		}
-		ret = sensor_channel_get(tach, SENSOR_CHAN_RPM, &val);
-		LOG_INF("Fan RPM %d", val.val1);
 	}
+
+	
 }
 #endif
-#if 0
+
+#ifdef CONFIG_SIM_DETECT_SLOT_POST
 void sim_slot_detect_test()
 {
 	int err, pins;
@@ -387,6 +480,7 @@ void sim_slot_detect_test()
 	}
 }
 #endif
+
 void board_post(void)
 {
         const struct device *adc;
@@ -404,11 +498,11 @@ void board_post(void)
 
 #ifdef CONFIG_THERMAL_MANAGEMENT
 #if DT_NODE_HAS_STATUS(DT_FAN_INST(0), okay)
-	fan_pwm = device_get_binding(FAN_LABEL(0));
+	fan_pwm = DEVICE_DT_GET(DT_FAN_INST(0));
 	fan_label = DT_PROP_OR(DT_FAN_INST(0), label, NULL);
 
 #if DT_NODE_HAS_STATUS(DT_TACH_INST(0), okay)
-	tach = device_get_binding(TACH_LABEL(0));
+	tach = DEVICE_DT_GET(DT_TACH_INST(0));
 	tach_label = DT_PROP_OR(DT_TACH_INST(0), label, NULL);
 #else
 #error "Need tach0 associated with fan pwm0!"
@@ -417,10 +511,10 @@ void board_post(void)
 #endif
 
 #if DT_NODE_HAS_STATUS(DT_FAN_INST(1), okay)
-	fan_pwm = device_get_binding(FAN_LABEL(1));
+	fan_pwm = DEVICE_DT_GET(DT_FAN_INST(1));
 	fan_label = DT_PROP_OR(DT_FAN_INST(1), label, NULL);
 #if DT_NODE_HAS_STATUS(DT_TACH_INST(1), okay)
-	tach = device_get_binding(TACH_LABEL(1));
+	tach = DEVICE_DT_GET(DT_TACH_INST(1));
 	tach_label = DT_PROP_OR(DT_TACH_INST(1), label, NULL);
 #else
 #error "Need tach1 assocated with fan pwm1!"
@@ -429,7 +523,7 @@ void board_post(void)
 #endif
 #endif
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(adc0), okay)
-	adc = device_get_binding(DT_LABEL(DT_NODELABEL(adc0)));
+	adc = DEVICE_DT_GET(DT_NODELABEL(adc0));
 
 	struct adc_channel_cfg adc_cfg;
 
@@ -468,18 +562,20 @@ void board_post(void)
 	LOG_DBG("ADC Ch %d : raw value %d", 10, adc_raw_val[10]);
 
 #endif
-#if 0
+#ifdef CONFIG_SIM_DETECT_SLOT_POST
 	sim_slot_detect_test();
 #endif
 }
+#endif
 
 #endif
 
 int board_init(void)
 {
+	struct wktmr_regs *weektmr = (struct wktmr_regs *)0x4000ac80;
 	int ret;
 
-//	bgpo_disable();
+	weektmr->BGPO_PWR &= ~0x7U;
 
 	ret = gpio_init();
 	if (ret) {
@@ -507,18 +603,10 @@ int board_init(void)
 	}
 
 
-#if 0
+#ifdef CONFIG_BOARD_POST 
 	board_post();
 #endif
 
-#if 0
-	/* testing VCI pins */
-	LOG_INF("VCI_REG currently: 0x%x", *(volatile uint32_t *)(0x4000ae00));
-	*(volatile uint32_t *)(0x4000ae00) |= BIT(10); /* set state of VCI_OUT to 1 */
-	*(volatile uint32_t *)(0x4000ae00) |= BIT(11); /* enable FW control of VCI_OUT */
-	LOG_INF("VCI_REG after: 0x%x", *(volatile uint32_t *)(0x4000ae00));
-	/* protruding button in should now be essentially disabled */
-#endif
 	/* In MAF, boot ROM already made this pin output and high, so we must
 	 * keep it like that during the boot phase in order to avoid espi reset
 	 */
@@ -552,6 +640,7 @@ int board_suspend(void)
 		LOG_ERR("%s: %d", __func__, ret);
 		return ret;
 	}
+
 
 	return 0;
 }

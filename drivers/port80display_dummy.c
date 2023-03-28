@@ -5,7 +5,7 @@
  */
 
 #include <errno.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "port80display.h"
 LOG_MODULE_REGISTER(port80, CONFIG_POSTCODE_LOG_LEVEL);
 

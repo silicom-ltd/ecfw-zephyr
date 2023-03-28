@@ -5,10 +5,10 @@
  */
 
 
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 #include <soc.h>
-#include <logging/log.h>
-#include <drivers/adc.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/drivers/adc.h>
 #include "thermal_sensor.h"
 #include "board_config.h"
 
@@ -234,10 +234,10 @@ int thermal_sensors_init(uint8_t adc_channel_bits)
 		return -ENOTSUP;
 	}
 
-	adc_dev = device_get_binding(ADC_CH_BASE);
+	adc_dev = DEVICE_DT_GET(ADC_CH_BASE);
 
 	if (!adc_dev) {
-		LOG_ERR("%s Sensor device Invalid", ADC_CH_BASE);
+		LOG_ERR("Sensor device Invalid");
 		return -ENOTSUP;
 	}
 

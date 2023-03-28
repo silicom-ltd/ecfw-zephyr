@@ -6,14 +6,16 @@
 
 /dts-v1/;
 
-#include <microchip/mec172xnsz.dtsi>
-#include <microchip/mec172x/mec172xnsz-pinctrl.dtsi>
+#include <microchip/mec172xnlj.dtsi>
+#include <microchip/mec172x/mec172xnsz-pinctrl.dtsi> 
 #include <microchip/mec172x/mec172xnlj-pinctrl.dtsi>
-#include <dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/reset/mec172x_reset.h>
+#include <zephyr/dt-bindings/led/led.h>
 
 / {
 	model = "Silicom Arizona Beach MEC172X EC";
-	compatible = "microchip,mec172x_azbeach", "microchip,mec172xnsz";
+	compatible = "microchip,mec172x_azbeach", "microchip,mec172xnlj";
 
 	chosen {
 		zephyr,sram = &sram0;
@@ -28,81 +30,101 @@
 		i2c11 = &i2c_smb_2;
 		pwm-0 = &pwm0;
 		peci-0 = &peci0;
+		led-1 = &pwmmcled0;
 	};
 
 	gpio_keys {
 		compatible = "gpio-keys";
 
 		/* make a DT entry for the ESPI_RESET# input */
-		espi_rst_maf: espi_rst {
+		espi_rst_maf: espi-rst {
 			gpios = <&gpio_040_076 16 GPIO_ACTIVE_LOW>;
 			label = "ESPI_RST_MAF";
 		};
 	};
 
-	leds_pwm: leds_pwm {
-		compatible = "pwm-leds";
-		fp_green_l: green {
-			pwms = <&pwm5 0 20000000 PWM_POLARITY_INVERTED>;
-			label = "FP_GREEN_L";
-		};
-		fp_red_l: red {
-			/* PWM4 */
-			pwms = <&pwm4 0 20000000 PWM_POLARITY_INVERTED>;
-			label = "FP_RED_L";
-		};
-		fp_blue_l: blue {
-			pwms = <&pwm6 0 20000000 PWM_POLARITY_INVERTED>;
-			label = "FP_BLUE_L";
+	pwm_mc_leds: leds-pwm-mc {
+		compatible = "pwm-leds-multicolor";
+
+		pwmmcled0: led-0 {
+			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+			color-mapping = <LED_COLOR_ID_RED>,
+					<LED_COLOR_ID_GREEN>,
+					<LED_COLOR_ID_BLUE>;
 		};
 	};
 
-	leds: leds {
+	pwmled0: pwmleds-0 {
+		compatible = "pwm-leds";
+
+		pwm_led0: led-0 {
+			pwms= <&pwm8 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+		};
+	};
+	pwmled1: pwmleds-1 {
+		compatible = "pwm-leds";
+
+		pwm_led1: led-1 {
+			pwms = <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+		};
+	};
+
+	gpioled0: gpioled-0 {
 		compatible = "gpio-leds";
-		fp_red_ctr: led_3 {
-			/* GPIO033/TACH3/RC_ID0 */
-			gpios = <&gpio_000_036 27 GPIO_ACTIVE_LOW>;
-			label = "FP_RED_CTR";
-		};
-		fp_green_ctr: led_4 {
-			/* GPIO034/GPSPI_IO2/RC_ID1/SPI0_CLK */
-			gpios = <&gpio_000_036 28 GPIO_ACTIVE_LOW>;
-			label = "FP_GRN_CTR";
-		};
-		fp_blue_ctr: led_5 {
-			/* GPIO035/PWM8/CTOUT1/ICT15/LED3 */
-			gpios = <&gpio_000_036 29 GPIO_ACTIVE_LOW>;
-			label = "FP_BL_CTR";
-		};
-		fp_red_right: led_6 {
-			/* GPIO156/LED0 */
-			gpios = <&gpio_140_176 14 GPIO_ACTIVE_LOW>;
-			label = "FP_RED_RT";
-		};
-		fp_green_right: led_7 {
-			/* GPIO046/KSO02/ICT11/BCM1_DAT */
-			gpios = <&gpio_040_076 6 GPIO_ACTIVE_LOW>;
-			label = "FP_GRN_RT";
-		};
-		fp_blue_right: led_8 {
-			/* GPIO047/KSO03/PWM3_ALT/ICT13/BCM1_CLK */
-			gpios = <&gpio_040_076 7 GPIO_ACTIVE_LOW>;
-			label = "FP_BL_RT";
-		};
-		fp_amber_left: led_9 {
+		gpio_led0: led-0 {
 			/* GPIO032/KSI7/GPTP_OUT0/UART0_RI# */
 			gpios = <&gpio_000_036 26 GPIO_ACTIVE_LOW>;
 			label = "FP_AMB_LT";
 		};
-		fp_amber_ctr: led_10 {
+	};
+	gpioled1: gpioled-1 {
+		compatible = "gpio-leds";
+		gpio_led1: led-1 {
 			/* GPIO040/GPTP_OUT2/KSO00 */
 			gpios = <&gpio_040_076 0 GPIO_ACTIVE_LOW>;
 			label = "FP_AMB_CTR";
 		};
-		fp_amber_right: led_11 {
+	};
+	gpioled2: gpioled-2 {
+		compatible = "gpio-leds";
+		gpio_led2: led-2 {
 			/* GPIO041 */
 			gpios = <&gpio_040_076 1 GPIO_ACTIVE_LOW>;
 			label = "FP_AMB_RT";
+		};
+	};
+	gpioled3: gpioled-3 {
+		compatible = "gpio-leds";
+		gpio_led3: led-3 {
+			/* GPIO034 */
+			gpios = <&gpio_000_036 28 GPIO_ACTIVE_LOW>;
+			label = "FP_GRN_CTR";
+		};
+	};
+	gpioled4: gpioled-4 {
+		compatible = "gpio-leds";
+		gpio_led4: led-4 {
+			/* GPIO046 */
+			gpios = <&gpio_040_076 6 GPIO_ACTIVE_LOW>;
+			label = "FP_GRN_CTR";
+		};
+	};
+	gpioled5: gpioled-5 {
+		compatible = "gpio-leds";
+		gpio_led5: led-5 {
+			/* GPIO156 */
+			gpios = <&gpio_140_176 14 GPIO_ACTIVE_LOW>;
+			label = "FP_RED_RT";
+		};
+	};
+	gpioled6: gpioled-6 {
+		compatible = "gpio-leds";
+		gpio_led6: led-6 {
+			/* GPIO033 */
+			gpios = <&gpio_000_036 27 GPIO_ACTIVE_LOW>;
+			label = "FP_RED_CTR";
 		};
 	};
 	bgpo0: bgpo@4000ac9c {
@@ -146,14 +168,24 @@
 	status = "okay";
 	pinctrl-0 = <&pwm0_gpio053>;
 	pinctrl-names = "default";
-	label = "FAN0";
 };
 
 &pwm1 {
 	status = "okay";
 	pinctrl-0 = <&pwm1_gpio054>;
 	pinctrl-names = "default";
-	label = "FAN1";
+};
+
+&pwm2 {
+	status = "okay";
+	pinctrl-0 = <&pwm2_alt_gpio045>;
+	pinctrl-names = "default";
+};
+
+&pwm3 {
+	status = "okay";
+	pinctrl-0 = <&pwm3_alt_gpio047>;
+	pinctrl-names = "default";
 };
 
 &pwm4 {
@@ -174,18 +206,22 @@
 	pinctrl-names = "default";
 };
 
+&pwm8 {
+	status = "okay";
+	pinctrl-0 = <&pwm8_gpio035>;
+	pinctrl-names = "default";
+};
+
 &tach0 {
 	status = "okay";
 	pinctrl-0 = <&tach0_gpio050>;
 	pinctrl-names = "default";
-	label = "TACH0";
 };
 
 &tach1 {
 	status = "okay";
 	pinctrl-0 = <&tach1_gpio051>;
 	pinctrl-names = "default";
-	label = "TACH1";
 };
 
 /* Initialize ECIA. Does not initialize child devices */
@@ -246,7 +282,10 @@
 };
 
 &vci0 {
+	compatible = "microchip,xec-vci-v2";
+	gpio-controller;
 	status = "okay";
+	#gpio-cells=<2>;
 };
 
 &pinctrl {

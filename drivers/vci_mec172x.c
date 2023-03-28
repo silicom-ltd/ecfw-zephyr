@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
 #include <errno.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "board.h"
 //#include "vci_mec172x.h"
 
-LOG_MODULE_REGISTER(vci, 4);
+LOG_MODULE_REGISTER(vci_mec, CONFIG_VCI_EC_LOG_LEVEL);
 
 /* VCI Config register */
 #define MCHP_VCI_CFG_REG_OFS            0

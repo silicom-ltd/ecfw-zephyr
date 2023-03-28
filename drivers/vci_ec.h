@@ -7,7 +7,7 @@
 #ifndef __VCI_DRIVER_H__
 #define __VCI_DRIVER_H__
 
-#include <drivers/gpio.h>
+#include <zephyr/drivers/gpio.h>
 
 /**
  * @brief VCI driver wrapper APIS.

@@ -1,7 +1,7 @@
 #ifndef _VCI_DRIVER_H_
 #define _VCI_DRIVER_H_
 
-#include <drivers/gpio.h>
+#include <zephyr/drivers/gpio.h>
 
 int vci_init(void);
 

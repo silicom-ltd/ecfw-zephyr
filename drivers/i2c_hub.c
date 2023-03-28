@@ -5,10 +5,10 @@
  */
 
 #include <zephyr/types.h>
-#include <device.h>
-#include <drivers/i2c.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
 #include "board_config.h"
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(i2c_hub, CONFIG_I2C_HUB_LOG_LEVEL);
 
 
@@ -18,18 +18,22 @@ struct i2c_hub_struct {
 };
 
 struct i2c_dev_inst {
+#if 0
 	char *i2c_inst;
+#else
+	const struct device *i2c_inst;
+#endif
 	uint8_t speed;
 };
 
 static struct i2c_dev_inst i2c_inst[] = {
 	{
-		.i2c_inst = I2C_BUS_0,
+		.i2c_inst = DEVICE_DT_GET(I2C_BUS_0),
 		/* Standard speed - 100kHz */
 		.speed = I2C_SPEED_STANDARD,
 	},
 	{
-		.i2c_inst = I2C_BUS_1,
+		.i2c_inst = DEVICE_DT_GET(I2C_BUS_1),
 		/* Fast speed - 400kHz */
 		.speed = I2C_SPEED_FAST,
 	},
@@ -56,7 +60,7 @@ int i2c_hub_config(uint8_t instance)
 		return -ENODEV;
 	}
 
-	dev = device_get_binding(i2c_inst[instance].i2c_inst);
+	dev = i2c_inst[instance].i2c_inst;
 	if (!dev) {
 		LOG_ERR("%s not found", i2c_inst[instance].i2c_inst);
 		return -EINVAL;
@@ -179,7 +183,7 @@ int i2c_hub_burst_write(uint8_t instance, uint16_t dev_addr,
 	return ret;
 }
 
-int i2c_hub_slave_register(uint8_t instance, struct i2c_slave_config *cfg)
+int i2c_hub_target_register(uint8_t instance, struct i2c_target_config *cfg)
 {
 	int ret;
 
@@ -191,13 +195,13 @@ int i2c_hub_slave_register(uint8_t instance, struct i2c_slave_config *cfg)
 	}
 
 	k_mutex_lock(&i2c_dev[instance].mutex, K_FOREVER);
-	ret = i2c_slave_register(i2c_dev[instance].device, cfg);
+	ret = i2c_target_register(i2c_dev[instance].device, cfg);
 	k_mutex_unlock(&i2c_dev[instance].mutex);
 
 	return ret;
 }
 
-int i2c_hub_slave_unregister(uint8_t instance, struct i2c_slave_config *cfg)
+int i2c_hub_target_unregister(uint8_t instance, struct i2c_target_config *cfg)
 {
 	int ret;
 
@@ -209,7 +213,7 @@ int i2c_hub_slave_unregister(uint8_t instance, struct i2c_slave_config *cfg)
 	}
 
 	k_mutex_lock(&i2c_dev[instance].mutex, K_FOREVER);
-	ret = i2c_slave_unregister(i2c_dev[instance].device, cfg);
+	ret = i2c_target_unregister(i2c_dev[instance].device, cfg);
 	k_mutex_unlock(&i2c_dev[instance].mutex);
 
 	return ret;

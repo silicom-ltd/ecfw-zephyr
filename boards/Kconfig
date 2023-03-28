@@ -61,4 +61,12 @@ config MEC172X_AIC_HW_REV2
 	help
 	  Use MEC172x HW rev 2 gpio configuration
 
+config BOARD_POST
+	bool "Enable any board-specific POST routines"
+
+config SIM_DETECT_SLOT_POST
+	bool "Enable SIM detect testing on AZBEACH platform"
+	default n
+	depends on BOARD_POST && CONFIG_BOARD_MEC172X_AZBEACH
+
 endmenu

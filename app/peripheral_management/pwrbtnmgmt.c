@@ -5,12 +5,12 @@
  */
 
 #include <errno.h>
-#include <zephyr.h>
-#include <device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
 #include <system.h>
 #include "gpio_ec.h"
 #include <soc.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "sci.h"
 #include "pwrplane.h"
 #include "pwrbtnmgmt.h"

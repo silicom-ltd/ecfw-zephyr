@@ -5,10 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-menu "LED management"
-
 config LED_MANAGEMENT
 	bool "Enable led management"
+	default y
 	help
 	  Indicate if EC supports management of leds.
 
@@ -21,4 +20,9 @@ config LED_MGMT_LOG_LEVEL
 	help
 	  Set log level for thermal management module.
 
-endmenu
+config LED_MANAGEMENT_POST
+	bool "Enable POST routine for led testing"
+	depends on LED_MANAGEMENT
+	default n
+	help
+	  Enables a 1 second thread that changes the led settings

@@ -17,6 +17,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/kbchost)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/saf)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/soc_debug_awareness)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/rstbtn)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/leds)
 
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
@@ -92,6 +93,14 @@ target_sources_ifdef(CONFIG_THERMAL_MANAGEMENT app
     ${CMAKE_CURRENT_LIST_DIR}/thermal_management/thermalmgmt.h
     )
 
+target_sources_ifdef(CONFIG_LED_MANAGEMENT app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.c
+    ${CMAKE_CURRENT_LIST_DIR}/smchost/smchost_led.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.h
+    )
+
 target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/debug/postcodemgmt.c
@@ -134,6 +143,13 @@ target_sources_ifdef(CONFIG_RESET_BUTTON app
     ${CMAKE_CURRENT_LIST_DIR}/rstbtn/rstbutton.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/rstbtn/rstbutton.h
+    )
+
+target_sources_ifdef(CONFIG_LED_MANAGEMENT app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.h
     )
 
 target_include_directories(app

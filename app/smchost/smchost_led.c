@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "board.h"
 #include "board_config.h"
 #include "smc.h"
@@ -17,20 +17,9 @@
 
 LOG_MODULE_DECLARE(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 
-static void update_pwm_led(void)
-{
-	host_update_led(g_acpi_tbl.acpi_pwm_led_idx,
-			g_acpi_tbl.acpi_pwm_led_val);
-}
-
-static void update_gpio_led(void)
-{
-	host_update_led(g_acpi_tbl.acpi_gpio_led_idx,
-			g_acpi_tbl.acpi_gpio_led_val);
-}
-
 static void update_led_peripherals_status(void)
 {
+#if 0
 	uint8_t hw_peripherals_sts[] = {0x0, 0x0};
 
 	/* Get led status */
@@ -38,16 +27,42 @@ static void update_led_peripherals_status(void)
 
 	/* Send hw peripherals status to BIOS */
 	send_to_host(hw_peripherals_sts, sizeof(hw_peripherals_sts));
+#endif
+}
+
+static void update_led_color(void)
+{
+	host_update_led_color(g_acpi_tbl.acpi_led_idx, g_acpi_tbl.acpi_led_val_l,
+			g_acpi_tbl.acpi_led_val_h);
+}
+
+static void update_led_brightness(void)
+{
+	host_update_led_brightness(g_acpi_tbl.acpi_led_idx, g_acpi_tbl.acpi_led_val_l);
+}
+
+static void update_led_blink(void)
+{
+	host_update_led_blink(g_acpi_tbl.acpi_led_idx, g_acpi_tbl.acpi_led_val_l,
+			g_acpi_tbl.acpi_led_val_h);
 }
 
 void smchost_cmd_led_handler(uint8_t command)
 {
 	switch (command) {
-	case SMCHOST_UPDATE_PWM_LED:
-		update_pwm_led();
+#if 0
+	case SMCHOST_GET_LED_PWM_OFS:
+		get_led_ofs();
 		break;
-	case SMCHOST_UPDATE_GPIO_LED:
-		update_gpio_led();
+#endif
+	case SMCHOST_UPDATE_LED_COLOR:
+		update_led_color();
+		break;
+	case SMCHOST_UPDATE_LED_BRIGHTNESS:
+		update_led_brightness();
+		break;
+	case SMCHOST_UPDATE_LED_BLINK:
+		update_led_blink();
 		break;
 	case SMCHOST_GET_LED_PERIPHERALS_STS:
 		update_led_peripherals_status();

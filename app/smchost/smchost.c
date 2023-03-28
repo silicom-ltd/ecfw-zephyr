@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include "board.h"
 #include "board_config.h"
 #include "smc.h"
@@ -676,9 +677,11 @@ static void smchost_cmd_handler(uint8_t command)
 		break;
 #endif
 #ifdef CONFIG_LED_MANAGEMENT
-	case SMCHOST_GET_LED_PWM_OFS:
+//	case SMCHOST_GET_LED_PWM_OFS:
 	case SMCHOST_GET_LED_PERIPHERALS_STS:
-	case SMCHOST_UPDATE_LED_PWM:
+	case SMCHOST_UPDATE_LED_COLOR:
+	case SMCHOST_UPDATE_LED_BRIGHTNESS:
+	case SMCHOST_UPDATE_LED_BLINK:
 		smchost_cmd_led_handler(command);
 		break;
 #endif

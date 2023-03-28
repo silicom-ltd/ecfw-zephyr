@@ -7,7 +7,6 @@
 #ifndef __LED_MGMT_H__
 #define __LED_MGMT_H__
 
-#include "led_mec172x.h"
 #include "smc.h"
 
 /**
@@ -25,7 +24,9 @@
  *
  */
 void ledmgmt_thread(void *p1, void *p2, void *p3);
+void ledmgmt_post_thread(void *p1, void *p2, void *p3);
 
+#if 0
 /**
  * @brief Host API to update led pwm.
  *
@@ -37,5 +38,10 @@ void ledmgmt_thread(void *p1, void *p2, void *p3);
 void host_update_led_dc(uint8_t idx, uint8_t duty_cycle);
 
 void get_led_peripherals_status(uint8_t *hw_peripherals_sts);
+#endif
+
+void host_update_led_color(uint8_t idx, uint16_t color0, uint16_t color1);
+void host_update_led_brightness(uint8_t idx, uint16_t brightness);
+void host_update_led_blink(uint8_t idx, uint16_t on, uint16_t off );
 
 #endif	/* __LED_MGMT_H__ */

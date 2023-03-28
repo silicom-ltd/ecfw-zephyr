@@ -101,13 +101,13 @@ extern uint8_t platformskutype;
 #define PWRBTN_EC_IN_N			EC_VCI_000
 
 /* Device instance names */
-#define I2C_BUS_0			DT_LABEL(DT_NODELABEL(i2c_smb_0))
-#define I2C_BUS_1			DT_LABEL(DT_NODELABEL(i2c_smb_1))
-#define ESPI_0				DT_LABEL(DT_NODELABEL(espi0))
-#define SPI_0				DT_LABEL(DT_NODELABEL(spi0))
-#define ADC_CH_BASE			DT_LABEL(DT_NODELABEL(adc0))
-#define PECI_0_INST			DT_LABEL(DT_NODELABEL(peci0))
-#define WDT_0				DT_LABEL(DT_NODELABEL(wdog))
+#define I2C_BUS_0			DT_NODELABEL(i2c_smb_0)
+#define I2C_BUS_1			DT_NODELABEL(i2c_smb_1)
+#define ESPI_0				DT_NODELABEL(espi0)
+#define SPI_0				DT_NODELABEL(spi0)
+#define ADC_CH_BASE			DT_NODELABEL(adc0)
+#define PECI_0_INST			DT_NODELABEL(peci0)
+#define WDT_0				DT_NODELABEL(wdog)
 
 /* Button/Switch Initial positions */
 #define PWR_BTN_INIT_POS		1

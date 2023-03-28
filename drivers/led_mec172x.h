@@ -4,68 +4,52 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef __LED_MEC172X_H__
-#define __LED_MEC172X_H__
+#ifndef __LED_H__
+#define __LED_H__
 
-#define ONLY_ON		100u
-#define ONLY_OFF	0u
-
-enum led_type {
-	LED_RGB,
-	LED_PWM,
-	LED_GPIO,
-	LED_BLINK,
-	LED_BREATH,
-	LED_UNDEF = 0xFF
+struct led_dev_stat {
+	uint8_t rgb:1;
+	uint8_t pwm:1;
+	uint8_t update_color:1;
+	uint8_t update_brightness:1;
+	uint8_t update_blink:1;
+	uint8_t :3;
 };
 
-enum led_color {
-	LED_RED,
-	LED_GREEN,
-	LED_BLUE,
-	LED_NONE = 0xFF
+struct led_dev {
+	const struct device *dev;
+	uint32_t color;
+	uint32_t brightness;
+	uint16_t on;
+	uint16_t off;
+//	uint8_t rgb;
+//	uint8_t pwm;
+	uint8_t owned;
+	struct {
+		uint8_t rgb:1;
+		uint8_t pwm:1;
+		uint8_t update_color:1;
+		uint8_t update_brightness:1;
+		uint8_t update_blink:1;
+		uint8_t :3;
+	};
 };
-
-union dev_num {
-	uint32_t gpio;          // this is so we can use the gpio macros
-	uint8_t pwm;
-	uint8_t blink;
-	uint8_t breath;
-};
-
-struct led_device {
-	enum led_type type;
-	union dev_num num;
-	uint8_t group;  // for RGB leds
-	enum led_color color;
-};
-
 
 /**
- * @brief Make the LED blink at the prescribed "duty cycle" percentage.
+ * @brief  set the led color.
  *
- * @param idx Number representing the LED device.
- * @param duty_cycle pwm duty_cycle in % value can be between 0 to 100.
- */
-int set_led_blink(int idx, uint8_t duty_cycle);
-
-/*
- * @brief Turn on the LED
+ * @param led_idx led index.
+ * @param .
  *
- * @param idx Number representing the LED device.
+ * @return 0 if success, otherwise error code.
  */
-int set_led_on(int idx);
 
-/**
- * @brief Turn off the LED
- *
- * @param idx Number representing the LED device.
- */
-int set_led_off(int idx);
+int led_init(int idx, struct led_dev *tbl);
 
-/**
- * @brief Init the LEDs
- */
-void led_init(int max, struct led_device *led_table);
+int led_color_set(uint8_t led_idx, uint8_t *color_map);
 
-#endif	/* __LED_MEC172X_H__ */
+int led_brightness_set(uint8_t led_idx, uint16_t brightness);
+
+int led_blink_set(uint8_t led_idx, uint16_t on, uint16_t off);
+
+#endif	/* __LED_H__ */

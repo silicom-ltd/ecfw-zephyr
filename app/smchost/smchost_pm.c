@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
-#include <device.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/device.h>
 #include "port80display.h"
 #include "board.h"
 #include "board_config.h"

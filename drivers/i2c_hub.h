@@ -8,8 +8,8 @@
 #define I2C_HUB_H_
 
 #include <zephyr/types.h>
-#include <device.h>
-#include <drivers/i2c.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
 
 enum i2c_bus_num {
 	I2C_0,
@@ -112,34 +112,34 @@ int i2c_hub_burst_write(uint8_t instance, uint16_t dev_addr,
 		  uint8_t reg_addr, uint8_t *value, uint32_t len);
 
 /*
- * @brief Registers the provided I2C port number as Slave device
+ * @brief Registers the provided I2C port number as target device
  *
- * Enable I2C slave mode for the supplied I2C bus using the provided
+ * Enable I2C target mode for the supplied I2C bus using the provided
  * 'config' struct containing the functions and parameters to send bus
- * events. The I2C slave will be registered at the address provided as 'address'
+ * events. The I2C target will be registered at the address provided as 'address'
  * struct member. Addressing mode - 7 or 10 bit - depends on the 'flags'
- * struct member. Any I2C bus events related to the slave mode will be passed
- * onto I2C slave device driver via a set of callback functions provided in
+ * struct member. Any I2C bus events related to the target mode will be passed
+ * onto I2C target device driver via a set of callback functions provided in
  * the 'callbacks' struct member.
  *
  * Most of the existing hardware allows simultaneous support for master
- * and slave mode. This is however not guaranteed.
+ * and target mode. This is however not guaranteed.
  *
- * @param instance I2C port number which needs to be put in slave mode.
+ * @param instance I2C port number which needs to be put in target mode.
  * @param cfg Config struct with functions and parameters used by the I2C driver
  * to send bus events
  *
  * @retval 0 Is successful
  * @retval -EINVAL If parameters are invalid
  * @retval -EIO General input / output error.
- * @retval -ENOTSUP If slave mode is not supported
+ * @retval -ENOTSUP If target mode is not supported
  */
-int i2c_hub_slave_register(uint8_t instance, struct i2c_slave_config *cfg);
+int i2c_hub_target_register(uint8_t instance, struct i2c_target_config *cfg);
 
 /**
- * @brief Unregisters the provided config as Slave device
+ * @brief Unregisters the provided config as target device
  *
- * This routine disables I2C slave mode for the supplied I2C bus using
+ * This routine disables I2C target mode for the supplied I2C bus using
  * the provided 'config' struct containing the functions and parameters
  * to send bus events.
  *
@@ -149,7 +149,7 @@ int i2c_hub_slave_register(uint8_t instance, struct i2c_slave_config *cfg);
  *
  * @retval 0 Is successful
  * @retval -EINVAL If parameters are invalid
- * @retval -ENOTSUP If slave mode is not supported
+ * @retval -ENOTSUP If target mode is not supported
  */
-int i2c_hub_slave_unregister(uint8_t instance, struct i2c_slave_config *cfg);
+int i2c_hub_target_unregister(uint8_t instance, struct i2c_target_config *cfg);
 #endif

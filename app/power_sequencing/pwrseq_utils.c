@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
-#include <logging/log_ctrl.h>
-#include <drivers/watchdog.h>
-#include <device.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/drivers/watchdog.h>
+#include <zephyr/device.h>
 #include "board.h"
 #include "board_config.h"
 #include "port80display.h"
@@ -27,7 +27,7 @@ static struct wdt_timeout_cfg m_cfg_wdt;
 static int ec_arm_reset(void)
 {
 	int err;
-	const struct device *wdt = device_get_binding(WDT_0);
+	const struct device *wdt = DEVICE_DT_GET(WDT_0);
 
 	if (!wdt) {
 		LOG_ERR("%s: WDT Device not found", __func__);

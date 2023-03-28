@@ -72,6 +72,16 @@ static inline int memsets(void *dst, int c, int len)
 	return 0;
 }
 
+#else
+static inline void memcpys(void *dst, const void *src, int len)
+{
+	memcpy(dst, src, len);
+}
+
+static inline void memsets(void *dst, int c, int len)
+{
+	memset(dst, c, len);
+}
 #endif
 #endif /* __MEMOPS__ */
 

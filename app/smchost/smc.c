@@ -5,11 +5,11 @@
  */
 
 #include <errno.h>
-#include <zephyr.h>
-#include <device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
 #include <soc.h>
 #include "gpio_ec.h"
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 #include "smc.h"
 #include "sci.h"
 #include "smchost.h"
