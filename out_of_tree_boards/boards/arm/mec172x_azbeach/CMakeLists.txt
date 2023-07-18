@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
+add_subdirectory(drivers)
 
 if(DEFINED ENV{MEC172X_SPI_GEN})
   # Grab it from environment variable if defined

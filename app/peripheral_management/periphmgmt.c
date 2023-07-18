@@ -103,24 +103,6 @@ static void notify_btn_handlers(uint8_t btn_idx)
 			btn_lst[btn_idx].handler(level);
 			btn_lst[btn_idx].prev_level = level;
 		}
-#if 0
-		if (btn_lst[btn_idx].flags == GPIO_INT_EDGE_BOTH) {
-			if (btn_lst[btn_idx].prev_level != level) {
-				LOG_DBG("calling handler");
-				btn_lst[btn_idx].handler(level);
-				btn_lst[btn_idx].prev_level = level;
-			}
-		} else {
-			if (btn_lst[btn_idx].prev_level != level) {
-				LOG_DBG("calling handler");
-				btn_lst[btn_idx].handler(level);
-				btn_lst[btn_idx].prev_level = level;
-			} else {
-				btn_lst[btn_idx].handler(!level);
-				btn_lst[btn_idx].prev_level = !level;
-			}
-		}
-#endif
 	}
 }
 
@@ -276,8 +258,6 @@ void periph_thread(void *p1, void *p2, void *p3)
 
 #ifdef CONFIG_RESET_BUTTON
 	rstbutton_init();
-#else
-#error no RESET_BUTTON defined!
 #endif
 	k_sem_init(&btn_debounce_lock, 0, 1);
 	while (true) {

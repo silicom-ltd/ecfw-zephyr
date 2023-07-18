@@ -18,6 +18,7 @@
 LOG_MODULE_DECLARE(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 
 static struct acpi_hid_btn_sci btn_ctrl;
+uint8_t rst_btn_ctrl;
 
 uint8_t check_btn_sci_sts(uint8_t btn_sci_en_dis)
 {
@@ -39,6 +40,8 @@ uint8_t check_btn_sci_sts(uint8_t btn_sci_en_dis)
 	case HID_BTN_SCI_ROT_LOCK:
 		ret = btn_ctrl.rot_lock_en_dis;
 		break;
+	case HID_BTN_SCI_RST:
+		ret = rst_btn_ctrl;
 	default:
 		break;
 	}
@@ -49,6 +52,11 @@ uint8_t check_btn_sci_sts(uint8_t btn_sci_en_dis)
 static void btn_sci_cntrl(void)
 {
 	btn_ctrl = g_acpi_tbl.acpi_btn_cntrl;
+}
+
+static void rstbtn_sci_cntrl(void)
+{
+	rst_btn_ctrl = g_acpi_tbl.rst_btn_en;
 }
 
 #ifdef CONFIG_DEPRECATED_SMCHOST_CMD
@@ -185,6 +193,9 @@ void smchost_cmd_info_handler(uint8_t command)
 		break;
 	case SMCHOST_HID_BTN_SCI_CONTROL:
 		btn_sci_cntrl();
+		break;
+	case SMCHOST_HID_RST_BTN_SCI_CONTROL:
+		rstbtn_sci_cntrl();
 		break;
 	default:
 		LOG_WRN("%s: command 0x%X without handler", __func__, command);

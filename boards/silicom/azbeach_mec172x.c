@@ -12,6 +12,7 @@
 #include <zephyr/drivers/pwm.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/adc.h>
+#include <zephyr/drivers/eeprom.h>
 #include <zephyr/sys/util.h>
 #include "i2c_hub.h"
 #include <zephyr/logging/log.h>
@@ -36,19 +37,14 @@ LOG_MODULE_DECLARE(board, CONFIG_BOARD_LOG_LEVEL);
  *
  */
 
-/* APP-owned vcis */
-struct gpio_ec_config mecc172x_vci_cfg[] = {
-	{ PWRBTN_EC_IN_N,	GPIO_INPUT },
-};
-
 /* APP-owned gpios */
 struct gpio_ec_config mecc172x_cfg[] = {
 	{ PLTRST_N,		GPIO_INPUT },
 	{ PM_SLP_SUS,		GPIO_INPUT },
 	{ EC_GPIO_011,		GPIO_INPUT },
 	{ RSMRST_PWRGD_G3SAF_P,	GPIO_INPUT },
-	{ RSMRST_PWRGD_MAF_P,	GPIO_INPUT },
-	{ EC_GPIO_015,		GPIO_INPUT },		/* W_DISABLE_M2_SLOT3_N */
+	{ RSMRST_PWRGD,		GPIO_INPUT },
+	{ EC_GPIO_015,		GPIO_INPUT },	/* W_DISABLE_M2_SLOT3_N */
 	{ SYS_PWROK,		GPIO_OUTPUT_LOW },
 	{ ALL_SYS_PWRGD,	GPIO_INPUT },
 	{ FAN_PWR_DISABLE_N,	GPIO_OUTPUT_HIGH },
@@ -61,7 +57,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 #endif
 	{ PM_BATLOW,		GPIO_OUTPUT_HIGH },
 	{ CATERR_LED_DRV,	GPIO_INPUT },
-//	{ PWRBTN_EC_IN_N,	GPIO_INPUT | GPIO_INT_EDGE_BOTH },
+	{ PWRBTN_EC_IN_N,	GPIO_INPUT | GPIO_INT_EDGE_BOTH },
 	{ BC_ACOK,		GPIO_INPUT },
 	{ PS_ON_OUT,		GPIO_OUTPUT_LOW },
 	{ CPU_C10_GATE,		GPIO_INPUT },
@@ -72,8 +68,6 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ PM_PWRBTN,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ DG2_PRESENT,		GPIO_INPUT },
 	{ PEG_RTD3_COLD_MOD_SW_R, GPIO_INPUT },
-//	{ PROCHOT,		GPIO_OUTPUT_HIGH },
-	{ PVT_SPI_BOOT,		GPIO_INPUT },
 	{ BTN_RECESSED,		GPIO_INPUT },
 	{ SOC_RSTBTN_N,		GPIO_OUTPUT_HIGH },
 	{ SLP_S3_N,             GPIO_INPUT },
@@ -82,6 +76,12 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ SIM_M2_SLOT1B_DET_N,	GPIO_INPUT },
 	{ SIM_M2_SLOT2A_DET_N,	GPIO_INPUT },
 	{ SIM_M2_SLOT2B_DET_N,	GPIO_INPUT },
+	{ SLOT3_SSD_PWRDIS,	GPIO_OUTPUT_LOW },
+	{ EC_M_2_SSD_PLN,	GPIO_OUTPUT_HIGH },
+};
+
+struct gpio_ec_config mecc172x_vci_cfg[] = {
+	{ MIPI60_PWRBTN_N, 	GPIO_INPUT },
 };
 
 struct gpio_ec_config mecc172x_cfg_sus[] =  {
@@ -354,26 +354,91 @@ const uint8_t gamma8[] = {
 #define DT_DRV_COMPAT gpio_leds
 void run_led_tests(void)
 {
-#define LED_GPIO(child) DEVICE_DT_GET(child),
+#define LED_GPIO(inst) DEVICE_DT_GET(DT_NODELABEL(gpioled##inst)),
 	const struct device *leds[] = {
-		DT_INST_FOREACH_CHILD(0, LED_GPIO)
+		DT_INST_FOREACH_STATUS_OKAY(LED_GPIO)
 	};
 	const int num_leds = ARRAY_SIZE(leds);
-	const struct device *led_gpio = DEVICE_DT_INST_GET(0);
+	const struct device *led_gpio;
 	int i,err;
 
 	for (i = 0; i < num_leds; i++) {
-		err = led_on(led_gpio, i);
+		led_gpio = leds[i];
+		err = led_on(led_gpio, 0);
 		if (err < 0) {
 			LOG_ERR("err=%d",err);
 			return;
 		}
 		k_sleep(K_MSEC(1000));
 
-		err = led_off(led_gpio, i);
+		err = led_off(led_gpio, 0);
 		k_sleep(K_MSEC(250));
 	}
 }
+
+#if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(0), okay)
+#undef DT_DRV_COMPAT
+#define DT_DRV_COMPAT pwm_leds_multicolor
+#define PWM_LED_MC(n) DEVICE_DT_GET(n),
+static int color_table[] = {
+        0xFF0000, /* magenta-ish */
+        0x00FF00, /* dull green */
+        0x0000FF, /* a nice blue */
+};
+void run_pwm_mc_led_tests(void)
+{
+	const struct device *mc_leds[] = {
+		DT_INST_FOREACH_CHILD(0, PWM_LED_MC)
+	};
+	const int num_leds = ARRAY_SIZE(mc_leds);
+	const struct device *led;
+	int color_choice;
+	uint8_t colors[3];
+	uint8_t num_colors;
+	uint16_t level;
+	int i, err;
+
+	for (i = 0; i < num_leds; i++) {
+		led = mc_leds[i];
+
+		err = led_on(led, 0);
+		if (err < 0) {
+			LOG_ERR("mc led err=%d", err);
+			return;
+		}
+		k_sleep(K_MSEC(1000));
+
+		err = led_off(led, 0);
+		k_sleep(K_MSEC(250));
+		color_choice = i;
+		num_colors = ARRAY_SIZE(colors);
+		while (num_colors--) {
+			colors[0] = color_table[color_choice] >> 16;
+			colors[1] = (color_table[color_choice] >> 8) & 0xff;
+			colors[2] = color_table[color_choice] & 0xff;
+			led_set_color(led, 0, 3, colors);
+			for (level = 0; level < 255; level++) {
+				led_set_brightness(led, 0, level);
+				k_sleep(K_MSEC(5));
+			}
+			for (level = 255; level >= 0; level--) {
+				if (level == 0) {
+					led_off(led, 0);
+					break;
+				}
+				led_set_brightness(led, 0, level);
+				k_sleep(K_MSEC(5));
+			}
+			color_choice++;
+			if (color_choice == 3)
+				color_choice = 0;
+		}
+	}
+}
+
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(0), okay)
+#undef DT_DRV_COMPAT
+#define DT_DRV_COMPAT pwm_leds
 #define LED_PWM_NODE_ID DT_COMPAT_GET_ANY_STATUS_OKAY(pwm_leds)
 void run_pwm_led_tests(void)
 {
@@ -409,6 +474,8 @@ void run_pwm_led_tests(void)
 		led_off(led_pwm, i);
 	}
 }
+#endif
+#endif
 
 #ifdef CONFIG_THERMAL_MANAGEMENT
 #define DT_FAN_INST(x)		DT_NODELABEL(pwm##x)
@@ -423,7 +490,7 @@ void run_fan_tests(const struct device *fan_pwm, const char *fan_label,
 {
 	struct sensor_value val;
 	int err,ret,i,seconds;
-	int duty_cycles[]  = {100, 50, 100};
+	int duty_cycles[]  = {100, 50, 0};
 
 	for (i = 0; i < ARRAY_SIZE(duty_cycles); i++) {
 		LOG_INF("Duty Cycle = %d",duty_cycles[i]);
@@ -433,7 +500,12 @@ void run_fan_tests(const struct device *fan_pwm, const char *fan_label,
 			LOG_ERR("Unable to set fan speed");
 			return;
 		}
-		for (seconds = 0; seconds < 15; seconds++) {
+		if (duty_cycles[i] == 100)
+			seconds = 7;
+		else
+			seconds = 5;
+
+		while (seconds--) {
 			k_sleep(K_MSEC(1000));
 
 			ret = sensor_sample_fetch_chan(tach, SENSOR_CHAN_RPM);
@@ -442,13 +514,12 @@ void run_fan_tests(const struct device *fan_pwm, const char *fan_label,
 				return;
 			}
 			ret = sensor_channel_get(tach, SENSOR_CHAN_RPM, &val);
-			LOG_INF("Fan sample %d: %d RPM ", seconds, val.val1);
+			LOG_INF("Fan sampled %d RPM ", val.val1);
 		}
 	}
 
 	
 }
-#endif
 
 #ifdef CONFIG_SIM_DETECT_SLOT_POST
 void sim_slot_detect_test()
@@ -483,18 +554,64 @@ void sim_slot_detect_test()
 
 void board_post(void)
 {
-        const struct device *adc;
 #ifdef CONFIG_THERMAL_MANAGEMENT
 	const struct device *fan_pwm, *tach;
 	const char *fan_label, *tach_label; 
 #endif
-	uint8_t adc_idx;
-	int err;
+#if 0
+#define DT_SPEC_AND_COMMA(node_id, prop, idx) \
+        ADC_DT_SPEC_GET_BY_IDX(node_id, idx),
+
+	/* Data of ADC io-channels specified in devicetree. */
+	static const struct adc_dt_spec adc_channels[] = {
+        DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), io_channels,
+                             DT_SPEC_AND_COMMA)
+	};
+        uint16_t buf;
+        struct adc_sequence sequence = {
+                .buffer = &buf,
+                /* buffer size in bytes, not number of samples */
+                .buffer_size = sizeof(buf),
+        };
+	int err,i;
+#else
+#undef DT_DRV_COMPAT
+#define DT_DRV_COMPAT ntc_thermistor
+#define THERM_GET(inst) \
+	DEVICE_DT_GET(DT_DRV_INST(inst))
+
+	int rc;
+	struct sensor_value temp;
+	const struct device *thermistor4 = DEVICE_DT_GET(DT_NODELABEL(therm4));
+
+	rc = sensor_sample_fetch(thermistor4);
+	sensor_channel_get(thermistor4, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+	LOG_INF("Sensor thermistor read: %dC", temp.val1);
+
+	const struct device *thermistor5 = DEVICE_DT_GET(DT_NODELABEL(therm5));
+	rc = sensor_sample_fetch(thermistor5);
+	sensor_channel_get(thermistor5, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+	LOG_INF("Sensor thermistor read: %dC", temp.val1);
+
+	const struct device *thermistor6 = DEVICE_DT_GET(DT_NODELABEL(therm6));
+	rc = sensor_sample_fetch(thermistor6);
+	sensor_channel_get(thermistor6, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+	LOG_INF("Sensor thermistor read: %dC", temp.val1);
+
+	const struct device *thermistor10 = DEVICE_DT_GET(DT_NODELABEL(therm10));
+	rc = sensor_sample_fetch(thermistor10);
+	sensor_channel_get(thermistor10, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+	LOG_INF("Sensor thermistor read: %dC", temp.val1);
+
+#endif
 
 	LOG_ERR("Heading to run_led_tests");
 	run_led_tests();
 	LOG_ERR("Returned from run_led_tests");
+	run_pwm_mc_led_tests();
+#if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(0), okay)
 	run_pwm_led_tests();
+#endif
 
 #ifdef CONFIG_THERMAL_MANAGEMENT
 #if DT_NODE_HAS_STATUS(DT_FAN_INST(0), okay)
@@ -522,45 +639,38 @@ void board_post(void)
 	run_fan_tests(fan_pwm, fan_label, tach, tach_label);
 #endif
 #endif
-#if DT_NODE_HAS_STATUS(DT_NODELABEL(adc0), okay)
-	adc = DEVICE_DT_GET(DT_NODELABEL(adc0));
+#if 0
+        /* Configure channels individually prior to sampling. */
+	for (i = 0U; i < ARRAY_SIZE(adc_channels); i++) {
+		if (!device_is_ready(adc_channels[i].dev)) {
+			LOG_INF("ADC controller device not ready");
+			return;
+		}
 
-	struct adc_channel_cfg adc_cfg;
-
-	adc_cfg.gain = ADC_GAIN_1;
-	adc_cfg.reference = ADC_REF_INTERNAL;
-	adc_cfg.acquisition_time = ADC_ACQ_TIME_DEFAULT;
-	adc_cfg.differential = 0;
-
-	for (adc_idx = 4; adc_idx <= 6; adc_idx++) {
-		adc_cfg.channel_id = adc_idx;
-		err = adc_channel_setup(adc, &adc_cfg);
-		if (err)
-			LOG_WRN("Sensor ch %d config failed", adc_cfg.channel_id);
+		err = adc_channel_setup_dt(&adc_channels[i]);
+		if (err < 0) {
+			LOG_INF("Could not setup channel #%d (%d)", i, err);
+			return;
+		}
 	}
-	adc_cfg.channel_id = 10;
-	err = adc_channel_setup(adc, &adc_cfg);
-	if (err)
-		LOG_WRN("Sensor ch %d config failed", adc_cfg.channel_id);
 
 	k_sleep(K_MSEC(1000));
 
-	uint16_t adc_raw_val[16];
-	const struct adc_sequence sequence = {
-		.channels	= BIT(4) | BIT(5) | BIT(6) | BIT(10),
-		.buffer		= adc_raw_val,
-		.buffer_size	= sizeof(adc_raw_val),
-		.resolution	= 10,
-	};
-	err = adc_read(adc, &sequence);
+	for (i = 0U; i < ARRAY_SIZE(adc_channels); i++) {
+		LOG_INF("- %s, channel %d: ",
+			adc_channels[i].dev->name,
+			adc_channels[i].channel_id);
 
-	if (err)
-		LOG_WRN("ADC Sensor reading failed %d", err);
+		(void)adc_sequence_init_dt(&adc_channels[i], &sequence);
 
-	for (adc_idx = 4; adc_idx <= 6; adc_idx++)
-		LOG_DBG("ADC Ch %d : raw value %d", adc_idx, adc_raw_val[adc_idx]);
-	LOG_DBG("ADC Ch %d : raw value %d", 10, adc_raw_val[10]);
+		err = adc_read(adc_channels[i].dev, &sequence);
+		if (err < 0) {
+			LOG_INF("Could not read (%d)\n", err);
+			continue;
+		}
 
+		LOG_INF("ADC Ch %d : raw value %d", i, buf);
+	}
 #endif
 #ifdef CONFIG_SIM_DETECT_SLOT_POST
 	sim_slot_detect_test();
@@ -570,10 +680,19 @@ void board_post(void)
 
 #endif
 
+#endif
 int board_init(void)
 {
 	struct wktmr_regs *weektmr = (struct wktmr_regs *)0x4000ac80;
 	int ret;
+	const struct device *eeprom = DEVICE_DT_GET(DT_ALIAS(eeprom0));
+	const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
+#if 0
+	const struct device *spd = DEVICE_DT_GET(DT_NODELABEL(spd));
+#endif
+	const char eeprom_data[] = { 0xAA, 0x55 };
+
+	char read_data[256];
 
 	weektmr->BGPO_PWR &= ~0x7U;
 
@@ -591,30 +710,57 @@ int board_init(void)
 
 	detect_boot_mode();
 
+#if 0
 	ret = vci_init();
 	if (ret) {
 		LOG_ERR("Failed to initialize vci devs: %d", ret);
 		return ret;
 	}
+#endif
 	ret = gpio_configure_array(mecc172x_vci_cfg, ARRAY_SIZE(mecc172x_vci_cfg));
 	if (ret) {
 		LOG_ERR("%s: %d", __func__, ret);
 		return ret;
 	}
 
-
 #ifdef CONFIG_BOARD_POST 
 	board_post();
 #endif
+	ret = eeprom_read(eeprom, 0, read_data, 16);
+	if (ret < 0 || (read_data[0] == 0xFF)) {
+		ret = eeprom_write(eeprom, 0, eeprom_data, 2);
+		if (ret < 0) {
+			LOG_ERR("%s: %d, Unable to write eeprom", __func__, ret);
+		} else {
+			LOG_INF("%s: Wrote 2 bytes to eeprom", __func__);
+		}
+	} else {
+		LOG_INF("%s: Read 16 bytes from eeprom, 0x%x 0x%x 0x%x 0x%x 0x%x 0x0%x 0x%x 0x%x\n\
+			0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x....", __func__, read_data[0], read_data[1],
+			read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7], read_data[8],
+			read_data[9], read_data[10], read_data[11], read_data[12], read_data[13], read_data[14], read_data[15]);
+	}
+#if 1
+	ret = eeprom_read(fru, 0, read_data, 8);
+	if (ret < 0) {
+		LOG_ERR("%s: %d, Unable to read eeprom", __func__, ret);
+	} else {
+		LOG_INF("%s: Read 8 bytes from spd, 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x...", __func__, read_data[0], read_data[1], read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7]);
+	}
 
+	/* XXX Valencia, after reading FRU and doing stuff, set the SMBus pins to inputs to disable */
+	gpio_force_configure_pin(EC_GPIO_007, GPIO_INPUT);
+	gpio_force_configure_pin(EC_GPIO_010, GPIO_INPUT);
+
+#endif
 	/* In MAF, boot ROM already made this pin output and high, so we must
 	 * keep it like that during the boot phase in order to avoid espi reset
 	 */
 	if (espihub_boot_mode() == FLASH_BOOT_MODE_MAF) {
 		/* Ensure GPIO mode for pins reconfigure due to QMSPI device */
-		gpio_force_configure_pin(RSMRST_PWRGD_MAF_P,
+		gpio_force_configure_pin(RSMRST_PWRGD,
 					 GPIO_INPUT | GPIO_PULL_UP);
-		gpio_force_configure_pin(PM_RSMRST_MAF_P, GPIO_OUTPUT_HIGH);
+		gpio_force_configure_pin(PM_RSMRST, GPIO_OUTPUT_HIGH);
 
 		/* LPM optimizations */
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_DISCONNECTED);
@@ -622,7 +768,7 @@ int board_init(void)
 		/* ensure no ESPI operations happen when in VTT testing mode */
 		espihub_set_boot_mode(FLASH_BOOT_MODE_OWN);
 
-		gpio_force_configure_pin(RSMRST_PWRGD_MAF_P, GPIO_INPUT | GPIO_PULL_UP);
+		gpio_force_configure_pin(RSMRST_PWRGD, GPIO_INPUT | GPIO_PULL_UP);
 	} else {
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_OUTPUT_LOW);
 	}

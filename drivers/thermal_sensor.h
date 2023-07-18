@@ -38,7 +38,7 @@ extern int16_t adc_temp_val[ADC_CH_TOTAL];
  *
  * @return 0 if success, otherwise error code.
  */
-int thermal_sensors_init(uint8_t adc_channel_bits);
+int thermal_sensors_init(uint32_t adc_channel_bits);
 
 
 /**

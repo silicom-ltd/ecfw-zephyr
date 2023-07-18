@@ -31,6 +31,7 @@
 		pwm-0 = &pwm0;
 		peci-0 = &peci0;
 		led-1 = &pwmmcled0;
+		eeprom0 = &eeprom;
 	};
 
 	gpio_keys {
@@ -43,31 +44,35 @@
 		};
 	};
 
-	pwm_mc_leds: leds-pwm-mc {
+	pwm_mc_leds: pwm_mc_leds {
 		compatible = "pwm-leds-multicolor";
 
-		pwmmcled0: led-0 {
+		pwmmcled0: pwmmcled-0 {
 			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+		       	       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+
 			color-mapping = <LED_COLOR_ID_RED>,
 					<LED_COLOR_ID_GREEN>,
 					<LED_COLOR_ID_BLUE>;
 		};
-	};
+		pwmmcled1: pwmmcled-1 {
+			pwms = <&pwm10 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm7  0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm8  0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
 
-	pwmled0: pwmleds-0 {
-		compatible = "pwm-leds";
-
-		pwm_led0: led-0 {
-			pwms= <&pwm8 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+			color-mapping = <LED_COLOR_ID_RED>,
+					<LED_COLOR_ID_GREEN>,
+					<LED_COLOR_ID_BLUE>;
 		};
-	};
-	pwmled1: pwmleds-1 {
-		compatible = "pwm-leds";
+		pwmmcled2: pwmmcled-2 {
+			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
 
-		pwm_led1: led-1 {
-			pwms = <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+			color-mapping = <LED_COLOR_ID_RED>,
+					<LED_COLOR_ID_GREEN>,
+					<LED_COLOR_ID_BLUE>;
 		};
 	};
 
@@ -95,48 +100,49 @@
 			label = "FP_AMB_RT";
 		};
 	};
-	gpioled3: gpioled-3 {
-		compatible = "gpio-leds";
-		gpio_led3: led-3 {
-			/* GPIO034 */
-			gpios = <&gpio_000_036 28 GPIO_ACTIVE_LOW>;
-			label = "FP_GRN_CTR";
-		};
-	};
-	gpioled4: gpioled-4 {
-		compatible = "gpio-leds";
-		gpio_led4: led-4 {
-			/* GPIO046 */
-			gpios = <&gpio_040_076 6 GPIO_ACTIVE_LOW>;
-			label = "FP_GRN_CTR";
-		};
-	};
-	gpioled5: gpioled-5 {
-		compatible = "gpio-leds";
-		gpio_led5: led-5 {
-			/* GPIO156 */
-			gpios = <&gpio_140_176 14 GPIO_ACTIVE_LOW>;
-			label = "FP_RED_RT";
-		};
-	};
-	gpioled6: gpioled-6 {
-		compatible = "gpio-leds";
-		gpio_led6: led-6 {
-			/* GPIO033 */
-			gpios = <&gpio_000_036 27 GPIO_ACTIVE_LOW>;
-			label = "FP_RED_CTR";
-		};
-	};
 	bgpo0: bgpo@4000ac9c {
 		compatible = "microchip,xec-bgpo";
 		reg = < 0x4000ac9c 0xc >;
 		status = "okay";
-		label = "BGPO";
 		gpio-controller;
 		#gpio-cells = <2>;
-		ngpios = <6>;
+//		ngpios = <6>;
 	};
-	
+
+
+	therm4: thermistor-4 {
+		compatible = "ntc-thermistor";
+		io-channels = <&adc0 4>;
+		rnominal = <10000>;
+		tnominal = <25>;
+		rpullup = <3300>;
+		b-const = <3455>;
+	};
+	therm5: thermistor-5 {
+		compatible = "ntc-thermistor";
+		io-channels = <&adc0 5>;
+		rnominal = <10000>;
+		tnominal = <25>;
+		rpullup = <3300>;
+		b-const = <3455>;
+	};
+	therm6: thermistor-6 {
+		compatible = "ntc-thermistor";
+		io-channels = <&adc0 6>;
+		rnominal = <10000>;
+		tnominal = <25>;
+		rpullup = <3300>;
+		b-const = <3455>;
+	};
+	therm10: thermistor-10 {
+		compatible = "ntc-thermistor";
+		io-channels = <&adc0 10>;
+		rnominal = <10000>;
+		tnominal = <25>;
+		rpullup = <3300>;
+		b-const = <3455>;
+	};
+
 	zephyr,user {
 		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173>;
@@ -157,11 +163,96 @@
 	pinctrl-names = "default";
 };
 
+&eeprom {
+	status = "okay";
+
+	pinctrl-0 = <&eeprom_cs_gpio116
+		     &eeprom_clk_gpio117
+		     &eeprom_mosi_gpio074
+		     &eeprom_miso_gpio075>;
+	pinctrl-names = "default";
+};
+
+&i2c_smb_3 {
+	status = "okay";
+	label = "I2C3";
+	port_sel = <3>;
+
+	pinctrl-0 = <&i2c03_sda_gpio007
+                     &i2c03_scl_gpio010>;
+	pinctrl-names = "default";
+
+	fru: dev@56 {
+		compatible = "atmel,at24";
+		status = "okay";
+		reg = <0x56>;
+		size = <2048>;
+		address-width = <8>;
+		timeout = <25>;
+		pagesize = <32>;
+	};
+
+	spd: dev@54 {
+		compatible = "atmel,at24";
+		status = "disabled";
+		reg = <0x54>;
+		size = <2048>;
+		address-width = <8>;
+		timeout = <25>;
+		pagesize = <16>;
+	};
+};
+
+&i2c03_sda_gpio007 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c03_scl_gpio010 {
+	drive-open-drain;
+	output-high;
+};
+
 &adc0 {
 	status = "okay";
 	pinctrl-0 = <&adc04_gpio204 &adc05_gpio205
 		     &adc06_gpio206 &adc10_gpio212>;
 	pinctrl-names = "default";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@5 {
+		reg = <5>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <10>;
+	};
+
+	channel@a {
+		reg = <10>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <10>;
+	};
 };
 
 &pwm0 {
@@ -206,9 +297,27 @@
 	pinctrl-names = "default";
 };
 
+&pwm7 {
+	status = "okay";
+	pinctrl-0 = <&pwm7_gpio015>;
+	pinctrl-names = "default";
+};
+
 &pwm8 {
 	status = "okay";
 	pinctrl-0 = <&pwm8_gpio035>;
+	pinctrl-names = "default";
+};
+
+&pwm9 {
+	status = "okay";
+	pinctrl-0 = <&pwm9_gpio133>;
+	pinctrl-names = "default";
+};
+
+&pwm10 {
+	status = "okay";
+	pinctrl-0 = <&pwm10_gpio134>;
 	pinctrl-names = "default";
 };
 
@@ -281,13 +390,6 @@
 	pinctrl-names = "default";
 };
 
-&vci0 {
-	compatible = "microchip,xec-vci-v2";
-	gpio-controller;
-	status = "okay";
-	#gpio-cells=<2>;
-};
-
 &pinctrl {
 	gpio101: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
@@ -302,3 +404,9 @@
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
 	};
 };
+
+&bgpo0 {
+	pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173>;
+	pinctrl-names = "default";
+};
+

@@ -58,6 +58,7 @@ enum hid_btn_sci {
 	HID_BTN_SCI_VOL_DOWN,
 	HID_BTN_SCI_HOME,
 	HID_BTN_SCI_ROT_LOCK,
+	HID_BTN_SCI_RST,
 };
 
 

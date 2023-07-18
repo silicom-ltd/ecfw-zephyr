@@ -86,6 +86,14 @@ void smc_update_thermal_sensor(enum acpi_thrm_sens_idx idx, int16_t temp);
 void smc_update_fan_tach(uint8_t fan_idx, uint16_t rpm);
 
 /**
+ * @brief Update the fan pwm (duty cycle) value for given fan device.
+ *
+ * @param fan_idx fan device index.
+ * @param pwm duty cycle value of the fan.
+ */
+void smc_update_fan_pwm(uint8_t fan_idx, uint8_t pwm);
+
+/**
  * @brief Update thermal sensor trip status.
  *
  * @param status is bit-field value indicating sensor number tripped.

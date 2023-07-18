@@ -130,7 +130,11 @@ void sys_therm_sensor_trip(void)
 
 		struct dtt_threshold *thrd = &therm_sensor_tbl[idx].thrd;
 		/* Current sensor temperature */
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+		int16_t snstemp = adc_temp_val[idx];
+#else
 		int16_t snstemp = adc_temp_val[therm_sensor_tbl[idx].adc_ch];
+#endif
 		bool tripped;
 		int16_t triplimit;
 		uint8_t old_status = thrd->status;
@@ -240,7 +244,7 @@ static void init_fans(void)
 
 static void init_therm_sensors(void)
 {
-	uint8_t adc_ch_bits = 0;
+	uint32_t adc_ch_bits = 0;		/* MEC172X has > 8 sensors */
 
 	board_therm_sensor_tbl_init(&max_adc_sensors, &therm_sensor_tbl);
 
@@ -357,6 +361,7 @@ static void manage_fan(void)
 
 		fan_read_rpm(idx, &rpm);
 		smc_update_fan_tach(idx, rpm);
+		smc_update_fan_pwm(idx, fan_duty_cycle[idx]); /* store fan duty cycle for hwmon */
 	}
 
 	/* EC assumes OS is hung/BSOD occurred and takes override actions
@@ -390,7 +395,11 @@ static void manage_thermal_sensors(void)
 	for (uint8_t idx = 0; idx < max_adc_sensors; idx++) {
 		smc_update_thermal_sensor(
 			therm_sensor_tbl[idx].acpi_loc,
+#if CONFIG_BOARD_MEC172X_AZBEACH
+			adc_temp_val[idx]);
+#else
 			adc_temp_val[therm_sensor_tbl[idx].adc_ch]);
+#endif
 	}
 
 	sys_therm_sensor_trip();

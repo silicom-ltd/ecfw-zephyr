@@ -107,6 +107,9 @@
 #define SCI_HB_REL              0x8A
 /* Home Button */
 #define SCI_ROT_PRES            0x8B
+/* Recessed Button press/release */
+#define SCI_RSTBTN_PRESS	0x8C
+#define SCI_RSTBTN_RELEASE	0x8D
 
 /* Burst acknowledge byte */
 #define SCI_BURST_ACK           0x90

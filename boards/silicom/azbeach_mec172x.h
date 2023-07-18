@@ -21,59 +21,54 @@ extern uint8_t platformskutype;
 
 /* Signal to gpio mapping for MEC172x based ADL-M is described here */
 
+/* power/boot related */
 #define PM_SLP_SUS			EC_GPIO_000
 #define RSMRST_PWRGD_G3SAF_P		EC_GPIO_012
-#define RSMRST_PWRGD_MAF_P		EC_GPIO_227
-
-#define RSMRST_PWRGD			((boot_mode_maf == 1) ? \
-					 RSMRST_PWRGD_MAF_P : \
-					 RSMRST_PWRGD_G3SAF_P)
-
 #define G3_SAF_DETECT			EC_GPIO_013
 #define SOC_RSTBTN_N			EC_GPIO_020
 #define CPU_C10_GATE			EC_GPIO_022
 #define PS_ON_OUT			EC_GPIO_023
-#define EC_PCH_SPI_OE_N			EC_GPIO_024
-#define PM_BAT_STATUS_LED2		EC_GPIO_035
 #define SYS_PWROK			EC_GPIO_043
 #define PVT_SPI_BOOT			EC_GPIO_045
-
-#define PM_RSMRST_MAF_P			EC_GPIO_055
-#define PM_RSMRST_G3SAF_P		EC_GPIO_133
-#define PM_RSMRST			((boot_mode_maf == 1) ? \
-					 PM_RSMRST_MAF_P : \
-					 PM_RSMRST_G3SAF_P)
-
 #define PLTRST_N			EC_GPIO_052
+#define PM_RSMRST_G3SAF_P 		EC_GPIO_253
 #define ALL_SYS_PWRGD			EC_GPIO_057
 /* We poll this GPIO in MAF mode in order to sense the input signal040_076.
  * This pin was already configured in pinmux as ALT mode 1 NOT GPIO
  */
 #define ESPI_RESET_MAF			EC_GPIO_061
-
-#define BTN_RECESSED			EC_GPIO_166 
 #define PM_PWRBTN			EC_GPIO_101
-#define EC_SMI				EC_GPIO_102
 #define PCH_PWROK			EC_GPIO_106
-#define WAKE_SCI			EC_GPIO_114
-#define DNX_FORCE_RELOAD_EC		EC_GPIO_115
-#define CATERR_LED_DRV			EC_GPIO_153
+#define PM_BATLOW			EC_GPIO_140
 #define SLP_S3_N			EC_GPIO_171
 #define SLP_S4_N			EC_GPIO_172
 #define SX_EXIT_HOLDOFF_N		EC_GPIO_175
-//#define PWRBTN_EC_IN_N			EC_GPIO_166
+#define RSMRST_PWRGD			EC_GPIO_227
+#define PM_RSMRST			EC_GPIO_055
+
+#define EC_PCH_SPI_OE_N			EC_GPIO_024
+
+/* button/peripherals */
+#define BTN_PROTRUDING			EC_GPIO_135
+#define MIPI60_PWRBTN_N			EC_GPIO_162
+#define BTN_RECESSED			EC_GPIO_166 
+#define PWRBTN_EC_IN_N			BTN_PROTRUDING
+
+#define EC_SMI				EC_GPIO_102
+#define WAKE_SCI			EC_GPIO_114
+#define DNX_FORCE_RELOAD_EC		EC_GPIO_115
+#define CATERR_LED_DRV			EC_GPIO_153
 #define PM_DS3				EC_DUMMY_GPIO_HIGH
 #define TIMEOUT_DISABLE			EC_DUMMY_GPIO_LOW
 #define FAN_PWR_DISABLE_N		EC_DUMMY_GPIO_LOW
-#define PM_BATLOW			EC_GPIO_140
-#define THERM_STRAP			EC_DUMMY_GPIO_LOW
+#define THERM_STRAP			EC_DUMMY_GPIO_HIGH
 
+/* (unused/DNI) */
 #define PM_SLP_S0_CS			EC_GPIO_221
 #define PM_SLP_S0_EC_N			EC_GPIO_240		/* ADL-M */
 #define EC_PWRBTN_LED			EC_DUMMY_GPIO_LOW
 
 /* M.2 Slots */
-#define W_DISABLE_M2_SLOT3_N		EC_GPIO_015
 #define W_DISABLE_M2_SLOT1_N		EC_GPIO_026
 #define W_DISABLE_M2_SLOT2_N		EC_GPIO_027
 #define SIM_M2_SLOT1_MUX_SEL		EC_GPIO_030
@@ -83,9 +78,11 @@ extern uint8_t platformskutype;
 #define SIM_M2_SLOT2A_DET_N		EC_GPIO_152
 #define SIM_M2_SLOT1A_DET_N		EC_GPIO_154
 #define SIM_M2_SLOT1B_DET_N		EC_GPIO_155
+#define SLOT3_SSD_PWRDIS		EC_GPIO_220
 #define RST_CTL_M2_SLOT1_N		EC_GPIO_230
 #define RST_CTL_M2_SLOT2_N		EC_GPIO_231
 #define SIM_M2_SLOT2B_DET_N		EC_GPIO_232
+#define EC_M_2_SSD_PLN			EC_GPIO_236
 #define SLOT1_LED_OUT			EC_GPIO_242
 #define SLOT2_LED_OUT			EC_GPIO_243
 
@@ -93,12 +90,7 @@ extern uint8_t platformskutype;
 #define DG2_PRESENT			EC_DUMMY_GPIO_LOW
 #define PEG_RTD3_COLD_MOD_SW_R		EC_DUMMY_GPIO_LOW
 
-/* XXX JJD, only an output and can't be a GPIO */
-//#define PROCHOT				EC_BGPO_000
-#define PROCHOT				EC_DUMMY_GPIO_LOW
-
-/* rev A0 has power button on VCI0# which makes it a pain */
-#define PWRBTN_EC_IN_N			EC_VCI_000
+#define PROCHOT				EC_GPIO_160
 
 /* Device instance names */
 #define I2C_BUS_0			DT_NODELABEL(i2c_smb_0)

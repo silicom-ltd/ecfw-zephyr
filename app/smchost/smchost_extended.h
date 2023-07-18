@@ -50,6 +50,13 @@ void smchost_cmd_led_handler(uint8_t command);
 void smchost_pwrbtn_handler(uint8_t pwrbtn_sts);
 
 /**
+ * @brief Handle reset button events.
+ *
+ * @param rstbtn_sts the current reset button status.
+ */
+void smchost_rstbtn_handler(uint8_t rstbtn_sts);
+
+/**
  * @brief Get connected standby state.
  */
 bool smchost_is_system_in_cs(void);

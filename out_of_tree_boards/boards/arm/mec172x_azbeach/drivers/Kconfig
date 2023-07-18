@@ -1,0 +1,2 @@
+source "drivers/sensor/Kconfig"
+source "drivers/gpio/Kconfig"

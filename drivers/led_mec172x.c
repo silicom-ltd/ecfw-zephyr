@@ -51,6 +51,11 @@ int led_brightness_set(uint8_t idx, uint16_t brightness)
 		return -ENODEV;
 	}
 
+	if (brightness == 0) {
+		ret = led_off(led, 0);
+		return ret;
+	}
+
 	ret = led_set_brightness(led, 0, (uint8_t)brightness);
 
 	if (ret) {

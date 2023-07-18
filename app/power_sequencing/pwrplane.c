@@ -535,54 +535,6 @@ static bool pwrseq_handle_transition_to_s5(void)
 	return valid_transition;
 }
 
-#if 0
-static void pwrseq_update(void)
-{
-	bool valid_sx_transition = false;
-
-	switch (next_state) {
-	case SYSTEM_S0_STATE:
-		check_slp_signals();
-		if (current_state == SYSTEM_G3_STATE ||
-		    current_state == SYSTEM_S5_STATE) {
-			if (!power_on()) {
-				valid_sx_transition = true;
-			}
-		} else {
-			if (!resume()) {
-				valid_sx_transition = true;
-			}
-		}
-		break;
-	case SYSTEM_S3_STATE:
-		if (current_state == SYSTEM_S0_STATE) {
-			suspend();
-			valid_sx_transition = true;
-		}
-		break;
-	case SYSTEM_S4_STATE:
-	case SYSTEM_S5_STATE:
-		if (current_state == SYSTEM_S0_STATE) {
-			LOG_DBG("Calling power_off");
-			power_off();
-			valid_sx_transition = true;
-		}
-		break;
-	default:
-		LOG_ERR("Unsupported next state: %d", next_state);
-		/* Do not transition to invalid state,
-		 * stay in current valid role.
-		 */
-		next_state = current_state;
-		break;
-	}
-
-	if (valid_sx_transition) {
-		LOG_INF("System transition %d->%d", current_state, next_state);
-		current_state = next_state;
-	}
-}
-#else
 static void pwrseq_update(void)
 {
 	bool valid_sx_transition = false;
@@ -615,7 +567,6 @@ static void pwrseq_update(void)
 		next_state = current_state;
 	}
 }
-#endif
 
 bool atx_detect(void)
 {

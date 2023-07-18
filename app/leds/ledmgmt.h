@@ -40,8 +40,9 @@ void host_update_led_dc(uint8_t idx, uint8_t duty_cycle);
 void get_led_peripherals_status(uint8_t *hw_peripherals_sts);
 #endif
 
+void host_update_led_ownership(uint8_t idx);
 void host_update_led_color(uint8_t idx, uint16_t color0, uint16_t color1);
-void host_update_led_brightness(uint8_t idx, uint16_t brightness);
+void host_update_led_brightness(uint8_t idx, uint8_t brightness);
 void host_update_led_blink(uint8_t idx, uint16_t on, uint16_t off );
 
 #endif	/* __LED_MGMT_H__ */

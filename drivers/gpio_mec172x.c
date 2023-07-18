@@ -38,15 +38,6 @@ static struct gpio_device pinmux_ports[] = {
 };
 #endif
 
-#if 0
-static struct gpio_device ports[] = {
-	{ DT_PROP(DT_NODELABEL(gpio_000_036), label), NULL},
-	{ DT_PROP(DT_NODELABEL(gpio_040_076), label), NULL},
-	{ DT_PROP(DT_NODELABEL(gpio_100_136), label), NULL},
-	{ DT_PROP(DT_NODELABEL(gpio_140_176), label), NULL},
-	{ DT_PROP(DT_NODELABEL(gpio_200_236), label), NULL},
-	{ DT_PROP(DT_NODELABEL(gpio_240_276), label), NULL},
-#else
 static const gpio_device *ports[] = {
 #if DT_NODE_HAS_STATUS(DT_INST(0, microchip_xec_gpio_v2), okay)
 	DEVICE_DT_GET(DT_INST(0, microchip_xec_gpio_v2)),
@@ -68,9 +59,6 @@ static const gpio_device *ports[] = {
 #endif
 #if DT_NODE_HAS_STATUS(DT_INST(0, microchip_xec_vci_v2), okay)
 	DEVICE_DT_GET(DT_INST(0, microchip_xec_vci_v2)),
-#else
-#error No vci node enabled!
-#endif
 #endif
 	/* Handle 1 or more IO expanders */
 #ifdef CONFIG_GPIO_PCA95XX

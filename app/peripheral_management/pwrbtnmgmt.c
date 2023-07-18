@@ -28,6 +28,7 @@ struct pwrbtn_handler {
 	pwrbtn_handler_t handler;
 };
 
+#if 0
 /* a workq for monitoring button change */
 struct btn_info {
 	struct k_work work;
@@ -35,6 +36,7 @@ struct btn_info {
 } pwr_btn_info;
 
 extern void reset_btn_levels(uint8_t, int);
+#endif
 
 /* This is just a pool */
 static struct pwrbtn_handler pwrbtn_handlers[MAX_PWRBTN_HANDLERS];
@@ -43,8 +45,9 @@ static bool usb_pwr_btn_sts = HIGH;
 static bool sys_pwr_btn_sts = HIGH;
 static bool pwr_btn_out_sts = HIGH;
 static bool pwrbtn_evt;
-static enum system_power_state current_state;
+//static enum system_power_state current_state;
 
+#if 0
 void pwrbtn_input_monitor(struct k_work *item)
 {
 	struct btn_info *btn = 
@@ -62,10 +65,6 @@ void pwrbtn_input_monitor(struct k_work *item)
 #if 1
 		if (pwrseq_system_state() == SYSTEM_S5_STATE)
 			break;
-#if 0
-		if (!gpio_read_pin(PLTRST_N))
-			break;
-#endif
 #endif
 		k_msleep(10);
 	} while (!level);
@@ -74,22 +73,14 @@ void pwrbtn_input_monitor(struct k_work *item)
 	pwrbtn_evt = pwr_btn_out_sts = HIGH;
 	gpio_write_pin(PM_PWRBTN, pwr_btn_out_sts);
 	reset_btn_levels(btn->btn_index, HIGH);
-#if 0
-	if (pwrseq_system_state() == SYSTEM_S5_STATE ||
-	    pwrseq_system_state() == SYSTEM_S4_STATE) {
-		LOG_DBG("%s ***** not SYSTEM_S0_STATE, triggering wake *****", __func__);
-		pwrbtn_trigger_wake();
-		g_pwrflags.turn_pwr_on = 1;
-	}
-#else
+
 	if (current_state != SYSTEM_S0_STATE) {
 		LOG_DBG("%s ***** not SYSTEM_S0_STATE, triggering wake *****", __func__);
 		pwrbtn_trigger_wake();
 		g_pwrflags.turn_pwr_on = 1;
 	}
-#endif
 }
-
+#endif
 void pwrbtn_btn_evt_processor(void)
 {
 	/* 
@@ -111,11 +102,10 @@ void pwrbtn_btn_evt_processor(void)
 		LOG_DBG(" %s: power button event %d is executing ",
 				__func__, pwr_btn_out_sts);
 
-		current_state = pwrseq_system_state();
+//		current_state = pwrseq_system_state();
 		gpio_write_pin(PM_PWRBTN, pwr_btn_out_sts);
-//		k_msleep(20);
 
-		k_work_submit(&pwr_btn_info.work);
+//		k_work_submit(&pwr_btn_info.work);
 		for (int i = 0; i < MAX_PWRBTN_HANDLERS; i++) {
 			if (pwrbtn_handlers[i].handler) {
 				LOG_DBG("Calling handler %s", __func__);
@@ -163,9 +153,8 @@ int pwrbtn_init(void)
 {
 	LOG_INF("%s", __func__);
 
-	pwr_btn_info.btn_index = 0;
-//	k_work_init(&pwrbtn_input_work, pwrbtn_input_monitor);
-	k_work_init(&pwr_btn_info.work, pwrbtn_input_monitor);
+//	pwr_btn_info.btn_index = 0;
+//	k_work_init(&pwr_btn_info.work, pwrbtn_input_monitor);
 	/* Register power button for debouncing */
 	return	periph_register_button(PWRBTN_EC_IN_N,
 			sys_pwrbtn_evt_processor);
