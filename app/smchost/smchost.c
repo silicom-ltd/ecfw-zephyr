@@ -309,7 +309,11 @@ static inline int smchost_task_init(void)
 
 	/* Register event handler */
 	pwrbtn_register_handler(smchost_pwrbtn_handler);
+#if 0
+#ifdef CONFIG_RESET_BUTTON
 	rstbtn_register_handler(smchost_rstbtn_handler);
+#endif
+#endif
 #ifndef CONFIG_BOARD_MEC172X_AZBEACH
 #ifdef EC_M_2_SSD_PLN
 	pwrbtn_register_handler(smchost_pwrbtn_pln_handler);

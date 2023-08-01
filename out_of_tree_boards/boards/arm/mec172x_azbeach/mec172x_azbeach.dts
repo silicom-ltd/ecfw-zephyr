@@ -48,9 +48,9 @@
 		compatible = "pwm-leds-multicolor";
 
 		pwmmcled0: pwmmcled-0 {
-			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-		       	       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-		       	       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
 
 			color-mapping = <LED_COLOR_ID_RED>,
 					<LED_COLOR_ID_GREEN>,
@@ -66,9 +66,9 @@
 					<LED_COLOR_ID_BLUE>;
 		};
 		pwmmcled2: pwmmcled-2 {
-			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-		       	       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-		       	       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
 
 			color-mapping = <LED_COLOR_ID_RED>,
 					<LED_COLOR_ID_GREEN>,
@@ -79,9 +79,9 @@
 	gpioled0: gpioled-0 {
 		compatible = "gpio-leds";
 		gpio_led0: led-0 {
-			/* GPIO032/KSI7/GPTP_OUT0/UART0_RI# */
-			gpios = <&gpio_000_036 26 GPIO_ACTIVE_LOW>;
-			label = "FP_AMB_LT";
+			/* GPIO041 */
+			gpios = <&gpio_040_076 1 GPIO_ACTIVE_LOW>;
+			label = "FP_AMB_RT";
 		};
 	};
 	gpioled1: gpioled-1 {
@@ -95,9 +95,9 @@
 	gpioled2: gpioled-2 {
 		compatible = "gpio-leds";
 		gpio_led2: led-2 {
-			/* GPIO041 */
-			gpios = <&gpio_040_076 1 GPIO_ACTIVE_LOW>;
-			label = "FP_AMB_RT";
+			/* GPIO032/KSI7/GPTP_OUT0/UART0_RI# */
+			gpios = <&gpio_000_036 26 GPIO_ACTIVE_LOW>;
+			label = "FP_AMB_LT";
 		};
 	};
 	bgpo0: bgpo@4000ac9c {
