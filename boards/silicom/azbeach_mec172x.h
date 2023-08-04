@@ -28,6 +28,7 @@ extern uint8_t platformskutype;
 #define SOC_RSTBTN_N			EC_GPIO_020
 #define CPU_C10_GATE			EC_GPIO_022
 #define PS_ON_OUT			EC_GPIO_023
+#define PM_UC_PG3_ENTRY			EC_GPIO_034
 #define SYS_PWROK			EC_GPIO_043
 #define PVT_SPI_BOOT			EC_GPIO_045
 #define PLTRST_N			EC_GPIO_052
