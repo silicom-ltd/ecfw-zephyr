@@ -91,6 +91,20 @@ struct gpio_ec_config mecc172x_cfg_sus[] =  {
 struct gpio_ec_config mecc172x_cfg_res[] =  {
 };
 
+struct gpio_ec_config mecc172x_cfg_host[] =  {
+	{ SIM_M2_SLOT1A_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT1B_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT2A_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT2B_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT1_MUX_SEL, GPIO_OUTPUT_LOW },
+	{ SIM_M2_SLOT2_MUX_SEL, GPIO_OUTPUT_LOW },
+	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ W_DISABLE_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ RST_CTL_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ RST_CTL_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ SLOT3_SSD_PWRDIS, GPIO_OUTPUT_LOW },
+};
+
 #ifdef CONFIG_LED_MANAGEMENT
 #define DT_PWM_MC_LED_INST(x)	DT_NODELABEL(pwmmcled##x)
 #define DT_PWM_LED_INST(x)	DT_NODELABEL(pwmled##x)
@@ -704,6 +718,12 @@ int board_init(void)
 	}
 
 	ret = gpio_configure_array(mecc172x_cfg, ARRAY_SIZE(mecc172x_cfg));
+	if (ret) {
+		LOG_ERR("%s: %d", __func__, ret);
+		return ret;
+	}
+
+	ret = gpio_configure_array(mecc172x_cfg_host, ARRAY_SIZE(mecc172x_cfg_host));
 	if (ret) {
 		LOG_ERR("%s: %d", __func__, ret);
 		return ret;

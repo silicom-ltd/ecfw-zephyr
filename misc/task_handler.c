@@ -21,7 +21,9 @@
 #ifdef CONFIG_LED_MANAGEMENT
 #include "ledmgmt.h"
 #endif
-
+#ifdef CONFIG_GPIO_MANAGEMENT
+#include "gpiomgmt.h"
+#endif
 LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
 
 #define EC_TASK_STACK_SIZE	1024
@@ -90,6 +92,13 @@ K_THREAD_DEFINE(led_thrd_post_id, EC_TASK_STACK_SIZE, ledmgmt_post_thread,
 #endif
 #endif
 
+#ifdef CONFIG_GPIO_MANAGEMENT
+const uint32_t gpio_thrd_period = 1000;
+K_THREAD_DEFINE(gpio_thrd_id, EC_TASK_STACK_SIZE, gpiomgmt_thread,
+		&gpio_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
+		K_INHERIT_PERMS, EC_WAIT_FOREVER);
+#endif
+
 struct task_info {
 	k_tid_t thread_id;
 	bool can_suspend;
@@ -137,6 +146,11 @@ static struct task_info tasks[] = {
 	{ .thread_id = led_thrd_post_id, .can_suspend = false,
 	  .tagname = "LEDS_POST" },
 #endif
+#endif
+
+#ifdef CONFIG_GPIO_MANAGEMENT
+	{ .thread_id = gpio_thrd_id, .can_suspend = false,
+	  .tagname = "GPIOS" },
 #endif
 };
 

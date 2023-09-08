@@ -26,3 +26,9 @@ config LED_MANAGEMENT_POST
 	default n
 	help
 	  Enables a 1 second thread that changes the led settings
+
+config GPIO_MANAGEMENT
+	bool "Enable GPIO host management"
+	default y
+	help
+	  Indicate if EC supports host management of gpios.

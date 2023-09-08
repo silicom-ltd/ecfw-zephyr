@@ -692,6 +692,11 @@ static void smchost_cmd_handler(uint8_t command)
 		smchost_cmd_led_handler(command);
 		break;
 #endif
+#ifdef CONFIG_GPIO_MANAGEMENT
+	case SMCHOST_UPDATE_GPIO_SET_VALUE:
+		smchost_cmd_gpio_handler(command);
+		break;
+#endif
 	/* Handlers for commands 80h to 8Fh */
 	case SMCHOST_ACPI_READ:
 		acpi_read_ec();

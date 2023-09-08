@@ -42,6 +42,17 @@ void smchost_cmd_led_handler(uint8_t command);
 
 #endif
 
+#ifdef CONFIG_GPIO_MANAGEMENT
+/**
+ * @brief Handle extended SMC commands for GPIO management.
+ *
+ * @param command identifier for the operation requested.
+ */
+void smchost_cmd_gpio_handler(uint8_t command);
+
+#endif
+
+
 /**
  * @brief Handle power button events.
  *

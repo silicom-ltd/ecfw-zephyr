@@ -18,6 +18,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/saf)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/soc_debug_awareness)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/rstbtn)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/leds)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/gpio)
 
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
@@ -101,6 +102,14 @@ target_sources_ifdef(CONFIG_LED_MANAGEMENT app
     ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.h
     )
 
+target_sources_ifdef(CONFIG_GPIO_MANAGEMENT app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/gpio/gpiomgmt.c
+    ${CMAKE_CURRENT_LIST_DIR}/smchost/smchost_gpio.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/gpio/gpiomgmt.h
+    )
+
 target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/debug/postcodemgmt.c
@@ -150,6 +159,13 @@ target_sources_ifdef(CONFIG_LED_MANAGEMENT app
     ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/leds/ledmgmt.h
+    )
+
+target_sources_ifdef(CONFIG_GPIO_MANAGEMENT app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/gpio/gpiomgmt.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/gpio/gpiomgmt.h
     )
 
 target_include_directories(app
