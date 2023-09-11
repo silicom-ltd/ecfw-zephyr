@@ -12,7 +12,7 @@
 
 LOG_MODULE_REGISTER(led, CONFIG_FAN_LOG_LEVEL);
 
-static struct device led_tbl[32];
+static struct device *led_tbl[32];
 
 int led_blink_set(uint8_t idx, uint16_t on, uint16_t off)
 {
@@ -22,7 +22,7 @@ int led_blink_set(uint8_t idx, uint16_t on, uint16_t off)
 		return -ENOTSUP;
 	}
 
-	struct device *led = &led_tbl[idx];
+	struct device *led = led_tbl[idx];
 
 	if (!led) {
 		return -ENODEV;
@@ -45,7 +45,7 @@ int led_brightness_set(uint8_t idx, uint16_t brightness)
 		return -ENOTSUP;
 	}
 
-	const struct device *led = &led_tbl[idx];
+	const struct device *led = led_tbl[idx];
 
 	if (!led) {
 		return -ENODEV;
@@ -73,7 +73,7 @@ int led_color_set(uint8_t idx, uint8_t *color)
 		return -ENOTSUP;
 	}
 
-	const struct device *led = &led_tbl[idx];
+	const struct device *led = led_tbl[idx];
 
 	if (!led) {
 		return -ENODEV;
@@ -97,7 +97,7 @@ int led_init(int max, struct led_dev *tbl)
 	}
 
 	for (int idx = 0; idx < max; idx++) {
-		led_tbl[idx] = *tbl[idx].dev;
+		led_tbl[idx] = (struct device *)tbl[idx].dev;
 	}
 
 	return 0;
