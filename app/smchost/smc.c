@@ -35,7 +35,7 @@ static const bool acpi_tbl_attr[256] = {
 	ACPI_ATTR_READ_ONLY,
 
 	/* [3 / 3] struct acpi_status_flags acpi_flags; */
-	ACPI_ATTR_READ_ONLY,
+	ACPI_ATTR_READ_WRITE,
 
 	/* [4 / 4] uint8_t acpi_smb_buffer[40]; */
 	ACPI_ATTR_READ_WRITE,
