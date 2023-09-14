@@ -285,7 +285,7 @@ struct acpi_tbl {
 	/* [231/E7] */
 	uint8_t cas_hotkey;
 	/* [232/E8] */
-	uint8_t acpi_pmic_rw;
+	uint8_t acpi_host_gpio;
 	/* [233/E9] */
 	uint8_t fast_charge_capable;
 	/* [234/EA] USB-C control */

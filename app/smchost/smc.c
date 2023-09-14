@@ -721,8 +721,8 @@ static const bool acpi_tbl_attr[256] = {
 	/* [231 / E7] uint8_t cas_hotkey; */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [232 / E8] uint8_t acpi_pmic_rw; */
-	ACPI_ATTR_READ_ONLY,
+	/* [232 / E8] uint8_t acpi_host_gpio; */
+	ACPI_ATTR_READ_WRITE,
 
 	/* [233 / E9] uint8_t fast_charge_capable; */
 	ACPI_ATTR_READ_WRITE,

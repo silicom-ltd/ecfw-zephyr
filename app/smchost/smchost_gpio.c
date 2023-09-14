@@ -19,11 +19,11 @@ void smchost_cmd_gpio_handler(uint8_t command)
 
 	case SMCHOST_UPDATE_GPIO_SET_VALUE:
 
-		if (g_acpi_tbl.acpi_led_idx < MAX_HOST_EC_GPIO ) {
-			host_update_gpio(g_acpi_tbl.acpi_led_idx, (g_acpi_tbl.batt_chrg_lmt >> g_acpi_tbl.acpi_led_idx) & 0x1 );
+		if (g_acpi_tbl.acpi_host_gpio < MAX_HOST_EC_GPIO ) {
+			host_update_gpio(g_acpi_tbl.acpi_host_gpio, (g_acpi_tbl.batt_chrg_lmt >> g_acpi_tbl.acpi_host_gpio) & 0x1 );
 		}
 		else {
-			LOG_ERR("GPIO number not supported: %d\n", g_acpi_tbl.acpi_led_idx);
+			LOG_ERR("GPIO number not supported: %d\n", g_acpi_tbl.acpi_host_gpio);
 		}
 		break;
 	default:
