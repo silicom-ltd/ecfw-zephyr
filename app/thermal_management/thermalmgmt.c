@@ -81,10 +81,49 @@ static bool peci_initialized;
 /* Using module property, before introducing straps handler */
 static bool fan_override;
 static bool bios_fan_override;
+static bool ec_fan_control;
 static uint8_t bios_fan_speed;
 static uint8_t fan_duty_cycle[FAN_DEV_TOTAL];
 static bool fan_duty_cycle_change;
 static int cpu_temp;
+
+struct fan_lookup {
+	int16_t temp;
+	uint8_t duty_cycle;
+};
+
+static const struct fan_lookup fan_lookup_tbl[] = {
+	{15, 15},
+	{35, 25},
+	{42, 40},
+	{49, 55},
+	{56, 70},
+	{63, 80},
+	{70, 90},
+	{75, 100}
+};
+
+static uint8_t get_fan_speed_for_temp(int16_t temp)
+{
+	int idx;
+	uint8_t speed = 100;
+
+	if (temp < fan_lookup_tbl[0].temp) {
+		speed = 0;
+		return speed;
+	} else if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+		speed = 100;
+		return speed;
+	} else {
+		for (idx = 0; idx < ARRAY_SIZE(fan_lookup_tbl); idx++) {
+			if (temp >= fan_lookup_tbl[idx].temp) {
+				speed = fan_lookup_tbl[idx].duty_cycle;
+//				break;
+			}
+		}
+	}
+	return speed;
+}
 
 void host_update_crit_temp(uint8_t crit_temp)
 {
@@ -282,6 +321,15 @@ bool is_fan_controlled_by_host(void)
 	return 1;
 }
 
+bool is_fan_controlled_by_ec(void)
+{
+	if (ec_fan_control) {
+		return 1;
+	}
+
+	return 0;
+}
+
 void host_set_bios_fan_override(bool en, uint8_t speed)
 {
 	LOG_INF("BIOS set over ride control to %d", en);
@@ -322,9 +370,11 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
-	if (!is_fan_controlled_by_host()) {
+	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
 		/* EC Self control fan based on CPU thermal info */
-		uint8_t cpu_fan_speed = GET_FAN_SPEED_FOR_TEMP(cpu_temp);
+//		uint8_t cpu_fan_speed = GET_FAN_SPEED_FOR_TEMP(cpu_temp);
+		uint8_t cpu_fan_speed = get_fan_speed_for_temp(adc_temp_val[3]);
+		LOG_INF("%s: board CPU temp: %d, setting duty cycle to %d", __func__,  adc_temp_val[3], cpu_fan_speed);
 		if (fan_duty_cycle[FAN_CPU] != cpu_fan_speed) {
 			fan_duty_cycle[FAN_CPU] = cpu_fan_speed;
 			fan_duty_cycle_change = 1;
@@ -543,6 +593,10 @@ void thermalmgmt_thread(void *p1, void *p2, void *p3)
 		peci_initialized = true;
 	}
 
+#ifdef CONFIG_EC_FAN_CONTROL
+	ec_fan_control = 1;
+#endif
+	
 	while (true) {
 		/* Each thread is aware of CS
 		 * Thread uses different sleep time during CS

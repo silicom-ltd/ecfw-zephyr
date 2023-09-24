@@ -26,6 +26,11 @@ config THERMAL_FAN_OVERRIDE_VALUE
 	  When EC overrides fan management via SW or HW strap, EC will
 	  use this pre-defined duty cycle to control the fan.
 
+config EC_FAN_CONTROL
+	bool "Enable EC control"
+	help
+	  TBD
+
 config PECI_OVER_ESPI_ENABLE
 	bool "Enable PECI over ESPI OOB"
 	help
