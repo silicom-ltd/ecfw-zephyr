@@ -66,8 +66,10 @@ extern uint8_t platformskutype;
 
 /* (unused/DNI) */
 #define PM_SLP_S0_CS			EC_GPIO_221
-#define PM_SLP_S0_EC_N			EC_GPIO_240		/* ADL-M */
 #define EC_PWRBTN_LED			EC_DUMMY_GPIO_LOW
+
+/* Host VR PE control */
+#define EC_CORE_SA_PE			EC_GPIO_240
 
 /* M.2 Slots */
 #define W_DISABLE_M2_SLOT1_N		EC_GPIO_026
@@ -78,7 +80,7 @@ extern uint8_t platformskutype;
 #define SLOT0_LED2_OUT			EC_GPIO_131
 #define SIM_M2_SLOT2A_DET_N		EC_GPIO_152
 #define SIM_M2_SLOT1A_DET_N		EC_GPIO_154
-#define SIM_M2_SLOT1B_DET_N		EC_GPIO_155
+#define FALLING_12V_N			EC_GPIO_155
 #define SLOT3_SSD_PWRDIS		EC_GPIO_220
 #define RST_CTL_M2_SLOT1_N		EC_GPIO_230
 #define RST_CTL_M2_SLOT2_N		EC_GPIO_231
@@ -86,6 +88,7 @@ extern uint8_t platformskutype;
 #define EC_M_2_SSD_PLN			EC_GPIO_236
 #define SLOT1_LED_OUT			EC_GPIO_242
 #define SLOT2_LED_OUT			EC_GPIO_243
+#define SIM_M2_SLOT1B_DET_N		EC_GPIO_246
 
 #define BC_ACOK				EC_DUMMY_GPIO_HIGH
 #define DG2_PRESENT			EC_DUMMY_GPIO_LOW

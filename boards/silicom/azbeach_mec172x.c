@@ -13,6 +13,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/adc.h>
 #include <zephyr/drivers/eeprom.h>
+#include <zephyr/drivers/espi.h>
 #include <zephyr/sys/util.h>
 #include "i2c_hub.h"
 #include <zephyr/logging/log.h>
@@ -44,13 +45,13 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ EC_GPIO_011,		GPIO_INPUT },
 	{ RSMRST_PWRGD_G3SAF_P,	GPIO_INPUT },
 	{ RSMRST_PWRGD,		GPIO_INPUT },
-	{ EC_GPIO_015,		GPIO_INPUT },	/* W_DISABLE_M2_SLOT3_N */
 	{ SYS_PWROK,		GPIO_OUTPUT_LOW },
 	{ PM_UC_PG3_ENTRY,	GPIO_OUTPUT_LOW },
-	{ ALL_SYS_PWRGD,	GPIO_INPUT },
+	{ ALL_SYS_PWRGD,	GPIO_OPEN_DRAIN | GPIO_OUTPUT_HIGH },
 	{ FAN_PWR_DISABLE_N,	GPIO_OUTPUT_HIGH },
 	{ PCH_PWROK,		GPIO_OUTPUT_LOW | GPIO_OPEN_DRAIN },
 	{ WAKE_SCI,		GPIO_OUTPUT_HIGH },
+	{ FALLING_12V_N,	GPIO_INPUT},
 #ifdef CONFIG_DNX_EC_ASSISTED_TRIGGER
 	{ DNX_FORCE_RELOAD_EC,	GPIO_OUTPUT_LOW},
 #else
@@ -63,7 +64,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ PS_ON_OUT,		GPIO_OUTPUT_LOW },
 	{ CPU_C10_GATE,		GPIO_INPUT },
 	{ EC_SMI,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
-	{ PM_SLP_S0_CS,		GPIO_INPUT },
+	{ EC_CORE_SA_PE,	GPIO_OUTPUT_LOW},
 	{ PM_DS3,		GPIO_INPUT },
 	{ SX_EXIT_HOLDOFF_N,	GPIO_INPUT },
 	{ PM_PWRBTN,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
@@ -701,7 +702,7 @@ int board_init(void)
 	struct wktmr_regs *weektmr = (struct wktmr_regs *)0x4000ac80;
 	int ret;
 	const struct device *eeprom = DEVICE_DT_GET(DT_ALIAS(eeprom0));
-	const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
+
 #if 0
 	const struct device *spd = DEVICE_DT_GET(DT_NODELABEL(spd));
 #endif
@@ -761,19 +762,74 @@ int board_init(void)
 			read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7], read_data[8],
 			read_data[9], read_data[10], read_data[11], read_data[12], read_data[13], read_data[14], read_data[15]);
 	}
-#if 1
+#if 0
+	const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
 	ret = eeprom_read(fru, 0, read_data, 8);
 	if (ret < 0) {
 		LOG_ERR("%s: %d, Unable to read eeprom", __func__, ret);
 	} else {
-		LOG_INF("%s: Read 8 bytes from spd, 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x...", __func__, read_data[0], read_data[1], read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7]);
+		LOG_INF("%s: Read 8 bytes from fru, 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x...", __func__, read_data[0], read_data[1], read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7]);
+	}
+#endif
+#if 0
+	const struct device *i2c = DEVICE_DT_GET(DT_NODELABEL(i2c_smb_0));
+	char pmbus_addr[] = {
+		0x00, 0x01, 0x07, 0x0A, 0x0B, 0x1A, 0x1B, 0x1D, 0x1E, 0x1F, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
+		0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F };
+
+	gpio_write_pin(EC_CORE_SA_PE, GPIO_OUTPUT_HIGH);
+	k_sleep(K_MSEC(1));
+
+	for (int i = 0; i < ARRAY_SIZE(pmbus_addr); i++) {
+		uint8_t read_byte;
+		uint8_t read_word[2];
+		switch (i) {
+			case 0:
+			case 1:
+			ret = i2c_write_read(i2c, 0x20, &pmbus_addr[i], 1, &read_byte, 1);
+		        LOG_INF("%s: Read 0x%x from VR address 0x%x", __func__, read_byte, pmbus_addr[i]);
+			break;
+			default:
+			ret = i2c_write_read(i2c, 0x20, &pmbus_addr[i], 1, read_word, 2);
+		        LOG_INF("%s: Read 0x%x from VR address 0x%x", __func__, (read_word[1] << 8 | read_word[0]), pmbus_addr[i]);
+			break;
+		}
+	}
+	uint8_t write_word[] = {0xAA, 0x00};
+	uint16_t read_word;
+	uint8_t revision_cmd = 0x94;
+	uint8_t cmd = 0x15;
+	ret = i2c_write_read(i2c, 0x20, &revision_cmd, 1, &read_word, 2);
+	if (read_word != 0xAA) {
+		LOG_INF("%s: revision byte not programmed: 0x%x", __func__, read_word);
+
+		ret = i2c_burst_write(i2c, 0x20, revision_cmd, write_word, 2);
+		ret = i2c_write(i2c, &cmd, 1, 0x20);
+	} else {
+		LOG_INF("%s: revision byte success!!!!: 0x%x", __func__, read_word);
 	}
 
+	gpio_write_pin(EC_CORE_SA_PE, GPIO_OUTPUT_LOW);
+#endif
+#if 0
+	const struct device *d = DEVICE_DT_GET(DT_NODELABEL(espi0));
+
+	struct espi_flash_packet espi_pkt;
+
+	espi_pkt.buf = read_data;
+	espi_pkt.flash_addr = 0;
+	espi_pkt.len = 4;
+	espi_read_flash(d, &espi_pkt);
+	LOG_INF("%s, flash read data 0x%x 0x%x 0x%x 0x%x", __func__, read_data[0], read_data[1], read_data[2], read_data[3]);
+#endif
+#if 0
+	extern void vr_check_and_program();
+	vr_check_and_program();
+#endif
 	/* XXX Valencia, after reading FRU and doing stuff, set the SMBus pins to inputs to disable */
 	gpio_force_configure_pin(EC_GPIO_007, GPIO_INPUT);
 	gpio_force_configure_pin(EC_GPIO_010, GPIO_INPUT);
 
-#endif
 	/* In MAF, boot ROM already made this pin output and high, so we must
 	 * keep it like that during the boot phase in order to avoid espi reset
 	 */

@@ -88,12 +88,10 @@ static void init_leds(void)
 
 bool is_led_controlled_by_host(uint8_t idx)
 {
-#ifndef CONFIG_LED_MANAGEMENT_POST
 	if (!is_system_in_acpi_mode()) {
 		LOG_DBG("LED control is over-ridden when not in ACPI mode.");
 		return 0;
 	}
-#endif
 
 	if (!led_tbl[idx].owned) {
 		LOG_INF("LED %d is not owned by host", idx);
@@ -216,7 +214,7 @@ static int color_table[] = {
 	0x99FF99, /* very light green */
 	0xF0183C, /* darkish red */
 #endif
-	0xFF6F00, /* bright orange */
+	0xFF7F00, /* amber */
 };
 
 static void manage_local_leds(void)
@@ -249,16 +247,15 @@ static void manage_local_leds(void)
 		else if (level == 0)
 			countup = 1;
 	}
-	else {
-#if 0
-		colors[0] = 0;
-		colors[1] = 0;
-		colors[2] = 0xff;
+	else if (!is_led_controlled_by_host(0)) {
+		colors[0] = color_table[color_choice] >> 16;
+		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
+		colors[2] = color_table[color_choice] & 0xFF;
+		/* set to amber when BIOS booting */
 		led_set_color(led_pwm_mc, 0, 3, colors);
-		led_set_brightness(led_pwm_mc, 0, 50);
-		loops = 0;
-#endif
+		err = led_set_brightness(led_pwm_mc, 0, 100);
 	}
+
 	if (loops == 10) {
 		color_choice = (color_choice + 1) % ARRAY_SIZE(color_table);
 		loops = 0;

@@ -21,6 +21,5 @@ supported:
   - pwm
   - tach
   - espi
-  - bgpo
   - spi
   - eeprom

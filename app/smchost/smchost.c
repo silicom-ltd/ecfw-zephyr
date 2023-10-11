@@ -309,7 +309,7 @@ static inline int smchost_task_init(void)
 
 	/* Register event handler */
 	pwrbtn_register_handler(smchost_pwrbtn_handler);
-#if 0
+#if 1
 #ifdef CONFIG_RESET_BUTTON
 	rstbtn_register_handler(smchost_rstbtn_handler);
 #endif
@@ -645,6 +645,7 @@ static void smchost_cmd_handler(uint8_t command)
 	case SMCHOST_READ_REVISION:
 	case SMCHOST_READ_PLAT_SIGNATURE:
 	case SMCHOST_HID_BTN_SCI_CONTROL:
+	case SMCHOST_HID_RST_BTN_SCI_CONTROL:
 		smchost_cmd_info_handler(command);
 		break;
 	case SMCHOST_PLN_CONFIG:

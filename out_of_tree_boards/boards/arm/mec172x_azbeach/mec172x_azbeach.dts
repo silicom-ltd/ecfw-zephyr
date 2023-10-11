@@ -7,10 +7,9 @@
 /dts-v1/;
 
 #include <microchip/mec172xnlj.dtsi>
-#include <microchip/mec172x/mec172xnsz-pinctrl.dtsi> 
+#include <microchip/mec172x/mec172xnsz-pinctrl.dtsi>
 #include <microchip/mec172x/mec172xnlj-pinctrl.dtsi>
 #include <zephyr/dt-bindings/pwm/pwm.h>
-#include <zephyr/dt-bindings/reset/mec172x_reset.h>
 #include <zephyr/dt-bindings/led/led.h>
 
 / {
@@ -100,15 +99,6 @@
 			label = "FP_AMB_LT";
 		};
 	};
-	bgpo0: bgpo@4000ac9c {
-		compatible = "microchip,xec-bgpo";
-		reg = < 0x4000ac9c 0xc >;
-		status = "okay";
-		gpio-controller;
-		#gpio-cells = <2>;
-//		ngpios = <6>;
-	};
-
 
 	therm4: thermistor-4 {
 		compatible = "ntc-thermistor";
@@ -171,6 +161,21 @@
 		     &eeprom_mosi_gpio074
 		     &eeprom_miso_gpio075>;
 	pinctrl-names = "default";
+};
+
+&i2c_smb_0 {
+	status = "okay";
+	port_sel = <0>;
+
+	pinctrl-0 = <&i2c00_sda_gpio003
+		     &i2c00_scl_gpio004>;
+	pinctrl-names = "default";
+
+	vr: vr@20 {
+		compatible = "vnd,i2c-device";
+		status = "okay";
+		reg = <0x20>;
+	};
 };
 
 &i2c_smb_3 {
@@ -390,6 +395,13 @@
 	pinctrl-names = "default";
 };
 
+//&rpmfan0 {
+//	compatible = "microchip,xec-rpm2pwm";
+//	status = "okay";
+//	pinctrl-0 = <&gpwm0_gpio053 &gtach0_gpio050>;
+//	pinctrl-names = "default";
+//};
+
 &pinctrl {
 	gpio101: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
@@ -404,9 +416,3 @@
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
 	};
 };
-
-&bgpo0 {
-	pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173>;
-	pinctrl-names = "default";
-};
-

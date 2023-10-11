@@ -18,7 +18,7 @@
 LOG_MODULE_DECLARE(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 
 static struct acpi_hid_btn_sci btn_ctrl;
-uint8_t rst_btn_ctrl;
+static uint8_t rst_btn_ctrl;
 
 uint8_t check_btn_sci_sts(uint8_t btn_sci_en_dis)
 {
@@ -42,6 +42,7 @@ uint8_t check_btn_sci_sts(uint8_t btn_sci_en_dis)
 		break;
 	case HID_BTN_SCI_RST:
 		ret = rst_btn_ctrl;
+		LOG_INF("%s: rst_btn_ctrl = 0x%x", __func__, ret);
 	default:
 		break;
 	}
@@ -195,6 +196,7 @@ void smchost_cmd_info_handler(uint8_t command)
 		btn_sci_cntrl();
 		break;
 	case SMCHOST_HID_RST_BTN_SCI_CONTROL:
+		LOG_INF("RST_BTN_SCI_CONTROL received");
 		rstbtn_sci_cntrl();
 		break;
 	default:

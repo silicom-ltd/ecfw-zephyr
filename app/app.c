@@ -17,7 +17,7 @@
 #include "softstrap.h"
 LOG_MODULE_REGISTER(ecfw, CONFIG_EC_LOG_LEVEL);
 
-void main(void)
+int main(void)
 {
 	int ret;
 
@@ -39,13 +39,13 @@ void main(void)
 	ret = espihub_init();
 	if (ret) {
 		LOG_ERR("Failed to init espi %d", ret);
-		return;
+		return ret;
 	}
 
 	ret = board_init();
 	if (ret) {
 		LOG_ERR("Failed to init board %d", ret);
-		return;
+		return ret;
 	}
 
 	strap_init();
@@ -54,4 +54,6 @@ void main(void)
 	while (true) {
 		k_msleep(2100);
 	}
+
+	return ret;
 }
