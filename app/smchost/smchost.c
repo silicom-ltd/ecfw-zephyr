@@ -274,7 +274,7 @@ static void smchost_pltrst_handler(uint8_t pltrst_sts)
 	pltrst_signal_sts = pltrst_sts;
 	LOG_DBG("SCI enabled %d", g_acpi_state_flags.sci_enabled);
 
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 	if (pltrst_sts) {
 		peci_start_delay_timer();
 	}
@@ -524,7 +524,7 @@ uint8_t get_pltrst_signal_sts(void)
 	return pltrst_signal_sts;
 }
 
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 static void change_peci_access_mode(void)
 {
 #ifndef CONFIG_DEPRECATED_HW_STRAP_BASED_PECI_MODE_SEL
@@ -614,7 +614,7 @@ static uint8_t smchost_req_length(uint8_t command)
 	case SMCHOST_ACPI_READ:
 	case SMCHOST_READ_ACPI_SPACE:
 	case SMCHOST_HID_BTN_SCI_CONTROL:
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 	case SMCHOST_BIOS_FAN_CONTROL:
 	case SMCHOST_SET_SHDWN_THRESHOLD:
 	case SMCHOST_SET_PECI_ACCESS_MODE:
@@ -672,7 +672,7 @@ static void smchost_cmd_handler(uint8_t command)
 		smchost_cmd_pm_handler(command);
 		break;
 
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 	case SMCHOST_SET_TMP_THRESHOLD:
 	case SMCHOST_UPDATE_PWM:
 		/* fall through */
@@ -724,7 +724,7 @@ static void smchost_cmd_handler(uint8_t command)
 		break;
 
 	/* Handler for command 3Ch */
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 	case SMCHOST_SET_PECI_ACCESS_MODE:
 		change_peci_access_mode();
 		break;

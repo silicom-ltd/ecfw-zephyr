@@ -16,7 +16,12 @@
 #include "pwrbtnmgmt.h"
 #include "periphmgmt.h"
 #include "board_config.h"
+#ifdef CONFIG_THERMAL_MANAGEMENT
 #include "fan.h"
+#endif
+#ifdef CONFIG_THERMAL_MANAGEMENT_V2
+#include "rpmfan.h"
+#endif
 LOG_MODULE_REGISTER(periph, CONFIG_PERIPHERAL_LOG_LEVEL);
 
 /* Delay to start power on sequencing - 300 ms*/

@@ -30,7 +30,7 @@ extern uint8_t boot_mode_maf;
 
 #endif /* CONFIG_SOC_FAMILY_MEC */
 
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 #include "thermalmgmt.h"
 #include "board_thermal.h"
 #endif

@@ -15,6 +15,7 @@ rsource "app/saf/Kconfig"
 rsource "app/smchost/Kconfig"
 rsource "app/kbchost/Kconfig"
 rsource "app/thermal_management/Kconfig"
+rsource "app/thermal_management_v2/Kconfig"
 
 menu "EC optional features"
 

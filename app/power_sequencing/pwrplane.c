@@ -33,7 +33,12 @@
 #include "pwrseq_timeouts.h"
 #include "errcodes.h"
 #include "vci.h"
+#ifdef CONFIG_THERMAL_MANAGEMENT
 #include "fan.h"
+#endif
+#ifdef CONFIG_THERMAL_MANAGEMENT_V2
+#include "rpmfan.h"
+#endif
 #include "kbchost.h"
 #include "task_handler.h"
 #include "softstrap.h"
@@ -719,11 +724,9 @@ void therm_shutdown(void)
 			/* Rotate fan and toggle leds until pwr btn pressed */
 			break;
 		}
-#if 1
+#if 0
 		fan_set_duty_cycle(FAN_LEFT, 50);
 		fan_set_duty_cycle(FAN_RIGHT, 50);
-#else
-		fan_set_duty_cycle(FAN_CPU, 50);
 #endif
 
 		/* EC initiated shutdown is indicated by flashing of NUM and
@@ -770,8 +773,8 @@ static void power_off(void)
 	LOG_DBG("Shutting down %d", level);
 #ifdef CONFIG_BOARD_MEC172X_AZBEACH
 //	gpio_write_pin(EC_PWRBTN_LED, HIGH);
-	fan_set_duty_cycle(FAN_LEFT, 0);
-	fan_set_duty_cycle(FAN_RIGHT, 0);
+//	fan_set_duty_cycle(FAN_LEFT, 0);
+//	fan_set_duty_cycle(FAN_RIGHT, 0);
 #else
 	gpio_write_pin(EC_PWRBTN_LED, LOW);
 #endif

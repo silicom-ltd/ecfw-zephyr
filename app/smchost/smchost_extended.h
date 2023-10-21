@@ -22,7 +22,7 @@ void smchost_cmd_info_handler(uint8_t command);
  */
 void smchost_cmd_pm_handler(uint8_t command);
 
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 /**
  * @brief Handle extended SMC commands for thermal management.
  *

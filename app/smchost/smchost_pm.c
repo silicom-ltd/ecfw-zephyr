@@ -240,7 +240,7 @@ static void cs_exit(void)
 #endif
 	cs_state = false;
 
-#ifdef CONFIG_THERMAL_MANAGEMENT
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 	thermalmgmt_handle_cs_exit();
 #endif
 }

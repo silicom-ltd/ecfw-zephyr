@@ -274,8 +274,15 @@ static struct fan_dev fan_tbl[] = {
 	{ PWM_CH_00,	TACH_CH_00 }, /* Fan 1 */
 	{ PWM_CH_01,	TACH_CH_01 }, /* Fan 2 */
 };
+#else
+static struct fan_dev fan_tbl[] = {
+	{ RPM2PWM_CH_00,	RPM2PWM_TACH_CH_00 },
+	{ RPM2PWM_CH_01,	RPM2PWM_TACH_CH_01 },
+};
+#endif
 
 
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 /**
  * @brief Thermal sensor table.
  *

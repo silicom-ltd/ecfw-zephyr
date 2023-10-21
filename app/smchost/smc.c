@@ -16,7 +16,12 @@
 #include "system.h"
 #include "acpi.h"
 #include "board_config.h"
+#ifdef CONFIG_THERMAL_MANAGEMENT
 #include "fan.h"
+#endif
+#ifdef CONFIG_THERMAL_MANAGEMENT_V2
+#include "rpmfan.h"
+#endif
 #include "scicodes.h"
 
 LOG_MODULE_REGISTER(smc, CONFIG_SMCHOST_LOG_LEVEL);
