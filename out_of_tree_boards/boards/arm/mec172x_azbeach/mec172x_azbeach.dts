@@ -260,17 +260,17 @@
 	};
 };
 
-&pwm0 {
-	status = "okay";
-	pinctrl-0 = <&pwm0_gpio053>;
-	pinctrl-names = "default";
-};
+//&pwm0 {
+//	status = "okay";
+//	pinctrl-0 = <&pwm0_gpio053>;
+//	pinctrl-names = "default";
+//};
 
-&pwm1 {
-	status = "okay";
-	pinctrl-0 = <&pwm1_gpio054>;
-	pinctrl-names = "default";
-};
+//&pwm1 {
+//	status = "okay";
+//	pinctrl-0 = <&pwm1_gpio054>;
+//	pinctrl-names = "default";
+//};
 
 &pwm2 {
 	status = "okay";
@@ -326,17 +326,17 @@
 	pinctrl-names = "default";
 };
 
-&tach0 {
-	status = "okay";
-	pinctrl-0 = <&tach0_gpio050>;
-	pinctrl-names = "default";
-};
+//&tach0 {
+//	status = "okay";
+//	pinctrl-0 = <&tach0_gpio050>;
+//	pinctrl-names = "default";
+//};
 
-&tach1 {
-	status = "okay";
-	pinctrl-0 = <&tach1_gpio051>;
-	pinctrl-names = "default";
-};
+//&tach1 {
+//	status = "okay";
+//	pinctrl-0 = <&tach1_gpio051>;
+//	pinctrl-names = "default";
+//};
 
 /* Initialize ECIA. Does not initialize child devices */
 &ecia {
@@ -395,12 +395,43 @@
 	pinctrl-names = "default";
 };
 
-//&rpmfan0 {
-//	compatible = "microchip,xec-rpm2pwm";
-//	status = "okay";
-//	pinctrl-0 = <&gpwm0_gpio053 &gtach0_gpio050>;
-//	pinctrl-names = "default";
-//};
+&rpmfan0 {
+	compatible = "microchip,xec-rpm2pwm";
+	status = "okay";
+	pinctrl-0 = <&gpwm0_gpio053 &gtach0_gpio050>;
+	pinctrl-names = "default";
+	#pwm-cells = <3>;
+
+	rpmfantach0: rpmfan_tach0 {
+		compatible = "microchip,xec-rpm2pwm-tach";
+	};
+
+	fan {
+		fan0: fan {
+			pwms = <&rpmfan0 0 PWM_MSEC(30) 0>;
+			edges = <5>;
+		};
+	};
+};
+
+&rpmfan1 {
+	compatible = "microchip,xec-rpm2pwm";
+	status = "okay";
+	pinctrl-0 = <&gpwm1_gpio054 &gtach1_gpio051>;
+	pinctrl-names = "default";
+	#pwm-cells = <3>;
+
+	rpmfantach1: rpmfan_tach1 {
+		compatible = "microchip,xec-rpm2pwm-tach";
+	};
+
+	fan {
+		fan1: fan {
+			pwms = <&rpmfan1 0 PWM_MSEC(30) 0>;
+			edges = <5>;
+		};
+	};
+};
 
 &pinctrl {
 	gpio101: gpio101 {

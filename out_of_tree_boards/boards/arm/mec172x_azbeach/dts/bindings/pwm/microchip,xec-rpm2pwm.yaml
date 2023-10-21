@@ -1,0 +1,57 @@
+# Copyright (c) 2023, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: Microchip XEC RPM2PWM
+
+include: [pwm-controller.yaml, base.yaml, pinctrl-device.yaml]
+
+compatible: "microchip,xec-rpm2pwm"
+
+properties:
+  reg:
+    required: true
+
+  pcrs:
+    type: array
+    required: true
+    description: RPM2PWM PCR register index and bit position
+
+  "#pwm-cells":
+    const: 3
+  
+  girqs:
+    type: array
+    required: true
+    description: |
+      Array of encoded interrupt information
+
+  pinctrl-0:
+    required: true
+
+  pinctrl-names:
+    required: true
+
+child-binding:
+  child-binding:
+    properties:
+      pwms:
+        required: true
+        type: phandle-array
+        description: |
+          Reference to RPM2PWM instance.
+
+          The period field is ignored, period is fixed in hardware.  Flags 
+          should be used to set the desired spin-up and update period etc.
+          of the rpm2pwm fan controller.
+
+      edges:
+        required: true
+        type: int
+        description: |
+          Number of edges on this fan that are needed to count a single 
+          revolution.
+
+pwm-cells:
+  - channel
+  - period
+  - flags
