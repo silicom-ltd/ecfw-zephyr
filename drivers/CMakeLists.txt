@@ -42,7 +42,7 @@ target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
     )
 
 if (CONFIG_BOARD_MEC172X_AZBEACH)
-    if (CONFIG_THERMAL_MANAGEMENT)
+    if (CONFIG_THERMAL_MANAGEMENT_V2)
 	target_sources(app
 	PRIVATE
 	${CMAKE_CURRENT_LIST_DIR}/thermal_sensor_azbeach.c
@@ -75,7 +75,7 @@ target_sources(app
     ${CMAKE_CURRENT_LIST_DIR}/espi_hub.h
     ${CMAKE_CURRENT_LIST_DIR}/espioob_mngr.h
     ${CMAKE_CURRENT_LIST_DIR}/gpio_ec.h
-    ${CMAKE_CURRENT_LIST_DIR}/fan.h
+    ${CMAKE_CURRENT_LIST_DIR}/rpmfan.h
     #    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.h
     ${CMAKE_CURRENT_LIST_DIR}/acpi.h
     )
@@ -99,7 +99,7 @@ target_sources_ifdef(CONFIG_SOC_SERIES_MEC1501X app
 target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/gpio_mec172x.c
-    ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
+    ${CMAKE_CURRENT_LIST_DIR}/rpm2pwm_mec172x.c
     ${CMAKE_CURRENT_LIST_DIR}/led_mec172x.c
     # Require Soc-HW access via device tree
     #    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.c

@@ -1,0 +1,43 @@
+# Kconfig - Config options for EC FW
+#
+# Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "Thermal management"
+
+config THERMAL_MANAGEMENT_V2
+	bool "Enable thermal management"
+	help
+	  Indicate if EC supports management of fan, reading thermal
+	  sensors and cpu temperature.
+
+config THERMAL_FAN_OVERRIDE_V2
+	bool "Enable fan override"
+	help
+	  Indicate if EC overrides fan control to pre-defined value. This
+	  to ensure fan is running before Si parts are fully calibrated.
+
+config THERMAL_FAN_OVERRIDE_VALUE_V2
+	int "Fan override rpm"
+	default 3000
+	help
+	  When EC overrides fan management via SW or HW strap, EC will
+	  use this pre-defined rpm to control the fan.
+
+config EC_FAN_CONTROL_V2
+	bool "Enable EC control"
+	help
+	  TBD
+
+config THERMAL_MGMT_LOG_LEVEL_V2
+	int "Thermal management log level"
+	depends on LOG
+	depends on THERMAL_MANAGEMENT_V2
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for thermal management module.
+
+endmenu
