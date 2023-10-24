@@ -339,6 +339,7 @@ static inline int smchost_task_init(void)
 
 	g_acpi_tbl.acpi_flags2.bt_pwr_off = 1;
 	g_acpi_tbl.acpi_flags2.pwr_btn = 1;
+	g_acpi_tbl.acpi_flags2.rst_btn = 1;
 	g_acpi_tbl.acpi_flags.lid_open = 1;
 //	g_acpi_tbl.kb_bklt_pwm_duty = 0;
 	prev_kb_bklt_pwm_duty = 0;

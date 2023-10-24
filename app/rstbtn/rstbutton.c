@@ -67,6 +67,7 @@ void sys_rstbtn_evt_processor(uint8_t rstbtn_evt)
 {
         sys_rst_btn_sts = rstbtn_evt;
 
+#ifndef CONFIG_NETGATE_BEHAVIOR
 	if ((is_system_in_acpi_mode() == 0) || (!check_btn_sci_sts(HID_BTN_SCI_RST))) {
 		gpio_write_pin(SOC_RSTBTN_N, 0);
 		k_msleep(20);
@@ -74,6 +75,9 @@ void sys_rstbtn_evt_processor(uint8_t rstbtn_evt)
 	} else {
         	rstbtn_btn_evt_processor();
 	}
+#else
+	rstbtn_btn_evt_processor();
+#endif
 }
 
 void rstbtn_register_handler(rstbtn_handler_t handler)

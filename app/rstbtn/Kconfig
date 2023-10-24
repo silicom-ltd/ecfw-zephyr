@@ -19,3 +19,9 @@ config RESET_BUTTON_LOG_LEVEL
 	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
 	help
 	  Set log level for Reset button.
+
+config NETGATE_BEHAVIOR
+	bool "Netgate SKU behavior, no hard reset button"
+	default n
+	help
+	  Netgate SKUs do not have a hard reset button.
