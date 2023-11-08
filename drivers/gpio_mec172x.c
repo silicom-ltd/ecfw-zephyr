@@ -168,7 +168,7 @@ int gpio_init(void)
 int gpio_configure_pin(uint32_t port_pin, gpio_flags_t flags)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	ret = validate_device(port_pin, &pp);
 	if (ret) {
@@ -189,7 +189,7 @@ int gpio_configure_pin(uint32_t port_pin, gpio_flags_t flags)
 int gpio_configure_array(struct gpio_ec_config *gpios, uint32_t len)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	/* Configure static board gpios */
 	for (int i = 0; i < len; i++) {
@@ -227,7 +227,7 @@ int gpio_configure_array(struct gpio_ec_config *gpios, uint32_t len)
 int gpio_write_pin(uint32_t port_pin, int value)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return 0;
@@ -244,7 +244,7 @@ int gpio_write_pin(uint32_t port_pin, int value)
 int gpio_read_pin(uint32_t port_pin)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return gpio_read_dummy_pin(port_pin);
@@ -263,7 +263,7 @@ int gpio_init_callback_pin(uint32_t port_pin,
 			   gpio_callback_handler_t handler)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return 0;
@@ -284,7 +284,7 @@ int gpio_add_callback_pin(uint32_t port_pin,
 			  struct gpio_callback *callback)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return 0;
@@ -302,7 +302,7 @@ int gpio_remove_callback_pin(uint32_t port_pin,
 			     struct gpio_callback *callback)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return 0;
@@ -319,7 +319,7 @@ int gpio_remove_callback_pin(uint32_t port_pin,
 int gpio_interrupt_configure_pin(uint32_t port_pin, gpio_flags_t flags)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return 0;
@@ -336,7 +336,7 @@ int gpio_interrupt_configure_pin(uint32_t port_pin, gpio_flags_t flags)
 bool gpio_port_enabled(uint32_t port_pin)
 {
 	int ret;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	if (is_dummy_gpio(port_pin)) {
 		return 0;
@@ -351,7 +351,7 @@ int gpio_force_configure_pin(uint32_t port_pin, gpio_flags_t flags)
 {
 	int ret;
 	uint32_t port_idx;
-	struct gpio_port_pin pp;
+	struct gpio_port_pin pp = { 0, 0 };
 
 	ret = validate_device(port_pin, &pp);
 	if (ret) {

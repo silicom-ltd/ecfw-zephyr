@@ -75,6 +75,12 @@ struct acpi_hid_btn_sci {
 	uint8_t rsvd0:3;
 };
 
+struct acpi_hw_ctl_flags {
+	uint8_t rst_btn_en:1;
+	uint8_t fan_en:1;
+	uint8_t :6;
+};
+
 struct acpi_tbl {
 	/* Start of ACPI space. */
 	uint8_t acpi_space;
@@ -143,7 +149,7 @@ struct acpi_tbl {
 	/* [75/4B] System power in 0.01 W */
 	uint16_t acpi_system_pwr;
 	/* [77/4D] */
-	uint8_t rst_btn_en;
+	struct acpi_hw_ctl_flags hw_en;
 	/* [78/4E] ACPI power source */
 	struct acpi_power_source acpi_pwr_src;
 	/* [80/50] Select thermal sensor */

@@ -57,7 +57,7 @@ static void btn_sci_cntrl(void)
 
 static void rstbtn_sci_cntrl(void)
 {
-	rst_btn_ctrl = g_acpi_tbl.rst_btn_en;
+	rst_btn_ctrl = g_acpi_tbl.hw_en.rst_btn_en;
 }
 
 #ifdef CONFIG_DEPRECATED_SMCHOST_CMD

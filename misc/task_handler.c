@@ -37,7 +37,7 @@ LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
 
 const uint32_t periph_thrd_period = 1;
 const uint32_t pwrseq_thrd_period = 10;
-const uint32_t smchost_thrd_period = 10;
+const uint32_t smchost_thrd_period = 1; //10;
 
 #if defined(CONFIG_ESPI_PERIPHERAL_8042_KBC) && \
 	defined(CONFIG_PS2_KEYBOARD_AND_MOUSE) || defined(CONFIG_KSCAN_EC)
@@ -70,7 +70,7 @@ K_THREAD_DEFINE(oobmngr_thrd_id, EC_TASK_STACK_SIZE, oobmngr_thread,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
 
 K_THREAD_DEFINE(smchost_thrd_id, EC_TASK_STACK_SIZE, smchost_thread,
-		&smchost_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
+		&smchost_thrd_period, NULL, NULL, EC_TASK_SMC_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
 
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)

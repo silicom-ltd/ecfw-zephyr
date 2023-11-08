@@ -22,8 +22,6 @@ struct led_dev {
 	uint32_t brightness;
 	uint16_t on;
 	uint16_t off;
-//	uint8_t rgb;
-//	uint8_t pwm;
 	uint8_t owned;
 	struct {
 		uint8_t rgb:1;

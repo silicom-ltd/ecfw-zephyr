@@ -27,7 +27,16 @@ LOG_MODULE_REGISTER(ledmgmt, CONFIG_LED_MGMT_LOG_LEVEL);
 
 static struct led_dev *led_tbl;
 static uint8_t max_led_dev;
+#ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+static struct k_sem led_lock;
+
+void led_request()
+{
+	k_sem_give(&led_lock);
+}
+#else
 static bool led_update;
+#endif
 
 #if 0
 struct led_device *led_dev_tbl;
@@ -120,11 +129,16 @@ void host_update_led_color(uint8_t idx, uint16_t greenblue, uint16_t red)
 	if (idx < max_led_dev) {
 		led_tbl[idx].color = ((red & 0xFF) << 16) | greenblue;
 		led_tbl[idx].update_color = 1;
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 		led_update = 1;
+#endif
 		LOG_INF("Updating led %d color", idx);
 	} else {
 		LOG_WRN("Invalid led idx %d", idx);
 	}
+#ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+	led_request();
+#endif
 }
 
 void host_update_led_brightness(uint8_t idx, uint8_t brightness)
@@ -137,11 +151,16 @@ void host_update_led_brightness(uint8_t idx, uint8_t brightness)
 	if (idx < max_led_dev) {
 		led_tbl[idx].brightness = brightness;
 		led_tbl[idx].update_brightness = 1;
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 		led_update = 1;
+#endif
 		LOG_INF("Updating led %d brightness", idx);
 	} else {
 		LOG_WRN("Invalid led idx %d", idx);
 	}
+#ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+	led_request();
+#endif
 }
 
 void host_update_led_blink(uint8_t idx, uint16_t on, uint16_t off)
@@ -158,11 +177,16 @@ void host_update_led_blink(uint8_t idx, uint16_t on, uint16_t off)
 		led_tbl[idx].on = on;
 		led_tbl[idx].off = off;
 		led_tbl[idx].update_blink = 1;
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 		led_update = 1;
+#endif
 		LOG_INF("Updating led %d blink rate", idx);
 	} else {
 		LOG_WRN("Invalid led idx %d", idx);
 	}
+#ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+	led_request();
+#endif
 }
 
 static void manage_leds(void)
@@ -174,10 +198,10 @@ static void manage_leds(void)
 		(smchost_is_system_in_cs())) {
 		return;
 	}
-
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 	if (led_update) {
 		led_update = 0;
-
+#endif
 		for (uint8_t idx = 0; idx < max_led_dev; idx++) {
 			if (led_tbl[idx].update_color) {
 				uint8_t color[3];
@@ -198,10 +222,22 @@ static void manage_leds(void)
 				led_tbl[idx].update_blink = 0;
 			}
 		}
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 	}
+#endif
+#if 1
 	for (uint8_t idx = 0; idx < max_led_dev; idx++) {
-		led_brightness_set(idx, led_tbl[idx].brightness);
+		if (!led_tbl[idx].on || led_tbl[idx].update_brightness) { // don't change brightness of a blinker
+			led_brightness_set(idx, led_tbl[idx].brightness);
+			led_tbl[idx].update_brightness = 0;
+			if (led_tbl[idx].on) {
+				led_tbl[idx].on = 0;
+				led_tbl[idx].update_blink = 1;
+			}
+		}
 	}
+
+#endif
 }
 
 static int color_table[] = {
@@ -264,16 +300,26 @@ static void manage_local_leds(void)
 
 void ledmgmt_thread(void *p1, void *p2, void *p3)
 {
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 	uint32_t normal_period = *(uint32_t *)p1;
+#endif
 
 	LOG_INF("LEDMGMT thread starting");
 	init_leds();
 
+#ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+	k_sem_init(&led_lock, 0, 1);
+#endif
 	while (true) {
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 		k_msleep(normal_period);
-
 		manage_local_leds();
 		manage_leds();
+#else
+		manage_local_leds();
+		k_sem_take(&led_lock, Z_TIMEOUT_MS(5));
+		manage_leds();
+#endif
 	}
 }
 

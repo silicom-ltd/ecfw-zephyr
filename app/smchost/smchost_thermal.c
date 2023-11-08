@@ -53,7 +53,7 @@ static void update_pwm(void)
 {
 #ifndef CONFIG_THERMAL_FAN_OVERRIDE
 		host_update_fan_speed(g_acpi_tbl.acpi_fan_idx,
-				 g_acpi_tbl.acpi_pwm_end_val);
+				 (g_acpi_tbl.acpi_pwm_init_val << 8) | g_acpi_tbl.acpi_pwm_end_val);
 #endif
 }
 

@@ -56,7 +56,9 @@ void generate_sci(void)
 		if (ret) {
 			LOG_WRN("SCI failed");
 		}
-		k_busy_wait(100);
+#if 0 // XXX JJD, driver handles the k_busy_wait(100)!
+		k_busy_wait(100); 
+#endif
 
 		ret = espihub_send_vw(ESPI_VWIRE_SIGNAL_SCI, ESPIHUB_VW_HIGH);
 		if (ret) {

@@ -260,7 +260,7 @@ bool is_fan_controlled_by_host(void)
 
 bool is_fan_controlled_by_ec(void)
 {
-	if (ec_fan_control) {
+	if (ec_fan_control && !g_acpi_tbl.hw_en.fan_en) {
 		return 1;
 	}
 
