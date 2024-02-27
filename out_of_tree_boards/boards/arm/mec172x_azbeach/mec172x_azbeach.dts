@@ -404,6 +404,7 @@
 
 	rpmfantach0: rpmfan_tach0 {
 		compatible = "microchip,xec-rpm2pwm-tach";
+		status = "okay";
 	};
 
 	fan {
@@ -423,6 +424,7 @@
 
 	rpmfantach1: rpmfan_tach1 {
 		compatible = "microchip,xec-rpm2pwm-tach";
+		status = "okay";
 	};
 
 	fan {

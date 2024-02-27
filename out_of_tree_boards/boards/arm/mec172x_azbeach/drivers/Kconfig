@@ -1,3 +1,2 @@
 source "drivers/sensor/Kconfig"
 source "drivers/led/Kconfig"
-source "drivers/pwm/Kconfig"
