@@ -8,6 +8,8 @@ manifest:
       url-base: https://github.com/silicom-ltd
     - name: upstream
       url-base: https://github.com/zephyrproject-rtos
+    - name: microchip
+      url-base: https://github.com/MicrochipTech
   projects:
     - name: zephyr
       repo-path: zephyr-silicom
@@ -30,5 +32,9 @@ manifest:
       remote: upstream
       revision: a4eda30f5b0cfd0cf15512be9dcd559239dbfc91
       path: bootloader/mcuboot
+    - name: CPGZephyrDocs
+      remote: microchip
+      revision: de150196c8ae5bf00f47c9e2f4cccfafee5844ab
+      path: tools
   self:
     path: ecfw-zephyr
