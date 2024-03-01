@@ -17,7 +17,7 @@ else()
     # we need to skip it.
     message(NOTICE "There is no SPI image generation tool for MacOS.")
   elseif(CMAKE_HOST_UNIX)
-    set(MEC172X_SPI_GEN_FILENAME mec172x_spi_gen_linux_x86_64)
+    set(MEC172X_SPI_GEN_FILENAME mec172x_spi_gen_lin_x86_64)
   elseif(CMAKE_HOST_WIN32)
     set(MEC172X_SPI_GEN_FILENAME mec172x_spi_gen.exe)
   endif()
@@ -49,3 +49,8 @@ if(DEFINED MEC172X_SPI_GEN)
   unset(MEC172X_SPI_GEN)
   unset(MEC172X_SPI_CFG)
 endif()
+
+set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+  COMMAND dd if=spi_image.bin bs=1 of=EcRegionPointer.bin count=16
+  COMMAND dd if=spi_image.bin bs=1 of=EcRegion.bin skip=4096
+)
