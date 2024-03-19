@@ -669,6 +669,7 @@ static void smchost_cmd_handler(uint8_t command)
 	case SMCHOST_DNX_TRIGGER:
 	case SMCHOST_DNX_SET_STRAP:
 #endif
+	case SMCHOST_FIRMWARE_UPDATE:
 		smchost_cmd_pm_handler(command);
 		break;
 

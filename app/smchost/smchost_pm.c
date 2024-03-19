@@ -40,6 +40,8 @@ K_TIMER_DEFINE(pln_timer, timer_pwrbtn_pln, NULL);
 static uint8_t pln_pin_sts;
 #endif
 
+uint8_t firmware_update;
+
 bool smchost_is_system_in_cs(void)
 {
 	return cs_state;
@@ -159,6 +161,10 @@ void smchost_pln_pltreset_handler(void)
 	set_pln_pin_sts(PLN_PIN_DEASSERT);
 	/* Stop PLN timer, if not running no effect */
 	k_timer_stop(&pln_timer);
+
+	if (firmware_update) {
+		ec_reset();
+	}
 }
 #endif
 
@@ -321,6 +327,9 @@ void smchost_cmd_pm_handler(uint8_t command)
 #endif /* CONFIG_DNX_EC_ASSISTED_TRIGGER_SMC */
 	case SMCHOST_RESET_KSC:
 		ec_reset();
+		break;
+	case SMCHOST_FIRMWARE_UPDATE:
+		firmware_update = 1;
 		break;
 	default:
 		LOG_WRN("%s: command 0x%X without handler", __func__, command);

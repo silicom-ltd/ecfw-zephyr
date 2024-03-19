@@ -45,6 +45,8 @@ static int ec_arm_reset(void)
 	}
 
 	LOG_DBG("%s: Timeout Installed Successfully", __func__);
+	gpio_write_pin(PM_UC_PG3_ENTRY, 1);
+	k_busy_wait(100000);
 	err = wdt_setup(wdt, 0);
 	if (err < 0) {
 		LOG_ERR("%s: Watchdog setup error", __func__);
