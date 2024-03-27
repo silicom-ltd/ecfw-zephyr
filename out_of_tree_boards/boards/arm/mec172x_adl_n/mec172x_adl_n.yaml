@@ -1,0 +1,25 @@
+#
+# Copyright (c) 2024, Silicom Connectivity Solutions
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+identifier: mec172x_adl_n
+name: MEC172X ADL-N EC
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+ram: 64
+flash: 352
+supported:
+  - gpio
+  - pinmux
+  - i2c
+  - adc
+  - pwm
+  - tach
+  - espi
+  - spi
+  - eeprom

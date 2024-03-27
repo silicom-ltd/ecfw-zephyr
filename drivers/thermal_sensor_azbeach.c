@@ -17,7 +17,8 @@
 LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 int16_t adc_temp_val[ADC_CH_TOTAL];
 
-#define DT_DRV_COMPAT ntc_thermistor
+//#define DT_DRV_COMPAT ntc_thermistor
+#define DT_DRV_COMPAT murata_ncp15xh103
 static const struct device *ntc_thermal_sensors[] = {
 	DEVICE_DT_INST_GET(0),
 	DEVICE_DT_INST_GET(1),
@@ -45,12 +46,12 @@ void thermal_sensors_update(void)
 	int err;
 
 	for (i = 0; i < num_sensors; i++) {
-		err = sensor_sample_fetch(ntc_thermal_sensors[i]);
+		err = sensor_sample_fetch_chan(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP);
 		if (err) {
 			LOG_WRN("ADC Sensor reading failed %d, %s\n", i, ntc_thermal_sensors[i]->name);
 			continue;
 		}
-		sensor_channel_get(ntc_thermal_sensors[i], SENSOR_CHAN_ALL, &temp);
+		sensor_channel_get(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP, &temp);
 		LOG_INF("Sensor thermistor read: %dC", temp.val1);
 		adc_temp_val[i] = temp.val1;
 	}

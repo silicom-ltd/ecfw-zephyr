@@ -20,7 +20,7 @@
 #include "rstbutton.h"
 #include "espi_hub.h"
 #include "peci_hub.h"
-#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
 #include "led_mec172x.h"
 #else
 #include "led.h"
@@ -46,7 +46,7 @@ static void proc_acpi_burst(void);
 static void service_system_acpi_cmds(void);
 static uint8_t smchost_req_length(uint8_t command);
 static void smchost_cmd_handler(uint8_t command);
-#ifndef CONFIG_BOARD_MEC172X_AZBEACH
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
 static void handle_kb_backlight_pwm(void);
 #endif
 
@@ -144,7 +144,7 @@ static void smchost_acpi_handler(void)
 #endif
 }
 
-#ifndef CONFIG_BOARD_MEC172X_AZBEACH
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
 static void smchost_volbtnup_handler(uint8_t volbtn_sts)
 {
 	LOG_DBG("%s", __func__);
@@ -314,7 +314,7 @@ static inline int smchost_task_init(void)
 	rstbtn_register_handler(smchost_rstbtn_handler);
 #endif
 #endif
-#ifndef CONFIG_BOARD_MEC172X_AZBEACH
+#ifdef CONFIG_BOARD_MEC172X_AZBEACH
 #ifdef EC_M_2_SSD_PLN
 	pwrbtn_register_handler(smchost_pwrbtn_pln_handler);
 #endif
@@ -342,7 +342,7 @@ static inline int smchost_task_init(void)
 	g_acpi_tbl.acpi_flags.lid_open = 1;
 //	g_acpi_tbl.kb_bklt_pwm_duty = 0;
 	prev_kb_bklt_pwm_duty = 0;
-#ifndef CONFIG_BOARD_MEC172X_AZBEACH
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
 	led_init(LED_KBD_BKLT);
 #endif
 
@@ -376,7 +376,7 @@ static bool smchost_process_tasks(void)
 	check_sci_queue();
 	service_system_acpi_cmds();
 	pend_data = proc_host_send();
-#ifndef CONFIG_BOARD_MEC172X_AZBEACH
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
 	handle_kb_backlight_pwm();
 #endif
 
@@ -743,7 +743,7 @@ static void smchost_cmd_handler(uint8_t command)
 	}
 }
 
-#ifndef CONFIG_BOARD_MEC172X_AZBEACH
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
 static void handle_kb_backlight_pwm(void)
 {
 	if (prev_kb_bklt_pwm_duty != g_acpi_tbl.kb_bklt_pwm_duty) {

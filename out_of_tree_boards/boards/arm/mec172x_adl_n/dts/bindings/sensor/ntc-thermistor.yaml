@@ -1,0 +1,57 @@
+# Copyright (c) 2023 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: NTC Thermistor Temperature Sensor
+
+compatible: "ntc-thermistor"
+
+include: sensor-device.yaml
+
+properties:
+  io-channels:
+    required: true
+    type: phandle-array
+    description: |
+      IO channel of the ADC to read the NTC thermistor voltage
+
+  rnominal:
+    required: true
+    type: int
+    description: |
+      Nominal resistance.
+
+  tnominal:
+    required: true
+    type: int
+    description: |
+      Temperature at which rnominal is measured.
+
+  rpullup:
+    required: true
+    type: int
+    description: |
+      Value of pullup resistor for ADC input.
+
+  b-const:
+    required: true
+    type: int
+    description: |
+      The B constant value of the thermistor.  Consult datasheet.
+
+  resolution:
+    type: int
+    default: 10
+    description: |
+      The resolution (in bits) of the ADC reading.
+
+  t-start:
+    type: int
+    default: -40
+    description: |
+      The start (lowest) temperature reading to generate.
+
+  t-stop:
+    type: int
+    default: 125
+    description: |
+      The ending (highest) temperature reading to generate.

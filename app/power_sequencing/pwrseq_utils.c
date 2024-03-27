@@ -19,14 +19,19 @@ LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
 #define DEFAULT_EC_RESET_DELAY_MS	2u
 #define PWROK_RSMRST_DELAY_US		10u
 
-static struct wdt_timeout_cfg m_cfg_wdt;
+//static struct wdt_timeout_cfg m_cfg_wdt;
 
 /** Find the watchdog device instance and setup a timeout
  * to initiate the reset after timeout
  */
 static int ec_arm_reset(void)
 {
-	int err;
+//	int err;
+
+	uint32_t *sys_reset = (uint32_t *)0x40080118;
+
+	*sys_reset = 0x8;	
+#if 0
 	const struct device *wdt = DEVICE_DT_GET(WDT_0);
 
 	if (!wdt) {
@@ -53,7 +58,7 @@ static int ec_arm_reset(void)
 	}
 
 	LOG_DBG("%s: Setup Done Successfully", __func__);
-
+#endif
 	return 0;
 }
 

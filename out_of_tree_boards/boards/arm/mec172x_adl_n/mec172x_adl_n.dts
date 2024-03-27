@@ -1,0 +1,637 @@
+/*
+ * Copyright (c) 2024, Silicom Connectivity Solutions
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <microchip/mec172xnlj.dtsi>
+#include <microchip/mec172x/mec172xnsz-pinctrl.dtsi>
+#include <microchip/mec172x/mec172xnlj-pinctrl.dtsi>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/led/led.h>
+
+/ {
+	model = "Silicom ADL-N MEC172X EC";
+	compatible = "microchip,mec172x_adl_n", "microchip,mec172xnlj";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,console = &uart0;
+	};
+
+	aliases {
+		i2c0 = &i2c_smb_0;
+		i2c-0 = &i2c_smb_0;
+		i2c3 = &i2c_smb_1;
+		i2c11 = &i2c_smb_2;
+		pwm-0 = &pwm0;
+		peci-0 = &peci0;
+		led-1 = &pwmmcled0;
+		eeprom0 = &eeprom;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		/* make a DT entry for the ESPI_RESET# input */
+		espi_rst_maf: espi-rst {
+			gpios = <&gpio_040_076 16 GPIO_ACTIVE_LOW>;
+			label = "ESPI_RST_MAF";
+		};
+	};
+
+	pwm_mc_leds: pwm_mc_leds {
+		compatible = "pwm-leds-multicolor";
+
+		pwmmcled0: pwmmcled-0 {
+			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+
+			color-mapping = <LED_COLOR_ID_RED>,
+					<LED_COLOR_ID_GREEN>,
+					<LED_COLOR_ID_BLUE>;
+		};
+		pwmmcled1: pwmmcled-1 {
+			pwms = <&pwm10 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm7  0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+		       	       <&pwm8  0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+
+			color-mapping = <LED_COLOR_ID_RED>,
+					<LED_COLOR_ID_GREEN>,
+					<LED_COLOR_ID_BLUE>;
+		};
+		pwmmcled2: pwmmcled-2 {
+			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+
+			color-mapping = <LED_COLOR_ID_RED>,
+					<LED_COLOR_ID_GREEN>,
+					<LED_COLOR_ID_BLUE>;
+		};
+	};
+
+	voltage_12v: voltage12v {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 0>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <10000>; /* R1 */
+		full-ohms = <(10000 + 3300)>; /* R1 + R2 */
+	};
+	voltage_5v: voltage5v {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 1>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <10000>; /* R1 */
+		full-ohms = <(10000 + 10000)>; /* R1 + R2 */
+	};
+	voltage_3v3_alw_on: voltage3v3alwon {
+		compatbile = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 2>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	voltage_1v8_alw_on: voltage1v3alwon {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 3>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	therm4: thermistor-4 {
+		compatible = "murata,ncp15xh103";
+		io-channels = <&adc0 4>;
+		pullup-uv = <3300000>;
+		pullup-ohm = <3300>;
+		pulldown-ohm = <0>;
+	};
+	therm5: thermistor-5 {
+		compatible = "murata,ncp15xh103";
+		io-channels = <&adc0 5>;
+		pullup-uv = <3300000>;
+		pullup-ohm = <3300>;
+		pulldown-ohm = <0>;
+	};
+	therm6: thermistor-6 {
+		compatible = "murata,ncp15xh103";
+		io-channels = <&adc0 6>;
+		pullup-uv = <3300000>;
+		pullup-ohm = <3300>;
+		pulldown-ohm = <0>;
+	};
+	voltage_1v8: voltage1v8 {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 9>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	therm10: thermistor-10 {
+		compatible = "murata,ncp15xh103";
+		io-channels = <&adc0 10>;
+		pullup-uv = <3300000>;
+		pullup-ohm = <3300>;
+		pulldown-ohm = <0>;
+	};
+	voltage_vccin_aux: voltagevccinaux {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 11>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	voltage_1v065_vdd2: voltage1v064vdd2 {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 12>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	voltage_0v95s: voltage0v95s {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 13>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	voltage_0v5_vddq: voltage0v5vddq {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 14>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+	voltage_vout_pwr_mon: voltagevoutpwrmon {
+		compatible = "voltage-divider";
+		status = "okay";
+		io-channels = <&adc0 15>;
+		io-channel-names = "VOLTAGE";
+		output-ohms = <1>;
+		full-ohms = <1>;
+	};
+
+	zephyr,user {
+		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
+		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173>;
+		pinctrl-names = "default";
+	};
+
+};
+
+&bbled0 {
+	compatible = "microchip,xec-bbled";
+	status = "okay";
+	pinctrl-0 = <&led0_gpio156>;
+	pinctrl-names = "default";
+};
+
+&bbled1 {
+	compatible = "microchip,xec-bbled";
+	status = "okay";
+	pinctrl-0 = <&led1_gpio157>;
+	pinctrl-names = "default";
+};
+
+&bbled2 {
+	compatible = "microchip,xec-bbled";
+	status = "okay";
+	pinctrl-0 = <&led2_gpio153>;
+	pinctrl-names = "default";
+};
+
+&cpu0 {
+	clock-frequency = <96000000>;
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_tx_gpio104 &uart0_rx_gpio105
+		     &uart0_cts_n_gpio143 &uart0_rts_n_gpio144>;
+	pinctrl-names = "default";
+};
+
+&uart1 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_tx_gpio170 &uart1_rx_gpio171>;
+	pinctrl-names = "default";
+};
+
+&eeprom {
+	status = "okay";
+
+	pinctrl-0 = <&eeprom_cs_gpio116
+		     &eeprom_clk_gpio117
+		     &eeprom_mosi_gpio074
+		     &eeprom_miso_gpio075>;
+	pinctrl-names = "default";
+};
+
+&i2c_smb_0 {
+	status = "okay";
+	port_sel = <0>;
+
+	pinctrl-0 = <&i2c00_sda_gpio003
+		     &i2c00_scl_gpio004>;
+	pinctrl-names = "default";
+
+	vr: vr@20 {
+		compatible = "vnd,i2c-device";
+		status = "okay";
+		reg = <0x20>;
+	};
+};
+
+&i2c_smb_1 {
+	status = "okay";
+	port_sel = <3>;
+
+	pinctrl-0 = <&i2c03_sda_gpio007
+                     &i2c03_scl_gpio010>;
+	pinctrl-names = "default";
+
+	fru: dev@56 {
+		compatible = "atmel,at24";
+		status = "okay";
+		reg = <0x56>;
+		size = <2048>;
+		address-width = <8>;
+		timeout = <25>;
+		pagesize = <16>;
+	};
+
+	spd: dev@54 {
+		compatible = "atmel,at24";
+		status = "disabled";
+		reg = <0x54>;
+		size = <2048>;
+		address-width = <8>;
+		timeout = <25>;
+		pagesize = <16>;
+	};
+};
+
+&i2c_smb_2 {
+	status = "disabled";
+	port_sel = <5>;
+	
+	pinctrl-0 = <&i2c05_sda_gpio141 &i2c05_scl_gpio142>;
+	pinctrl-names = "default";
+};
+
+&i2c_smb_3 {
+	status = "okay";
+	port_sel = <8>;
+
+	pinctrl-0 = <&i2c08_sda_gpio231 &i2c08_scl_gpio230>;
+	pinctrl-names = "default";
+};
+
+&i2c_smb_4 {
+	status = "okay";
+	port_sel = <11>;
+
+	pinctrl-0 = <&i2c11_sda_alt_gpio005 &i2c11_scl_alt_gpio006>;
+	pinctrl-names = "default";
+};
+
+&i2c03_sda_gpio007 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c03_scl_gpio010 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c05_sda_gpio141 {
+	drive-open-drain;
+	output-high;
+};
+
+&i2c05_scl_gpio142 {
+	drive-open-drain;
+	output-high;
+};
+
+&adc0 {
+	status = "okay";
+	pinctrl-0 = <&adc00_gpio200 &adc01_gpio201
+		     &adc02_gpio202 &adc03_gpio203
+		     &adc04_gpio204 &adc05_gpio205
+		     &adc06_gpio206 &adc08_gpio210
+		     &adc09_gpio211 &adc10_gpio212
+		     &adc11_gpio213 &adc12_gpio214
+		     &adc13_gpio215 &adc14_gpio216
+		     &adc15_gpio217>;
+	pinctrl-names = "default";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@2 {
+		reg = <2>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@5 {
+		reg = <5>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@9 {
+		reg = <9>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@a {
+		reg = <10>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@b {
+		reg = <11>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@c {
+		reg = <12>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@d {
+		reg = <13>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@e {
+		reg = <14>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+	channel@f {
+		reg = <15>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,resolution = <10>;
+		zephyr,vref-mv = <3300>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+	};
+
+};
+
+&pwm2 {
+	status = "okay";
+	pinctrl-0 = <&pwm2_alt_gpio045>;
+	pinctrl-names = "default";
+};
+
+&pwm3 {
+	status = "okay";
+	pinctrl-0 = <&pwm3_alt_gpio047>;
+	pinctrl-names = "default";
+};
+
+&pwm4 {
+	status = "okay";
+	pinctrl-0 = <&pwm4_alt_gpio001>;
+	pinctrl-names = "default";
+};
+
+&pwm5 {
+	status = "okay";
+	pinctrl-0 = <&pwm5_gpio002>;
+	pinctrl-names = "default";
+};
+
+&pwm6 {
+	status = "okay";
+	pinctrl-0 = <&pwm6_gpio014>;
+	pinctrl-names = "default";
+};
+
+&pwm7 {
+	status = "okay";
+	pinctrl-0 = <&pwm7_gpio015>;
+	pinctrl-names = "default";
+};
+
+&pwm8 {
+	status = "okay";
+	pinctrl-0 = <&pwm8_gpio035>;
+	pinctrl-names = "default";
+};
+
+&pwm9 {
+	status = "okay";
+	pinctrl-0 = <&pwm9_gpio133>;
+	pinctrl-names = "default";
+};
+
+&pwm10 {
+	status = "okay";
+	pinctrl-0 = <&pwm10_gpio134>;
+	pinctrl-names = "default";
+};
+
+/* Initialize ECIA. Does not initialize child devices */
+&ecia {
+	status = "okay";
+};
+
+/* Enable aggregated GIRQ24 and GIRQ25 for eSPI virtual wires interrupts */
+&girq24 {
+	status = "okay";
+};
+
+&girq25 {
+	status = "okay";
+};
+
+&rtimer {
+	status = "okay";
+};
+
+&pcr {
+	status = "okay";
+};
+
+&espi0 {
+	status = "okay";
+	pinctrl-0 = < &espi_reset_n_gpio061 &espi_cs_n_gpio066
+		      &espi_alert_n_gpio063 &espi_clk_gpio065
+		      &espi_io0_gpio070 &espi_io1_gpio071
+		      &espi_io2_gpio072 &espi_io3_gpio073 >;
+	pinctrl-names = "default";
+};
+
+&spi0 {
+	status = "okay";
+	pinctrl-0 = < &pvt_cs_n_gpio124
+		      &pvt_clk_gpio125
+		      &pvt_io0_gpio121
+		      &pvt_io1_gpio122
+		      &pvt_io2_gpio123
+		      &pvt_io3_gpio126 >;
+
+	pinctrl-names = "default";
+};
+
+&acpi_ec0 {
+	status = "okay";
+};
+
+&acpi_ec1 {
+	status = "okay";
+};
+
+&peci0 {
+	status = "okay";
+	pinctrl-0 = <&peci_dat_gpio042>;
+	pinctrl-names = "default";
+};
+
+&rpmfan0 {
+	compatible = "microchip,xec-rpm2pwm";
+	status = "okay";
+	pinctrl-0 = <&gpwm0_gpio053 &gtach0_gpio050>;
+	pinctrl-names = "default";
+	#pwm-cells = <3>;
+
+	rpmfantach0: rpmfan_tach0 {
+		compatible = "microchip,xec-rpm2pwm-tach";
+		status = "okay";
+	};
+
+	fan {
+		fan0: fan {
+			pwms = <&rpmfan0 0 PWM_MSEC(30) 0>;
+			edges = <5>;
+		};
+	};
+};
+
+&rpmfan1 {
+	compatible = "microchip,xec-rpm2pwm";
+	status = "okay";
+	pinctrl-0 = <&gpwm1_gpio054 &gtach1_gpio051>;
+	pinctrl-names = "default";
+	#pwm-cells = <3>;
+
+	rpmfantach1: rpmfan_tach1 {
+		compatible = "microchip,xec-rpm2pwm-tach";
+		status = "okay";
+	};
+
+	fan {
+		fan1: fan {
+			pwms = <&rpmfan1 0 PWM_MSEC(30) 0>;
+			edges = <5>;
+		};
+	};
+};
+
+&pinctrl {
+	gpio101: gpio101 {
+		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
+	};
+	gpio102: gpio102 {
+		pinmux = < MCHP_XEC_PINMUX(0102, MCHP_AF0) >;
+	};
+	gpio172: gpio172 {
+		pinmux = < MCHP_XEC_PINMUX(0172, MCHP_AF0) >;
+	};
+	gpio173: gpio173 {
+		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
+	};
+};

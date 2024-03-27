@@ -1,0 +1,19 @@
+description: Microchip CEC/MEC BGPO node
+
+compatible: "microchip,xec-bgpo"
+
+include: gpio-controller.yaml
+include: pinctrl-device.yaml
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  pinctrl-0:
+    type: phandles
+    required: true
+
+  pinctrl-names:
+    type: string-array
+    required: true

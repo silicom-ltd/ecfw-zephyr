@@ -1,0 +1,11 @@
+# Microchip BGPO
+#
+# Copyright (c) 2023 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+config BGPO_XEC
+	bool "BGPO device configuration"
+	default y
+	depends on DT_HAS_MICROCHIP_XEC_BGPO_ENABLED
+	help
+	  Enable BGPO driver for Microchip XEC MECU series.

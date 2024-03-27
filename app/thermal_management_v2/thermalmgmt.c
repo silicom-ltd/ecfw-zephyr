@@ -211,7 +211,7 @@ static void init_fans(void)
 	}
 
 	fan_rpm[FAN_LEFT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE_V2;
-#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
 	fan_rpm[FAN_RIGHT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE_V2;
 #endif
 	fan_rpm_change = 1;
@@ -377,7 +377,7 @@ static void manage_thermal_sensors(void)
 	for (uint8_t idx = 0; idx < max_adc_sensors; idx++) {
 		smc_update_thermal_sensor(
 			therm_sensor_tbl[idx].acpi_loc,
-#if CONFIG_BOARD_MEC172X_AZBEACH
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
 			adc_temp_val[idx]);
 #else
 			adc_temp_val[therm_sensor_tbl[idx].adc_ch]);
