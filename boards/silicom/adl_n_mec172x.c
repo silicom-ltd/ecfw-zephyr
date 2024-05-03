@@ -79,6 +79,10 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ SIM_M2_SLOT3B_DET_N,	GPIO_INPUT },
 	{ SIM_M2_SLOT2A_DET_N,	GPIO_INPUT },
 	{ SIM_M2_SLOT2B_DET_N,	GPIO_INPUT },
+	{ W_DISABLE_M2_SLOT2_N, GPIO_OUTPUT_HIGH },
+	{ W_DISABLE_M2_SLOT3_N, GPIO_OUTPUT_HIGH },
+	{ EXP_PWREN_EC,         GPIO_OUTPUT_HIGH },
+//	{ PM_USB3A_PWR_EN,	GPIO_OUTPUT_HIGH },
 //	{ SLOT3_SSD_PWRDIS,	GPIO_OUTPUT_LOW },
 };
 
@@ -100,7 +104,7 @@ struct gpio_ec_config mecc172x_cfg_host[] =  {
 	{ SIM_M2_SLOT3_MUX_SEL, GPIO_OUTPUT_LOW },
 	{ SIM_M2_SLOT2_MUX_SEL, GPIO_OUTPUT_LOW },
 	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
-	{ W_DISABLE_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+//{ W_DISABLE_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ RST_CTL_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ RST_CTL_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 //	{ SLOT3_SSD_PWRDIS, GPIO_OUTPUT_LOW },
@@ -252,6 +256,16 @@ static void init_led_devices(void)
 #endif
 #if DT_NODE_HAS_STATUS(DT_BBLED_INST(0), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_BBLED_INST(0));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_BBLED_INST(1), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_BBLED_INST(1));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_BBLED_INST(2), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_BBLED_INST(2));
 	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif

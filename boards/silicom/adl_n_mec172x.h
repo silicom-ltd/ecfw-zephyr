@@ -74,6 +74,7 @@ extern uint8_t platformskutype;
 /* M.2 Slots */
 #define W_DISABLE_M2_SLOT1_N		EC_GPIO_026 // XXX
 #define W_DISABLE_M2_SLOT2_N		EC_GPIO_027 // XXX
+#define W_DISABLE_M2_SLOT3_N		EC_GPIO_060 // XXX
 #define SIM_M2_SLOT3_MUX_SEL		EC_GPIO_030 // XXX
 #define SIM_M2_SLOT2_MUX_SEL		EC_GPIO_031 // XXX
 #define SLOT0_LED1_OUT			EC_GPIO_130 // XXX
@@ -89,11 +90,17 @@ extern uint8_t platformskutype;
 #define SIM_M2_SLOT3A_DET_N		EC_GPIO_154 // XXX
 #define SIM_M2_SLOT3B_DET_N		EC_GPIO_246 // XXX
 
+/* EXP port */
+#define EXP_PWREN_EC			EC_GPIO_040 
+
 #define BC_ACOK				EC_DUMMY_GPIO_HIGH
 #define DG2_PRESENT			EC_DUMMY_GPIO_LOW
 #define PEG_RTD3_COLD_MOD_SW_R		EC_DUMMY_GPIO_LOW
 
 #define PROCHOT				EC_GPIO_160 // XXX
+
+/* USB3 port enable */
+#define PM_USB3A_PWR_EN			EC_GPIO_245
 
 /* Device instance names */
 #define I2C_BUS_0			DT_NODELABEL(i2c_smb_0)
