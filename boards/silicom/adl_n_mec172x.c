@@ -15,6 +15,7 @@
 #include <zephyr/drivers/adc.h>
 #include <zephyr/drivers/eeprom.h>
 #include <zephyr/drivers/espi.h>
+#include <zephyr/drivers/pinctrl.h>
 #include <zephyr/sys/util.h>
 #include "i2c_hub.h"
 #include <zephyr/logging/log.h>
@@ -82,8 +83,14 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ W_DISABLE_M2_SLOT2_N, GPIO_OUTPUT_HIGH },
 	{ W_DISABLE_M2_SLOT3_N, GPIO_OUTPUT_HIGH },
 	{ EXP_PWREN_EC,         GPIO_OUTPUT_HIGH },
+	{ CATERR_LED_DRV,	GPIO_INPUT }, // REDEFINE this? (EC_GPIO_153, BBLED3)
+	{ EC_GPIO_157,		GPIO_INPUT },
+	{ EC_GPIO_156,		GPIO_INPUT },
 //	{ PM_USB3A_PWR_EN,	GPIO_OUTPUT_HIGH },
 //	{ SLOT3_SSD_PWRDIS,	GPIO_OUTPUT_LOW },
+//	{ EC_GPIO_102,		GPIO_INPUT},
+//	{ EC_GPIO_172,		GPIO_INPUT},
+//	{ EC_GPIO_173,		GPIO_INPUT},
 };
 
 struct gpio_ec_config mecc172x_vci_cfg[] = {
@@ -104,11 +111,18 @@ struct gpio_ec_config mecc172x_cfg_host[] =  {
 	{ SIM_M2_SLOT3_MUX_SEL, GPIO_OUTPUT_LOW },
 	{ SIM_M2_SLOT2_MUX_SEL, GPIO_OUTPUT_LOW },
 	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
-//{ W_DISABLE_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ RST_CTL_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ RST_CTL_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
-//	{ SLOT3_SSD_PWRDIS, GPIO_OUTPUT_LOW },
+	{ RST_CTL_M2_SLOT3_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ SLOT0_LED1_OUT, GPIO_INPUT },
+	{ SLOT0_LED2_OUT, GPIO_INPUT },
+	{ SLOT1_LED_OUT, GPIO_INPUT },
+	{ SLOT2_LED_OUT, GPIO_INPUT },
 };
+
+int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);
 
 #ifdef CONFIG_LED_MANAGEMENT
 #define DT_PWM_MC_LED_INST(x)	DT_NODELABEL(pwmmcled##x)
