@@ -19,7 +19,7 @@
 	chosen {
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
-		zephyr,console = &uart0;
+		zephyr,console = &uart1;
 	};
 
 	aliases {
@@ -74,32 +74,31 @@
 					<LED_COLOR_ID_BLUE>;
 		};
 	};
-
-	voltage_12v: voltage12v {
+	voltage0: voltage12v {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 0>;
 		io-channel-names = "VOLTAGE";
-		output-ohms = <10000>; /* R1 */
-		full-ohms = <(10000 + 3300)>; /* R1 + R2 */
+		output-ohms = <3300>;
+		full-ohms = <(10000+3300)>; 
 	};
-	voltage_5v: voltage5v {
+	voltage1: voltage5v {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 1>;
 		io-channel-names = "VOLTAGE";
-		output-ohms = <10000>; /* R1 */
-		full-ohms = <(10000 + 10000)>; /* R1 + R2 */
+		output-ohms = <10000>;
+		full-ohms = <(10000+10000)>;
 	};
-	voltage_3v3_alw_on: voltage3v3alwon {
-		compatbile = "voltage-divider";
+	voltage2: voltage3v3alwon {
+		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 2>;
 		io-channel-names = "VOLTAGE";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	voltage_1v8_alw_on: voltage1v3alwon {
+	voltage3: voltage1v3alwon {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 3>;
@@ -128,7 +127,7 @@
 		pullup-ohm = <3300>;
 		pulldown-ohm = <0>;
 	};
-	voltage_1v8: voltage1v8 {
+	voltage4: voltage1v8 {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 9>;
@@ -143,7 +142,7 @@
 		pullup-ohm = <3300>;
 		pulldown-ohm = <0>;
 	};
-	voltage_vccin_aux: voltagevccinaux {
+	voltage5: voltagevccinaux {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 11>;
@@ -151,7 +150,7 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	voltage_1v065_vdd2: voltage1v064vdd2 {
+	voltage6: voltage1v064vdd2 {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 12>;
@@ -159,7 +158,7 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	voltage_0v95s: voltage0v95s {
+	voltage7: voltage0v95s {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 13>;
@@ -167,7 +166,7 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	voltage_0v5_vddq: voltage0v5vddq {
+	voltage8: voltage0v5vddq {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 14>;
@@ -175,7 +174,7 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	voltage_vout_pwr_mon: voltagevoutpwrmon {
+	voltage9: voltagevoutpwrmon {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 15>;
@@ -185,11 +184,10 @@
 	};
 
 	zephyr,user {
-		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
-		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173>;
+//		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
+		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
 		pinctrl-names = "default";
 	};
-
 };
 
 &bbled0 {
@@ -336,7 +334,7 @@
 	pinctrl-0 = <&adc00_gpio200 &adc01_gpio201
 		     &adc02_gpio202 &adc03_gpio203
 		     &adc04_gpio204 &adc05_gpio205
-		     &adc06_gpio206 &adc08_gpio210
+		     &adc06_gpio206
 		     &adc09_gpio211 &adc10_gpio212
 		     &adc11_gpio213 &adc12_gpio214
 		     &adc13_gpio215 &adc14_gpio216
@@ -624,14 +622,22 @@
 &pinctrl {
 	gpio101: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
+		bias-disable;
 	};
 	gpio102: gpio102 {
 		pinmux = < MCHP_XEC_PINMUX(0102, MCHP_AF0) >;
+		bias-disable;
 	};
 	gpio172: gpio172 {
 		pinmux = < MCHP_XEC_PINMUX(0172, MCHP_AF0) >;
+		bias-disable;
 	};
 	gpio173: gpio173 {
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
+		bias-disable;
+	};
+	gpio_uc_2: gpio025 {
+		pinmux = < MCHP_XEC_PINMUX(025, MCHP_GPIO) >;
+		bias-pull-down;
 	};
 };
