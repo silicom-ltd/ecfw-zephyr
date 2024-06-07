@@ -176,6 +176,12 @@
 		status = "okay";
 		reg = <0x20>;
 	};
+	test: test@30 {
+		compatible = "zephyr,i2c-target-eeprom";
+		status = "okay";
+		size = <0x2000>;
+		reg = <0x30>;
+	};
 };
 
 &i2c_smb_3 {
