@@ -46,7 +46,7 @@
 	pwm_mc_leds: pwm_mc_leds {
 		compatible = "pwm-leds-multicolor";
 
-		pwmmcled2: pwmmcled-2 {
+		pwmmcled0: pwmmcled-0 {
 			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
@@ -64,7 +64,7 @@
 					<LED_COLOR_ID_GREEN>,
 					<LED_COLOR_ID_BLUE>;
 		};
-		pwmmcled0: pwmmcled-0 {
+		pwmmcled2: pwmmcled-2 {
 			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 			       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 			       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
