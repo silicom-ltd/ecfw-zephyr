@@ -738,6 +738,11 @@ void board_post(void)
 #endif
 
 #endif
+
+#define ZEPHYR_USER DT_PATH(zephyr_user)
+PINCTRL_DT_DEFINE(ZEPHYR_USER);
+static const struct pinctrl_dev_config *zephyr_user = PINCTRL_DT_DEV_CONFIG_GET(ZEPHYR_USER);
+
 int board_init(void)
 {
 	struct wktmr_regs *weektmr = (struct wktmr_regs *)0x4000ac80;
@@ -751,7 +756,14 @@ int board_init(void)
 
 	char read_data[256];
 
-	weektmr->BGPO_PWR &= ~0x7U;
+	weektmr->BGPO_PWR &= ~0x1FU;
+
+	ret = pinctrl_apply_state(zephyr_user, PINCTRL_STATE_DEFAULT);
+
+	if (ret) {
+		LOG_ERR("Failed to initialize zephyr,user gpios: %d", ret);
+		return ret;
+	}
 
 	ret = gpio_init();
 	if (ret) {

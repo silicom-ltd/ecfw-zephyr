@@ -46,10 +46,10 @@
 	pwm_mc_leds: pwm_mc_leds {
 		compatible = "pwm-leds-multicolor";
 
-		pwmmcled0: pwmmcled-0 {
-			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-			       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-			       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+		pwmmcled2: pwmmcled-2 {
+			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
 
 			color-mapping = <LED_COLOR_ID_RED>,
 					<LED_COLOR_ID_GREEN>,
@@ -64,10 +64,10 @@
 					<LED_COLOR_ID_GREEN>,
 					<LED_COLOR_ID_BLUE>;
 		};
-		pwmmcled2: pwmmcled-2 {
-			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
-			       <&pwm6 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
+		pwmmcled0: pwmmcled-0 {
+			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm9 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
+			       <&pwm3 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>;
 
 			color-mapping = <LED_COLOR_ID_RED>,
 					<LED_COLOR_ID_GREEN>,
@@ -635,6 +635,14 @@
 	gpio173: gpio173 {
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
 		bias-disable;
+	};
+	gpio_uc_0: gpio112 {
+		pinmux = < MCHP_XEC_PINMUX(112, MCHP_GPIO) >;
+		bias-pull-down;
+	};
+	gpio_uc_1: gpio113 {
+		pinmux = < MCHP_XEC_PINMUX(113, MCHP_GPIO) >;
+		bias-pull-down;
 	};
 	gpio_uc_2: gpio025 {
 		pinmux = < MCHP_XEC_PINMUX(025, MCHP_GPIO) >;
