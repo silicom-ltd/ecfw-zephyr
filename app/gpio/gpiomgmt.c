@@ -14,7 +14,7 @@
 #include "task_handler.h"
 
 LOG_MODULE_REGISTER(gpiomgmt, CONFIG_LED_MGMT_LOG_LEVEL);
-extern struct gpio_ec_config mecc172x_cfg_host[11];
+extern struct gpio_ec_config mecc172x_cfg_host[12];
 extern struct acpi_tbl g_acpi_tbl;
 
 void host_update_gpio(uint8_t idx, uint16_t value)
