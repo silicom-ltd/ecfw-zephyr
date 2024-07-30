@@ -104,7 +104,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 0>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "12V";
 		output-ohms = <3300>;
 		full-ohms = <(10000+3300)>; 
 	};
@@ -112,7 +112,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 1>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "5V";
 		output-ohms = <10000>;
 		full-ohms = <(10000+10000)>;
 	};
@@ -120,7 +120,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 2>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "3.3VAlwaysOn";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -128,7 +128,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 3>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "1.3VAlwaysOn";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -138,6 +138,7 @@
 		pullup-uv = <3300000>;
 		pullup-ohm = <3300>;
 		pulldown-ohm = <0>;
+		friendly-name = "Ambient";
 	};
 	therm5: thermistor-5 {
 		compatible = "murata,ncp15xh103";
@@ -145,6 +146,7 @@
 		pullup-uv = <3300000>;
 		pullup-ohm = <3300>;
 		pulldown-ohm = <0>;
+		friendly-name = "Core VR";
 	};
 	therm6: thermistor-6 {
 		compatible = "murata,ncp15xh103";
@@ -152,12 +154,13 @@
 		pullup-uv = <3300000>;
 		pullup-ohm = <3300>;
 		pulldown-ohm = <0>;
+		friendly-name = "DDR";
 	};
 	voltage4: voltage1v8 {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 9>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "1.8V";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -167,12 +170,13 @@
 		pullup-uv = <3300000>;
 		pullup-ohm = <3300>;
 		pulldown-ohm = <0>;
+		friendly-name = "CPU";
 	};
 	voltage5: voltagevccinaux {
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 11>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "VCCinAux";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -180,7 +184,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 12>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "1.06V_VDD2";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -188,7 +192,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 13>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "0.95V";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -196,7 +200,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 14>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "0.5V_VDDq";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -204,7 +208,7 @@
 		compatible = "voltage-divider";
 		status = "okay";
 		io-channels = <&adc0 15>;
-		io-channel-names = "VOLTAGE";
+		io-channel-names = "VOUT_PWRMON";
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
@@ -620,6 +624,10 @@
 };
 
 &acpi_ec1 {
+	status = "okay";
+};
+
+&emi1 {
 	status = "okay";
 };
 
