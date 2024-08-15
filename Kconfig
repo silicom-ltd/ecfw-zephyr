@@ -16,6 +16,8 @@ rsource "app/smchost/Kconfig"
 rsource "app/kbchost/Kconfig"
 rsource "app/thermal_management/Kconfig"
 rsource "app/thermal_management_v2/Kconfig"
+rsource "app/voltage_monitor/Kconfig"
+rsource "app/current_monitor/Kconfig"
 
 menu "EC optional features"
 

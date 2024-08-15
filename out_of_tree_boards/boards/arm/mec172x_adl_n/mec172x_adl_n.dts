@@ -204,13 +204,13 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	voltage9: voltagevoutpwrmon {
-		compatible = "voltage-divider";
+	current0: voutpwrmon {
+		compatible = "current-sense-amplifier";
 		status = "okay";
 		io-channels = <&adc0 15>;
 		io-channel-names = "VOUT_PWRMON";
-		output-ohms = <1>;
-		full-ohms = <1>;
+		sense-resistor-micro-ohms = <3>;
+		sense-gain-mult = <50>;
 	};
 
 	zephyr,user {

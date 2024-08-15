@@ -11,6 +11,8 @@
 #define EC_TASK_SMC_PRIORITY	K_PRIO_COOP(10)
 
 #define THRML_MGMT_TASK_NAME    "THRMLMGMT"
+#define VOLTAGE_MGMT_TASK_NAME  "VLTGLMGMT"
+#define CURRENT_MGMT_TASK_NAME  "CURRMGMT"
 
 /**
  * @brief Set names for all tasks in the app.

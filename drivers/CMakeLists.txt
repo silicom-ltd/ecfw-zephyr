@@ -41,14 +41,27 @@ target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
     ${CMAKE_CURRENT_LIST_DIR}/port80display_dummy.h
     )
 
-target_sources_ifdef(CONFIG_THERMAL_MANAGEMENT app
-    PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor_azbeach.c
-    ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
-    PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
-    ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
-)
+if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N)
+    if (CONFIG_THERMAL_MANAGEMENT_V2)
+	target_sources(app
+	PRIVATE
+	${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+	${CMAKE_CURRENT_LIST_DIR}/sensors.c
+	PUBLIC
+	${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+	${CMAKE_CURRENT_LIST_DIR}/hwmon.h
+    )
+    else()
+        target_sources(app
+        PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.c
+        ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+        PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
+        ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+    )
+    endif()
+endif()
 
 target_sources(app
     PRIVATE

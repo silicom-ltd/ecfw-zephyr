@@ -20,6 +20,9 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/leds)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/gpio)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/current_monitor)
+
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/peripheral_management/periphmgmt.c
@@ -174,6 +177,20 @@ target_sources_ifdef(CONFIG_GPIO_MANAGEMENT app
     ${CMAKE_CURRENT_LIST_DIR}/gpio/gpiomgmt.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/gpio/gpiomgmt.h
+    )
+
+target_sources_ifdef(CONFIG_VOLTAGE_MONITOR app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/voltage_monitor/voltage_monitor.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/voltage_monitor/voltagemon.h
+    )
+
+target_sources_ifdef(CONFIG_CURRENT_MONITOR app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/current_monitor/current_monitor.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/current_monitor/currmon.h
     )
 
 target_include_directories(app
