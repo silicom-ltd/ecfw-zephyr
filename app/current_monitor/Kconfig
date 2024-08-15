@@ -1,0 +1,24 @@
+# Kconfig - Config options for EC FW
+#
+# Copyright (c) 2024 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "Current Monitor"
+
+config CURRENT_MONITOR
+	bool "Enable current monitor"
+	help
+	  Indicate if EC supports monitoring of current sources.
+
+config CURRENT_MONITOR_LOG_LEVEL
+	int "Current monitor log level"
+	depends on LOG
+	depends on CURRENT_MONITOR
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for current management module.
+
+endmenu
