@@ -309,8 +309,9 @@ static void manage_fan(void)
 
 	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
 		/* EC Self control fan based on CPU thermal info */
-		uint16_t rpm = get_fan_speed_for_temp(adc_temp_val[3]);
-		LOG_INF("%s: board CPU temp: %d, setting rpm to %d", __func__,  adc_temp_val[3], rpm);
+//		uint16_t rpm = get_fan_speed_for_temp(adc_temp_val[3]);
+		uint16_t rpm = get_fan_speed_for_temp(cpu_temp);
+		LOG_INF("%s: board CPU temp: %d, setting rpm to %d", __func__,  cpu_temp, rpm);
 		if (fan_rpm[FAN_LEFT] != rpm) {
 			fan_rpm[FAN_LEFT] = rpm;
 			fan_rpm_change = 1;
@@ -414,6 +415,7 @@ static void manage_cpu_thermal(void)
 	/* Manage CPU thermal only in S0 state */
 	if (!peci_initialized || k_timer_remaining_get(&peci_delay_timer) ||
 	    (pwrseq_system_state() != SYSTEM_S0_STATE)) {
+		cpu_temp = 15;
 		return;
 	}
 

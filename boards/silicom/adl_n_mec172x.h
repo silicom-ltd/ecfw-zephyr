@@ -108,7 +108,7 @@ extern uint8_t platformskutype;
 #define GPIO_UC_0			EC_GPIO_112
 #define GPIO_UC_1			EC_GPIO_113
 #define GPIO_UC_2			EC_GPIO_025
-#define THERM_STRAP			EC_DUMMY_GPIO_LOW // GPIO_UC_2 (for when the PU/PD works)
+#define THERM_STRAP			EC_DUMMY_GPIO_HIGH // GPIO_UC_2 (for when the PU/PD works)
 
 /* EXP port */
 #define EXP_PWREN_EC			EC_GPIO_040 
