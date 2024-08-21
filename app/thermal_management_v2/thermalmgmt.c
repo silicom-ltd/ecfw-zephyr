@@ -76,7 +76,16 @@ struct fan_lookup {
 	uint16_t rpm;
 };
 
-static const struct fan_lookup fan_lookup_tbl[] = {
+static const struct fan_lookup fan1_lookup_tbl[] = {
+	{15, 10000},
+	{35, 10000},
+	{42, 10000},
+	{49, 10000},
+	{56, 10000},
+	{63, 10000},
+	{70, 10000},
+	{75, 10000}
+#if 0
 	{15, 1500},
 	{35, 2500},
 	{42, 4000},
@@ -85,35 +94,80 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 	{63, 8000},
 	{70, 9000},
 	{75, 10000}
+#endif
 };
 
-static uint16_t get_fan_speed_for_temp(int16_t temp)
+static const struct fan_lookup fan2_lookup_tbl[] = {
+	{15, 10000},
+	{35, 10000},
+	{42, 10000},
+	{49, 10000},
+	{56, 10000},
+	{63, 10000},
+	{70, 10000},
+	{75, 10000}
+};
+static uint16_t get_fan1_speed_for_temp(int16_t temp)
 {
 	static int16_t old_temp = 0;
 	static uint16_t speed = 1000;
 	int idx;
 
-	if (temp < fan_lookup_tbl[0].temp) {
+	if (temp < fan1_lookup_tbl[0].temp) {
 		old_temp = temp;
 		speed = 0;
 		return speed;
-	} else if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+	} else if (temp >= fan1_lookup_tbl[ARRAY_SIZE(fan1_lookup_tbl)-1].temp) {
 		old_temp = temp;
 		speed = 10000;
 		return speed;
 	} else {
 		if (temp > old_temp) {
-			for (idx = 0; idx < ARRAY_SIZE(fan_lookup_tbl); idx++) {
-				if ((temp >= fan_lookup_tbl[idx].temp)) {
-					old_temp = fan_lookup_tbl[idx].temp;
-					speed = fan_lookup_tbl[idx].rpm;
+			for (idx = 0; idx < ARRAY_SIZE(fan1_lookup_tbl); idx++) {
+				if ((temp >= fan1_lookup_tbl[idx].temp)) {
+					old_temp = fan1_lookup_tbl[idx].temp;
+					speed = fan1_lookup_tbl[idx].rpm;
 				}
 			}
 		} else {
-			for (idx = ARRAY_SIZE(fan_lookup_tbl)-1; idx >= 0; idx--) {
-				if (temp <= fan_lookup_tbl[idx].temp) {
-					old_temp = fan_lookup_tbl[idx].temp;
-					speed = fan_lookup_tbl[idx].rpm;
+			for (idx = ARRAY_SIZE(fan1_lookup_tbl)-1; idx >= 0; idx--) {
+				if (temp <= fan1_lookup_tbl[idx].temp) {
+					old_temp = fan1_lookup_tbl[idx].temp;
+					speed = fan1_lookup_tbl[idx].rpm;
+				}
+			}
+		}
+	}
+
+	return speed;
+}
+static uint16_t get_fan2_speed_for_temp(int16_t temp)
+{
+	static int16_t old_temp = 0;
+	static uint16_t speed = 1000;
+	int idx;
+
+	if (temp < fan2_lookup_tbl[0].temp) {
+		old_temp = temp;
+		speed = 0;
+		return speed;
+	} else if (temp >= fan2_lookup_tbl[ARRAY_SIZE(fan2_lookup_tbl)-1].temp) {
+		old_temp = temp;
+		speed = 10000;
+		return speed;
+	} else {
+		if (temp > old_temp) {
+			for (idx = 0; idx < ARRAY_SIZE(fan2_lookup_tbl); idx++) {
+				if ((temp >= fan2_lookup_tbl[idx].temp)) {
+					old_temp = fan2_lookup_tbl[idx].temp;
+					speed = fan2_lookup_tbl[idx].rpm;
+				}
+			}
+		} else {
+			for (idx = ARRAY_SIZE(fan2_lookup_tbl)-1; idx >= 0; idx--) {
+				if (temp <= fan2_lookup_tbl[idx].temp) {
+					old_temp = fan2_lookup_tbl[idx].temp;
+					speed = fan2_lookup_tbl[idx].rpm;
 				}
 			}
 		}
@@ -310,14 +364,16 @@ static void manage_fan(void)
 	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
 		/* EC Self control fan based on CPU thermal info */
 //		uint16_t rpm = get_fan_speed_for_temp(adc_temp_val[3]);
-		uint16_t rpm = get_fan_speed_for_temp(cpu_temp);
-		LOG_INF("%s: board CPU temp: %d, setting rpm to %d", __func__,  cpu_temp, rpm);
-		if (fan_rpm[FAN_LEFT] != rpm) {
-			fan_rpm[FAN_LEFT] = rpm;
+		uint16_t rpm1 = get_fan1_speed_for_temp(cpu_temp);
+		uint16_t rpm2 = get_fan2_speed_for_temp(cpu_temp);
+		LOG_INF("%s: board CPU temp: %d, setting fan 1 rpm to %d", __func__,  cpu_temp, rpm1);
+		LOG_INF("%s: board CPU temp: %d, setting fan 2 rpm to %d", __func__,  cpu_temp, rpm2);
+		if (fan_rpm[FAN_LEFT] != rpm1) {
+			fan_rpm[FAN_LEFT] = rpm1;
 			fan_rpm_change = 1;
 		}
-		if (fan_rpm[FAN_RIGHT] != rpm) {
-			fan_rpm[FAN_RIGHT] = rpm;
+		if (fan_rpm[FAN_RIGHT] != rpm2) {
+			fan_rpm[FAN_RIGHT] = rpm2;
 			fan_rpm_change = 1;
 		}
 	}
