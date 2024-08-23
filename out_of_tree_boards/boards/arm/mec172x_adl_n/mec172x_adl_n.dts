@@ -468,6 +468,30 @@
 
 };
 
+&pwm0 {
+	status = "okay";
+	pinctrl-0 = <&pwm0_gpio053>;
+	pinctrl-names = "default";
+};
+
+&pwm1 {
+	status = "okay";
+	pinctrl-0 = <&pwm1_gpio054>;
+	pinctrl-names = "default";
+};
+
+&tach0 {
+	status = "okay";
+	pinctrl-0 = <&tach0_gpio050>;
+	pinctrl-names = "default";
+};
+
+&tach1 {
+	status = "okay";
+	pinctrl-0 = <&tach1_gpio051>;
+	pinctrl-names = "default";
+};
+
 &pwm2 {
 	status = "okay";
 	pinctrl-0 = <&pwm2_alt_gpio045>;
@@ -581,14 +605,14 @@
 
 &rpmfan0 {
 	compatible = "microchip,xec-rpm2pwm";
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&gpwm0_gpio053 &gtach0_gpio050>;
 	pinctrl-names = "default";
 	#pwm-cells = <3>;
 
 	rpmfantach0: rpmfan_tach0 {
 		compatible = "microchip,xec-rpm2pwm-tach";
-		status = "okay";
+		status = "disabled";
 	};
 
 	fan {
@@ -601,14 +625,14 @@
 
 &rpmfan1 {
 	compatible = "microchip,xec-rpm2pwm";
-	status = "okay";
+	status = "disabled";
 	pinctrl-0 = <&gpwm1_gpio054 &gtach1_gpio051>;
 	pinctrl-names = "default";
 	#pwm-cells = <3>;
 
 	rpmfantach1: rpmfan_tach1 {
 		compatible = "microchip,xec-rpm2pwm-tach";
-		status = "okay";
+		status = "disabled";
 	};
 
 	fan {

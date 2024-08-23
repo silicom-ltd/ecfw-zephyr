@@ -221,7 +221,7 @@ static int16_t conv_adc_temp(uint16_t adc_raw_val)
 	return temperature;
 }
 
-int thermal_sensors_init(uint8_t adc_channel_bits)
+int thermal_sensors_init(uint32_t adc_channel_bits)
 {
 	int ret = 0;
 	int adc_ch = ADC_CH_00;
