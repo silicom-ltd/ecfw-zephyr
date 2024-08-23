@@ -805,6 +805,9 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 	raw_cpu_temp >>= GET_TEMP_INTEGER_POS;
 	*temperature = tjmax - raw_cpu_temp;
 
+	if (*temperature > tjmax)
+		*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
+
 	return 0;
 }
 

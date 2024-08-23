@@ -85,7 +85,7 @@ static bool ec_fan_control;
 static uint8_t bios_fan_speed;
 static uint8_t fan_duty_cycle[FAN_DEV_TOTAL];
 static bool fan_duty_cycle_change;
-static int cpu_temp;
+static int cpu_temp = 10;
 
 struct fan_lookup {
 	int16_t temp;
@@ -116,13 +116,49 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 };
 #endif
 
+#if 1
+static uint16_t get_fan_speed_for_temp(int16_t temp)
+{
+	static int16_t old_temp = 0;
+	static uint16_t speed = 100;
+	int idx;
+
+	if (temp < fan_lookup_tbl[0].temp) {
+		old_temp = temp;
+		speed = fan_lookup_tbl[0].duty_cycle;
+		return speed;
+	} else if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+		old_temp = temp;
+		speed = fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].duty_cycle;
+		return speed;
+	} else {
+		if (temp > old_temp) {
+			for (idx = 0; idx < ARRAY_SIZE(fan_lookup_tbl); idx++) {
+				if ((temp >= fan_lookup_tbl[idx].temp)) {
+					old_temp = fan_lookup_tbl[idx].temp;
+					speed = fan_lookup_tbl[idx].duty_cycle;
+				}
+			}
+		} else {
+			for (idx = ARRAY_SIZE(fan_lookup_tbl)-1; idx >= 0; idx--) {
+				if (temp <= fan_lookup_tbl[idx].temp) {
+					old_temp = fan_lookup_tbl[idx].temp;
+					speed = fan_lookup_tbl[idx].duty_cycle;
+				}
+			}
+		}
+	}
+
+	return speed;
+}
+#else
 static uint8_t get_fan_speed_for_temp(int16_t temp)
 {
 	int idx;
 	uint8_t speed = 100;
 
 	if (temp < fan_lookup_tbl[0].temp) {
-		speed = 0;
+		speed = fan_lookup_tbl[0].temp;
 		return speed;
 	} else if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
 		speed = 100;
@@ -137,6 +173,7 @@ static uint8_t get_fan_speed_for_temp(int16_t temp)
 	}
 	return speed;
 }
+#endif
 
 void host_update_crit_temp(uint8_t crit_temp)
 {
@@ -500,11 +537,7 @@ static void manage_cpu_thermal(void)
 	/* Manage CPU thermal only in S0 state */
 	if (!peci_initialized || k_timer_remaining_get(&peci_delay_timer) ||
 	    (pwrseq_system_state() != SYSTEM_S0_STATE)) {
-#if 0
-		/* continue to manage temperature in non-S0 */
-		temp = 10;
 		return;
-#endif
 	}
 
 	/* Read CPU temperature using peci */
@@ -560,6 +593,7 @@ static void manage_pch_temperature(void)
 {
 	static uint8_t temp_poll_cnt = PCH_TEMP_POLLING_CNT_TIME_DIVISION;
 
+	return;
 	if (pwrseq_system_state() != SYSTEM_S0_STATE) {
 		return;
 	}
