@@ -91,7 +91,7 @@ struct fan_lookup {
 	int16_t temp;
 	uint8_t duty_cycle;
 };
-
+#if 0
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 15},
 	{35, 25},
@@ -102,6 +102,19 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 	{70, 90},
 	{75, 100}
 };
+#else
+/* thermal modeling */
+static const struct fan_lookup fan_lookup_tbl[] = {
+	{15, 10},
+	{45, 23},
+	{63, 36},
+	{73, 49},
+	{80, 61},
+	{85, 74},
+	{88, 87},
+	{90, 100}
+};
+#endif
 
 static uint8_t get_fan_speed_for_temp(int16_t temp)
 {
@@ -373,8 +386,13 @@ static void manage_fan(void)
 	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
 		/* EC Self control fan based on CPU thermal info */
 //		uint8_t cpu_fan_speed = GET_FAN_SPEED_FOR_TEMP(cpu_temp);
+#if 0
 		uint8_t cpu_fan_speed = get_fan_speed_for_temp(adc_temp_val[3]);
 		LOG_INF("%s: board CPU temp: %d, setting duty cycle to %d", __func__,  adc_temp_val[3], cpu_fan_speed);
+#else
+		uint8_t cpu_fan_speed = get_fan_speed_for_temp(cpu_temp);
+		LOG_INF("%s: board CPU temp: %d, setting duty cycle to %d", __func__,  cpu_temp, cpu_fan_speed);
+#endif
 		if (fan_duty_cycle[FAN_CPU] != cpu_fan_speed) {
 			fan_duty_cycle[FAN_CPU] = cpu_fan_speed;
 			fan_duty_cycle_change = 1;
@@ -448,7 +466,7 @@ static void manage_thermal_sensors(void)
 #if CONFIG_BOARD_MEC172X_AZBEACH
 			adc_temp_val[idx]);
 #else
-			adc_temp_val[therm_sensor_tbl[idx].adc_ch]);
+			cpu_temp);
 #endif
 	}
 
@@ -482,14 +500,20 @@ static void manage_cpu_thermal(void)
 	/* Manage CPU thermal only in S0 state */
 	if (!peci_initialized || k_timer_remaining_get(&peci_delay_timer) ||
 	    (pwrseq_system_state() != SYSTEM_S0_STATE)) {
+#if 0
+		/* continue to manage temperature in non-S0 */
+		temp = 10;
 		return;
+#endif
 	}
 
 	/* Read CPU temperature using peci */
-	ret = peci_get_temp(CPU, &temp);
-	if (ret) {
-		LOG_ERR("Failed to get cpu temperature, ret-%x", ret);
-		temp = CPU_FAIL_CRITICAL_TEMPERATURE;
+	if (!temp) {
+		ret = peci_get_temp(CPU, &temp);
+		if (ret) {
+			LOG_ERR("Failed to get cpu temperature, ret-%x", ret);
+			temp = CPU_FAIL_CRITICAL_TEMPERATURE;
+		}
 	}
 
 	cpu_temp = temp;

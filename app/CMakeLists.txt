@@ -19,7 +19,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/rstbtn)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/leds)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/gpio)
 
-include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management_v2)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management)
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/peripheral_management/periphmgmt.c
