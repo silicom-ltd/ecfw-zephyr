@@ -773,6 +773,18 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 		return -EINVAL;
 	}
 
+	if (peci_resp == PECI_UNDERFLOW_SENSOR_ERROR) {
+		LOG_ERR("%s:PECI_UNDERFLOW_SENSOR_ERROR", __func__);
+		*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
+		return -EINVAL;
+	}
+
+	if (peci_resp == PECI_OVERFLOW_SENSOR_ERROR) {
+		LOG_ERR("%s:PECI_OVERFLOW_SENSOR_ERR", __func__);
+		*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
+		return -EINVAL;
+	}
+
 	/* TODO: During BIOS reset, EC receiving incorrect PECI data response
 	 * '0' eventhough temp didn't reach TjMax leading to EC initiated
 	 * shutdown. Temporary WA provided to return fail safe temperature
