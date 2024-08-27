@@ -434,12 +434,12 @@ static void manage_fan(void)
 			fan_duty_cycle[FAN_CPU] = cpu_fan_speed;
 			fan_duty_cycle_change = 1;
 		}
-#ifdef CONFIG_BOARD_MEC172X_AZBEACH
+
 		if (fan_duty_cycle[FAN_RIGHT] != cpu_fan_speed) {
 			fan_duty_cycle[FAN_RIGHT] = cpu_fan_speed;
 			fan_duty_cycle_change = 1;
 		}
-#endif
+
 	}
 
 	/* HW/KConfig override takes precedence over every control method
