@@ -558,7 +558,7 @@ static void manage_cpu_thermal(void)
 	/* Trigger shutdown if temp crosses above critical threshold */
 	if (cpu_temp >= g_acpi_tbl.acpi_crit_temp) {
 		LOG_DBG("EC thermal shutdown");
-		therm_shutdown();
+//		therm_shutdown();
 		return;
 	}
 
