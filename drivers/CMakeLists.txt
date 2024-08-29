@@ -101,7 +101,8 @@ target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/gpio_mec172x.c
     #    ${CMAKE_CURRENT_LIST_DIR}/rpm2pwm_mec172x.c
-    ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
+    #    ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
+    ${CMAKE_CURRENT_LIST_DIR}/fan_new.c
     ${CMAKE_CURRENT_LIST_DIR}/led_mec172x.c
     # Require Soc-HW access via device tree
     #    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.c

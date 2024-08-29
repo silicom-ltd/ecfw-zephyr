@@ -85,7 +85,7 @@ static bool ec_fan_control;
 static uint8_t bios_fan_speed;
 static uint8_t fan_duty_cycle[FAN_DEV_TOTAL];
 static bool fan_duty_cycle_change;
-static int cpu_temp = 10;
+static int cpu_temp = 30;
 
 struct fan_lookup {
 	int16_t temp;
@@ -282,12 +282,14 @@ void get_hw_peripherals_status(uint8_t *hw_peripherals_sts)
 	 * board has CPU & graphics fans.
 	 */
 
+#if 0
 	/* Update fans status */
 	for (idx = 0; idx < max_fan_dev; idx++) {
 		if (fan_dev_tbl[idx].pwm_ch != PWM_CH_UNDEF) {
 			hw_peripherals_sts[0] |= BIT(idx);
 		}
 	}
+#endif
 
 	/* Update thermal sensors status */
 	for (idx = 0; idx < max_adc_sensors; idx++) {
@@ -297,7 +299,9 @@ void get_hw_peripherals_status(uint8_t *hw_peripherals_sts)
 
 static void init_fans(void)
 {
+#if 0
 	int ret;
+#endif
 	int level;
 
 	/* Initialize override */
@@ -315,13 +319,18 @@ static void init_fans(void)
 #endif
 
 	/* Get the list of fan devices supported for the board */
+#if 0
 	board_fan_dev_tbl_init(&max_fan_dev, &fan_dev_tbl);
 	LOG_DBG("Board has %d fans", max_fan_dev);
 
 	ret = fan_init(max_fan_dev, fan_dev_tbl);
+
 	if (ret) {
 		LOG_ERR("Failed to init fan");
 	}
+
+#endif
+	max_fan_dev = fan_init();
 
 	fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
 #ifdef CONFIG_BOARD_MEC172X_AZBEACH
@@ -541,13 +550,13 @@ static void manage_cpu_thermal(void)
 	}
 
 	/* Read CPU temperature using peci */
-	if (!temp) {
+//	if (!temp) {
 		ret = peci_get_temp(CPU, &temp);
 		if (ret) {
 			LOG_ERR("Failed to get cpu temperature, ret-%x", ret);
 			temp = CPU_FAIL_CRITICAL_TEMPERATURE;
 		}
-	}
+//	}
 
 	cpu_temp = temp;
 

@@ -65,7 +65,8 @@ struct fan_dev {
  *
  * @return 0 if success, otherwise error code.
  */
-int fan_init(int size, struct fan_dev *fan_tbl);
+//int fan_init(int size, struct fan_dev *fan_tbl);
+int fan_init(void);
 
 /**
  * @brief Set fan supply power on / off.
