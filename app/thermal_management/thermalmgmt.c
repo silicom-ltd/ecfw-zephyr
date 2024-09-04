@@ -113,15 +113,25 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 	{88, 87},
 	{90, 100}
 };
-#endif
-
-#if 1
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
 	{55, 23},
 	{66, 36},
 	{74, 49},
 	{80, 61},
+	{85, 74},
+	{88, 87},
+	{90, 100}
+};
+#endif
+
+#if 1
+static const struct fan_lookup fan_lookup_tbl[] = {
+	{15, 10},
+	{60, 23},
+	{70, 36},
+	{76, 49},
+	{81, 61},
 	{85, 74},
 	{88, 87},
 	{90, 100}
