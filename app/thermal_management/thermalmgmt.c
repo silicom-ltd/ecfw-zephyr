@@ -102,13 +102,25 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 	{70, 90},
 	{75, 100}
 };
-#else
 /* thermal modeling */
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
 	{45, 23},
 	{63, 36},
 	{73, 49},
+	{80, 61},
+	{85, 74},
+	{88, 87},
+	{90, 100}
+};
+#endif
+
+#if 1
+static const struct fan_lookup fan_lookup_tbl[] = {
+	{15, 10},
+	{55, 23},
+	{66, 36},
+	{74, 49},
 	{80, 61},
 	{85, 74},
 	{88, 87},
