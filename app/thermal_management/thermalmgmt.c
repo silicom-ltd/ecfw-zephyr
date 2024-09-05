@@ -128,8 +128,8 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 #if 1
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
-	{60, 23},
-	{70, 36},
+	{65, 23},
+	{71, 36},
 	{76, 49},
 	{81, 61},
 	{85, 74},
