@@ -102,30 +102,8 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 	{70, 90},
 	{75, 100}
 };
-/* thermal modeling */
-static const struct fan_lookup fan_lookup_tbl[] = {
-	{15, 10},
-	{45, 23},
-	{63, 36},
-	{73, 49},
-	{80, 61},
-	{85, 74},
-	{88, 87},
-	{90, 100}
-};
-static const struct fan_lookup fan_lookup_tbl[] = {
-	{15, 10},
-	{55, 23},
-	{66, 36},
-	{74, 49},
-	{80, 61},
-	{85, 74},
-	{88, 87},
-	{90, 100}
-};
 #endif
 
-#if 1
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
 	{65, 23},
@@ -136,66 +114,44 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 	{88, 87},
 	{90, 100}
 };
-#endif
 
-#if 1
 static uint16_t get_fan_speed_for_temp(int16_t temp)
 {
 	static int16_t old_temp = 0;
 	static uint16_t speed = 100;
+	static int last_index = 0;
 	int idx;
 
 	if (temp < fan_lookup_tbl[0].temp) {
 		old_temp = temp;
 		speed = fan_lookup_tbl[0].duty_cycle;
+		last_index = 0;
 		return speed;
 	} else if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
 		old_temp = temp;
 		speed = fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].duty_cycle;
+		last_index = ARRAY_SIZE(fan_lookup_tbl) - 1;
 		return speed;
 	} else {
-		if (temp > old_temp) {
+		if (temp >= old_temp) {
 			for (idx = 0; idx < ARRAY_SIZE(fan_lookup_tbl); idx++) {
 				if ((temp >= fan_lookup_tbl[idx].temp)) {
 					old_temp = fan_lookup_tbl[idx].temp;
 					speed = fan_lookup_tbl[idx].duty_cycle;
+					last_index = idx;
 				}
 			}
-		} else {
-			for (idx = ARRAY_SIZE(fan_lookup_tbl)-1; idx >= 0; idx--) {
-				if (temp <= fan_lookup_tbl[idx].temp) {
-					old_temp = fan_lookup_tbl[idx].temp;
-					speed = fan_lookup_tbl[idx].duty_cycle;
-				}
+		} else if (temp <= (old_temp - 2)) {
+			speed = fan_lookup_tbl[last_index - 1].duty_cycle;
+			if (temp <= fan_lookup_tbl[last_index - 1].temp) {
+				old_temp = temp;
+				last_index--;
 			}
-		}
+		} 
 	}
 
 	return speed;
 }
-#else
-static uint8_t get_fan_speed_for_temp(int16_t temp)
-{
-	int idx;
-	uint8_t speed = 100;
-
-	if (temp < fan_lookup_tbl[0].temp) {
-		speed = fan_lookup_tbl[0].temp;
-		return speed;
-	} else if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
-		speed = 100;
-		return speed;
-	} else {
-		for (idx = 0; idx < ARRAY_SIZE(fan_lookup_tbl); idx++) {
-			if (temp >= fan_lookup_tbl[idx].temp) {
-				speed = fan_lookup_tbl[idx].duty_cycle;
-//				break;
-			}
-		}
-	}
-	return speed;
-}
-#endif
 
 void host_update_crit_temp(uint8_t crit_temp)
 {
@@ -321,9 +277,6 @@ void get_hw_peripherals_status(uint8_t *hw_peripherals_sts)
 
 static void init_fans(void)
 {
-#if 0
-	int ret;
-#endif
 	int level;
 
 	/* Initialize override */
@@ -340,18 +293,6 @@ static void init_fans(void)
 	LOG_WRN("Fan SW override enable: %d", fan_override);
 #endif
 
-	/* Get the list of fan devices supported for the board */
-#if 0
-	board_fan_dev_tbl_init(&max_fan_dev, &fan_dev_tbl);
-	LOG_DBG("Board has %d fans", max_fan_dev);
-
-	ret = fan_init(max_fan_dev, fan_dev_tbl);
-
-	if (ret) {
-		LOG_ERR("Failed to init fan");
-	}
-
-#endif
 	max_fan_dev = fan_init();
 
 	fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
@@ -453,14 +394,9 @@ static void manage_fan(void)
 
 	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
 		/* EC Self control fan based on CPU thermal info */
-//		uint8_t cpu_fan_speed = GET_FAN_SPEED_FOR_TEMP(cpu_temp);
-#if 0
-		uint8_t cpu_fan_speed = get_fan_speed_for_temp(adc_temp_val[3]);
-		LOG_INF("%s: board CPU temp: %d, setting duty cycle to %d", __func__,  adc_temp_val[3], cpu_fan_speed);
-#else
 		uint8_t cpu_fan_speed = get_fan_speed_for_temp(cpu_temp);
 		LOG_INF("%s: board CPU temp: %d, setting duty cycle to %d", __func__,  cpu_temp, cpu_fan_speed);
-#endif
+
 		if (fan_duty_cycle[FAN_CPU] != cpu_fan_speed) {
 			fan_duty_cycle[FAN_CPU] = cpu_fan_speed;
 			fan_duty_cycle_change = 1;
@@ -572,13 +508,11 @@ static void manage_cpu_thermal(void)
 	}
 
 	/* Read CPU temperature using peci */
-//	if (!temp) {
-		ret = peci_get_temp(CPU, &temp);
-		if (ret) {
-			LOG_ERR("Failed to get cpu temperature, ret-%x", ret);
-			temp = CPU_FAIL_CRITICAL_TEMPERATURE;
-		}
-//	}
+	ret = peci_get_temp(CPU, &temp);
+	if (ret) {
+		LOG_ERR("Failed to get cpu temperature, ret-%x", ret);
+		temp = CPU_FAIL_CRITICAL_TEMPERATURE;
+	}
 
 	cpu_temp = temp;
 
@@ -589,7 +523,7 @@ static void manage_cpu_thermal(void)
 	/* Trigger shutdown if temp crosses above critical threshold */
 	if (cpu_temp >= g_acpi_tbl.acpi_crit_temp) {
 		LOG_DBG("EC thermal shutdown");
-//		therm_shutdown();
+		therm_shutdown();
 		return;
 	}
 
