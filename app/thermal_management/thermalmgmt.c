@@ -141,7 +141,7 @@ static uint16_t get_fan_speed_for_temp(int16_t temp)
 					last_index = idx;
 				}
 			}
-		} else if (temp <= (old_temp - 2)) {
+		} else if (temp <= (old_temp - 4)) {
 			speed = fan_lookup_tbl[last_index - 1].duty_cycle;
 			if (temp <= fan_lookup_tbl[last_index - 1].temp) {
 				old_temp = temp;
