@@ -11,67 +11,36 @@
 #include <zephyr/logging/log.h>
 #include "gpio_ec.h"
 #include "board_config.h"
-#include "rpmfan.h"
+#include "fan.h"
 
 LOG_MODULE_REGISTER(fan, CONFIG_FAN_LOG_LEVEL);
 
+#define	PWM_FREQ_MULT		8
+
+#define MAX_DUTY_CYCLE		100u
 #define DT_RPM2PWM_INST(x)	DT_NODELABEL(rpmfan##x)
 #define DT_RPM2PWM_TACH_INST(x)	DT_NODELABEL(rpmfantach##x)
 
-static const struct device *rpm2pwm_dev[2];
-static const struct device *rpm2pwm_tach_dev[2];
-
-static struct fan_dev fan_table[] = {
-	{ RPM2PWM_CH_00,	RPM2PWM_TACH_CH_00	},
-	{ RPM2PWM_CH_01,	RPM2PWM_TACH_CH_01	},
-};
-
-static void init_rpm2pwm_devices(void)
-{
+static const struct device *rpm2pwm_dev[] = {
 #if DT_NODE_HAS_STATUS(DT_RPM2PWM_INST(0), okay)
-	rpm2pwm_dev[RPM2PWM_CH_00] = DEVICE_DT_GET(DT_RPM2PWM_INST(0));
+	DEVICE_DT_GET(DT_RPM2PWM_INST(0)),
 #endif
 #if DT_NODE_HAS_STATUS(DT_RPM2PWM_INST(1), okay)
-	rpm2pwm_dev[RPM2PWM_CH_01] = DEVICE_DT_GET(DT_RPM2PWM_INST(1));
+	DEVICE_DT_GET(DT_RPM2PWM_INST(1)),
 #endif
-}
-
-static void init_rpm2pwm_tach_devices(void)
-{
+};
+static const struct device *rpm2pwm_tach_dev[] = {
 #if DT_NODE_HAS_STATUS(DT_RPM2PWM_TACH_INST(0), okay)
-	rpm2pwm_tach_dev[RPM2PWM_TACH_CH_00] = DEVICE_DT_GET(DT_RPM2PWM_TACH_INST(0));
+	DEVICE_DT_GET(DT_RPM2PWM_TACH_INST(0)),
 #endif
 #if DT_NODE_HAS_STATUS(DT_RPM2PWM_TACH_INST(1), okay)
-	rpm2pwm_tach_dev[RPM2PWM_TACH_CH_01] = DEVICE_DT_GET(DT_RPM2PWM_TACH_INST(1));
+	DEVICE_DT_GET(DT_RPM2PWM_TACH_INST(1)),
 #endif
-}
+};
 
-int fan_init(int size, struct fan_dev *fan_tbl)
+int fan_init(void)
 {
-	init_rpm2pwm_devices();
-	init_rpm2pwm_tach_devices();
-
-	if (size > ARRAY_SIZE(fan_table)) {
-		return -ENOTSUP;
-	}
-
-	for (int idx = 0; idx < size; idx++) {
-
-		if (!rpm2pwm_dev[fan_tbl[idx].rpm2pwm_ch]) {
-			LOG_ERR("PWM ch %d not found", fan_tbl[idx].rpm2pwm_ch);
-			return -ENODEV;
-		}
-
-		if (!rpm2pwm_tach_dev[fan_tbl[idx].rpm2pwm_tach_ch]) {
-			LOG_ERR("Tach ch %d not found", fan_tbl[idx].rpm2pwm_tach_ch);
-			return -ENODEV;
-		}
-
-		fan_table[idx].rpm2pwm_ch = fan_tbl[idx].rpm2pwm_ch;
-		fan_table[idx].rpm2pwm_tach_ch = fan_tbl[idx].rpm2pwm_tach_ch;
-	}
-
-	return 0;
+	return ARRAY_SIZE(rpm2pwm_dev);
 }
 
 int fan_power_set(bool power_state)
@@ -80,21 +49,34 @@ int fan_power_set(bool power_state)
 	return gpio_write_pin(FAN_PWR_DISABLE_N, power_state);
 }
 
+int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t duty_cycle)
+{
+	int ret;
+
+	if (fan_idx > ARRAY_SIZE(rpm2pwm_dev)) {
+		return -ENODEV;
+	}
+
+	const struct device *rpm2pwm = rpm2pwm_dev[fan_idx];
+
+	if (duty_cycle > MAX_DUTY_CYCLE) {
+		duty_cycle = MAX_DUTY_CYCLE;
+	}
+
+	ret = pwm_set_cycles(rpm2pwm, 0, PWM_FREQ_MULT * MAX_DUTY_CYCLE,
+		duty_cycle, 0);
+	if (ret) {
+		LOG_WRN("Fan setting error: %d", ret);
+		return ret;
+	}
+	return 0;
+}
+
 int fan_set_rpm(enum fan_type fan_idx, uint16_t rpm)
 {
 	int ret;
 
-	if (fan_idx > ARRAY_SIZE(fan_table)) {
-		return -ENOTSUP;
-	}
-
-	struct fan_dev *fan = &fan_table[fan_idx];
-
-	if (fan->rpm2pwm_ch >= 2) {
-		return -EINVAL;
-	}
-
-	const struct device *rpm2pwm = rpm2pwm_dev[fan->rpm2pwm_ch];
+	const struct device *rpm2pwm = rpm2pwm_dev[fan_idx];
 
 	if (!rpm2pwm) {
 		return -ENODEV;
@@ -118,17 +100,7 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm)
 	int ret;
 	struct sensor_value val;
 
-	if (fan_idx > ARRAY_SIZE(fan_table)) {
-		return -ENOTSUP;
-	}
-
-	struct fan_dev *fan = &fan_table[fan_idx];
-
-	if (fan->rpm2pwm_tach_ch >= 2) {
-		return -EINVAL;
-	}
-
-	const struct device *rpm2pwm_tach = rpm2pwm_tach_dev[fan->rpm2pwm_tach_ch];
+	const struct device *rpm2pwm_tach = rpm2pwm_tach_dev[fan_idx];
 
 	if (!rpm2pwm_tach) {
 		return -ENODEV;
