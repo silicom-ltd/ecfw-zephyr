@@ -611,6 +611,7 @@
 	pinctrl-names = "default";
 	spinup_time = "RPM2PWM_SPINUP_2S";
 	spinup_level = "RPM2PWM_SPINUP_LVL_50%";
+	update = "RPM2PWM_UPDATE_1600MS";
 	spinup_nokick;
 	enable_ramp_control;
 	manual_mode;
@@ -636,6 +637,7 @@
 	pinctrl-names = "default";
 	spinup_time = "RPM2PWM_SPINUP_2S";
 	spinup_level = "RPM2PWM_SPINUP_LVL_50%";
+	update = "RPM2PWM_UPDATE_1600MS";
 	spinup_nokick;
 	enable_ramp_control;
 	manual_mode;
