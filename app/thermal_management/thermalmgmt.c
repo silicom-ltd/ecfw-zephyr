@@ -106,14 +106,16 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
-	{65, 23},
-	{71, 36},
-	{76, 49},
-	{81, 61},
+	{45, 23},
+	{67, 36},
+	{74, 49},
+	{80, 61},
 	{85, 74},
 	{88, 87},
 	{90, 100}
 };
+
+#define NEGATIVE_HYST CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS
 
 static uint16_t get_fan_speed_for_temp(int16_t temp)
 {
@@ -141,7 +143,12 @@ static uint16_t get_fan_speed_for_temp(int16_t temp)
 					last_index = idx;
 				}
 			}
-		} else if (temp <= (old_temp - 4)) {
+		} else if ((temp <= fan_lookup_tbl[last_index-1].temp) &&
+			  (temp > fan_lookup_tbl[last_index-2].temp)) {
+			speed = fan_lookup_tbl[last_index - 1].duty_cycle;
+			old_temp = fan_lookup_tbl[last_index-1].temp;
+			last_index--;
+		} else if (temp <= (old_temp - NEGATIVE_HYST)) {
 			speed = fan_lookup_tbl[last_index - 1].duty_cycle;
 			if (temp <= fan_lookup_tbl[last_index - 1].temp) {
 				old_temp = temp;
