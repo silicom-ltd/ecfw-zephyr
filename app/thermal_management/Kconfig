@@ -26,6 +26,14 @@ config THERMAL_FAN_OVERRIDE_VALUE
 	  When EC overrides fan management via SW or HW strap, EC will
 	  use this pre-defined duty cycle to control the fan.
 
+config THERMAL_MGMT_NEGATIVE_HYSTERESIS
+	int "Negative hysteresis for fan control"
+	default 2
+	help
+	  Number of degrees of negative hysteresis to use for fan
+	  control.  Current temperature must be this many degrees 
+	  below current temperature/fan setting to slow the fan down.
+
 config EC_FAN_CONTROL
 	bool "Enable EC control"
 	help
