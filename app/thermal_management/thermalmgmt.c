@@ -106,12 +106,12 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
-	{45, 23},
-	{67, 36},
-	{74, 49},
-	{80, 61},
-	{85, 74},
-	{88, 87},
+	{55, 35},
+	{67, 50},
+	{74, 60},
+	{80, 70},
+	{85, 80},
+	{88, 90},
 	{90, 100}
 };
 
