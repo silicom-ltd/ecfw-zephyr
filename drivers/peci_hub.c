@@ -28,6 +28,13 @@
 #define PECI_CFG_WRMSR_AWFCS    12u
 #define PECI_CFG_WRPCI_AWFCS    9u
 
+#define PECI_CONFIGINDEX_PKGID	0u
+#define PECI_CONFIGPARAM_CPUID	0u
+#define PECI_CONFIGPARAM_PLTID	1u
+#define PECI_CONFIGPARAM_UNCID	2u
+#define PECI_CONFIGPARAM_NCORE	3u
+#define PECI_CONFIGPARAM_UCODE	4u
+#
 #define PECI_WRPKG_AWFCS_LEN    12u
 #define PECI_WRMSR_AWFCS_LEN    16u
 #define PECI_WRPCI_AWFCS_LEN    13u
@@ -40,6 +47,7 @@
 /* Offsets in rx buffer */
 #define PECI_RX_BUF_RESP_OFFSET	0
 #define PECI_RX_BUF_TJMAX_OFFSET 3
+#define PECI_RX_BUF_PKGID_OFFSET 1
 
 /* Offsets in tx buffer */
 #define PECI_TX_BUF_HOSTIDRETRY_OFFSET 0
@@ -707,6 +715,26 @@ int peci_get_tjmax(enum peci_devices dev, uint8_t *tjmax)
 	}
 
 	LOG_INF("TjMax=%d", *tjmax);
+	return ret;
+}
+
+int peci_get_cpuid(enum peci_devices, dev, uint32 *cpuid)
+{
+	int ret;
+	uint8_t resp_buf[PECI_RD_PKG_LEN_DWORD + PECI_FCS_LEN];
+	uint8_t req_buf[] = {PECI_CONFIGINDEX_PKGID,
+				PECI_CONFIGPARAM_CPUID & 0x00FF,
+				(PECI_CONFIGPARAM_CPUID & 0xFF00) >> 8,
+	};
+
+	ret = peci_rdpkg_config(dev, req_buf, resp_buf, PECI_RD_PKG_LEN_DWORD);
+
+	if (!ret) {
+		*cpuid = resp_buf[PECI_RX_BUF_PKGID_OFFSET];
+	}
+
+	LOG_INF("CPUID = 0x%x", ((*cpuid & 0xFF) << 24) | ((*cpuid & 0xFF00) << 8) |
+				((*cpuid & 0xFF0000) >> 8) | ((*cpuid & 0xFF000000) >> 24));
 	return ret;
 }
 
