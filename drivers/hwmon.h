@@ -63,29 +63,40 @@ enum sensor_type {
 };
 
 struct hwmon_sdata {
-	uint32_t mon_in;
-	uint16_t mon_sts;
-	uint32_t mon_max;
-	uint32_t mon_min;
-	uint32_t mon_hyst;
+	uint16_t mon_in;	/* 0x0 */
+	uint16_t mon_sts;	/* 0x2 */
+	uint16_t mon_max;	/* 0x4 */
+	uint16_t mon_crit;	/* 0x6 */
+	uint16_t mon_hyst;	/* 0x8 */
+	uint16_t mon_min;	/* 0xa */
+	uint16_t rsvd[2];	/* 0xc */
+};
+
+struct hwmon_peci {
+	uint8_t peci_in;	/* 0x0, degrees C resolution */
+	uint8_t peci_tjmax;	/* 0x1 */
+	uint16_t peci_raw;	/* 0x2 2s complement 1/64 degree */
 };
 
 struct hwmon_fdata {
-	uint32_t fan_rpm;
-	uint16_t fan_sts;
-	uint16_t fan_pwm;
+	uint16_t fan_rpm;
+	uint16_t fan_min;
+	uint16_t fan_alarm;
 	uint16_t fanin_cfg;
-	uint16_t fan_err;
+};
+
+struct hwmon_pdata {
+	uint8_t pwm_in;
+	uint8_t pwm_en;
 };
 
 struct hwmon_sram {
 	uint8_t rsvd[0x100];
 	struct hwmon_sdata mon[16];
+	struct hwmon_peci;	
+	uint32_t rsvd[3];
 	struct hwmon_fdata fan[2];
-	
-	enum cfg[16];		/* 0x238-0x248 */	/* presuming not compiling with -fshort-enums */
-	char sname[16][32];	/* 0x248-0x448 */	/* friendly names are only 32 bytes max */
-	char fname[2][32];
+	struct hwmon_pdata pwm[2];	/* only for pwm-controlled fan */
 };
 
 /**
