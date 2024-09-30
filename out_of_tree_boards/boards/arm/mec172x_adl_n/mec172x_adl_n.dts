@@ -269,7 +269,7 @@
 		compatible = "atmel,at24";
 		status = "okay";
 		reg = <0x56>;
-		size = <2048>;
+		size = <512>;
 		address-width = <8>;
 		timeout = <25>;
 		pagesize = <16>;
@@ -279,7 +279,7 @@
 		compatible = "atmel,at24";
 		status = "disabled";
 		reg = <0x54>;
-		size = <2048>;
+		size = <256>;
 		address-width = <8>;
 		timeout = <25>;
 		pagesize = <16>;
