@@ -103,5 +103,6 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t duty_cycle);
  */
 int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm);
 
+int fan_update(void);
 
 #endif	/* __FAN_H__ */

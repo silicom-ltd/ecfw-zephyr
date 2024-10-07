@@ -10,6 +10,7 @@
 #define THERMISTOR_TYPE 16
 #define VOLTAGE_TYPE 96
 #define CURRENT_TYPE 32
+#if 0
 enum sensor_type {
 	NULL,	/* unimplemented */
 	thermistor0 = THERMISTOR_TYPE,
@@ -61,43 +62,59 @@ enum sensor_type {
 	vin14,
 	vin15,
 };
+#endif
 
 struct hwmon_sdata {
 	uint16_t mon_in;	/* 0x0 */
-	uint16_t mon_sts;	/* 0x2 */
-	uint16_t mon_max;	/* 0x4 */
-	uint16_t mon_crit;	/* 0x6 */
-	uint16_t mon_hyst;	/* 0x8 */
-	uint16_t mon_min;	/* 0xa */
-	uint16_t rsvd[2];	/* 0xc */
-};
+	uint16_t mon_max;	/* 0x2 */
+	uint16_t mon_crit;	/* 0x4 */
+	uint16_t mon_hyst;	/* 0x6 */
+	uint16_t mon_min;	/* 0x8 */
+	uint16_t mon_alarm;	/* 0xa */
+	uint16_t mon_target;	/* 0xc */
+	uint16_t multiplier;	/* 0xe */
+	uint16_t mon_sts;	/* 0x10*/
+	uint16_t mon_cfg;	/* 0x12 */
+	uint16_t type;		/* 0x14 */
+} __attribute__ ((packed, aligned(32)));
 
 struct hwmon_peci {
-	uint8_t peci_in;	/* 0x0, degrees C resolution */
-	uint8_t peci_tjmax;	/* 0x1 */
-	uint16_t peci_raw;	/* 0x2 2s complement 1/64 degree */
-};
+	uint16_t peci_in;	/* 0x0, degrees C resolution */
+	uint16_t peci_tjmax;	/* 0x2 */
+	uint16_t peci_raw;	/* 0x4 2s complement 1/64 degree */
+} __attribute__ ((packed, aligned(32)));
 
 struct hwmon_fdata {
 	uint16_t fan_rpm;
+	uint16_t fan_max;
+	uint16_t rsvd0;
+	uint16_t rsvd1;
 	uint16_t fan_min;
 	uint16_t fan_alarm;
-	uint16_t fanin_cfg;
-};
+	uint16_t fan_target;
+	uint16_t rsvd2;
+	uint16_t fan_sts;
+	uint16_t fan_cfg;
+} __attribute__ ((packed, aligned(32)));
 
 struct hwmon_pdata {
-	uint8_t pwm_in;
-	uint8_t pwm_en;
-};
+	uint16_t pwm_in;
+} __attribute__ ((packed, aligned(32)));
 
 struct hwmon_sram {
 	uint8_t rsvd[0x100];
 	struct hwmon_sdata mon[16];
-	struct hwmon_peci;	
-	uint32_t rsvd[3];
-	struct hwmon_fdata fan[2];
-	struct hwmon_pdata pwm[2];	/* only for pwm-controlled fan */
-};
+	struct hwmon_peci peci;	
+	struct hwmon_fdata fan[4];
+	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
+} __attribute__ ((packed, aligned(32)));
+
+
+//struct hwmon_sram *hwmon_data;
+
+int voltage_monitor_init(void);
+void voltage_monitor_update(void);
+void current_sense_update(void);
 
 /**
  * @brief Initialize sensor module.
@@ -113,6 +130,6 @@ int sensors_init(void);
  * This function call reads all ADC sensors enabled in init, and
  * updates hwmon struct for respective ADC channel reads.
  */
-int sensors_update(void);
+void sensors_update(void);
 
 #endif	/* __HWMON_H__ */

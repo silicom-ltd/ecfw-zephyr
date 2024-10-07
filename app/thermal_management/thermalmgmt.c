@@ -297,7 +297,7 @@ static void init_fans(void)
 
 #ifdef CONFIG_THERMAL_FAN_OVERRIDE
 	fan_override = true;
-	LOG_WRN("Fan SW override enable: %d", fan_override);
+	LOG_INF("#################  Fan SW override enable: %d ####################", fan_override);
 #endif
 
 	max_fan_dev = fan_init();
@@ -312,26 +312,7 @@ static void init_fans(void)
 
 static void init_therm_sensors(void)
 {
-	uint32_t adc_ch_bits = 0;		/* MEC172X has > 8 sensors */
-
 	board_therm_sensor_tbl_init(&max_adc_sensors, &therm_sensor_tbl);
-
-	LOG_INF("Num of thermal sensors: %d", max_adc_sensors);
-
-	for (uint8_t idx = 0; idx < max_adc_sensors; idx++) {
-		LOG_INF("adc ch: %d, for acpi sen: %d",
-			therm_sensor_tbl[idx].adc_ch,
-			therm_sensor_tbl[idx].acpi_loc);
-
-		adc_ch_bits |= BIT(therm_sensor_tbl[idx].adc_ch);
-	}
-
-	LOG_INF("adc ch sensors bit: %x", adc_ch_bits);
-	if (thermal_sensors_init(adc_ch_bits)) {
-		LOG_WRN("Thermal Sensor module init failed!");
-	} else {
-		thermal_initialized = true;
-	}
 
 	init_dtt_threshold_limits();
 }
@@ -435,6 +416,8 @@ static void manage_fan(void)
 		}
 	}
 
+	fan_update();
+
 	for (uint8_t idx = 0; idx < max_fan_dev; idx++) {
 		uint16_t rpm;
 
@@ -464,12 +447,14 @@ static void manage_fan(void)
 
 static void manage_thermal_sensors(void)
 {
+	thermal_sensors_update();
+#if 1
 	/* Do not attempt to update if no sensors were detected */
 	if (!thermal_initialized) {
 		return;
 	}
+#endif
 
-	thermal_sensors_update();
 
 	for (uint8_t idx = 0; idx < max_adc_sensors; idx++) {
 		smc_update_thermal_sensor(

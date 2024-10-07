@@ -15,6 +15,7 @@
 #include "memops.h"
 #include "smchost.h"
 #include "peci_hub.h"
+#include "hwmon.h"
 
 #define PECI_GPU_ADDR		0x32u
 #define PECI_CPU_ADDR		0x30u
@@ -718,7 +719,7 @@ int peci_get_tjmax(enum peci_devices dev, uint8_t *tjmax)
 	return ret;
 }
 
-int peci_get_cpuid(enum peci_devices, dev, uint32 *cpuid)
+int peci_get_cpuid(enum peci_devices dev, uint32_t *cpuid)
 {
 	int ret;
 	uint8_t resp_buf[PECI_RD_PKG_LEN_DWORD + PECI_FCS_LEN];
@@ -737,6 +738,8 @@ int peci_get_cpuid(enum peci_devices, dev, uint32 *cpuid)
 				((*cpuid & 0xFF0000) >> 8) | ((*cpuid & 0xFF000000) >> 24));
 	return ret;
 }
+
+extern struct hwmon_sram *hwmon_data;
 
 int peci_get_temp(enum peci_devices dev, int *temperature)
 {
@@ -765,6 +768,7 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 	/* If cpu/gpu tjmax is not fetched then cpu/gpu temperature cannot
 	 * be calculated. In this case return fail safe temperature.
 	 */
+	struct hwmon_peci *peci_data = &hwmon_data->peci;
 	if (*tjmax_ptr == 0) {
 		ret = peci_get_tjmax(dev, tjmax_ptr);
 		if (ret) {
@@ -772,6 +776,7 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 			*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
 			return -EINVAL;
 		}
+		peci_data->peci_tjmax = *tjmax_ptr;
 	}
 	tjmax = *tjmax_ptr;
 
@@ -841,12 +846,17 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 	 * degree C). Since this value is relative to TjMax, it is subtracted
 	 * from TjMax to get the absolute temperature value.
 	 */
+
 	raw_cpu_temp = ~peci_resp + 1;
+	peci_data->peci_raw = (uint16_t)(tjmax - raw_cpu_temp);
+
 	raw_cpu_temp >>= GET_TEMP_INTEGER_POS;
 	*temperature = tjmax - raw_cpu_temp;
 
 	if (*temperature > tjmax)
 		*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
+
+	peci_data->peci_in = (uint16_t)*temperature;
 
 	return 0;
 }

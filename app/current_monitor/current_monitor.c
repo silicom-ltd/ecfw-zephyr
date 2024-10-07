@@ -8,6 +8,7 @@
 #include <zephyr/logging/log.h>
 #include "current_monitor.h"
 #include "currmon.h"
+#include "hwmon.h"
 #include "board_config.h"
 #include "smc.h"
 #include "sci.h"
@@ -21,14 +22,11 @@ LOG_MODULE_REGISTER(currentmonitor, CONFIG_CURRENT_MONITOR_LOG_LEVEL);
 
 static void init_current_sensors(void)
 {
-	if (current_monitor_init(0)) {
-		LOG_WRN("Current Sensor module init failed!");
-	}
 }
 
 static void manage_current_sensors(void)
 {
-	current_monitor_update();
+	current_sense_update();
 #if 0
 	for (uint8_t idx = 0; idx < max_adc_sensors; idx++) {
 		smc_update_thermal_sensor(
