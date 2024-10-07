@@ -27,8 +27,10 @@
 		i2c-0 = &i2c_smb_0;
 		i2c3 = &i2c_smb_1;
 		i2c11 = &i2c_smb_2;
-		fan0 = &pwm0;
-		fan1 = &pwm1;
+		fan0 = &rpmfan0;
+		fan1 = &rpmfan1;
+		tach0 = &rpmfantach0;
+		tach1 = &rpmfantach1;
 		peci-0 = &peci0;
 		led-1 = &pwmmcled0;
 		eeprom0 = &eeprom;
@@ -132,7 +134,7 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	therm4: thermistor-4 {
+	therm0: thermistor-0 {
 		compatible = "murata,ncp15xh103";
 		io-channels = <&adc0 4>;
 		pullup-uv = <3300000>;
@@ -140,7 +142,7 @@
 		pulldown-ohm = <0>;
 		friendly-name = "Ambient";
 	};
-	therm5: thermistor-5 {
+	therm1: thermistor-1 {
 		compatible = "murata,ncp15xh103";
 		io-channels = <&adc0 5>;
 		pullup-uv = <3300000>;
@@ -148,7 +150,7 @@
 		pulldown-ohm = <0>;
 		friendly-name = "Core VR";
 	};
-	therm6: thermistor-6 {
+	therm2: thermistor-2 {
 		compatible = "murata,ncp15xh103";
 		io-channels = <&adc0 6>;
 		pullup-uv = <3300000>;
@@ -164,7 +166,7 @@
 		output-ohms = <1>;
 		full-ohms = <1>;
 	};
-	therm10: thermistor-10 {
+	therm3: thermistor-3 {
 		compatible = "murata,ncp15xh103";
 		io-channels = <&adc0 10>;
 		pullup-uv = <3300000>;

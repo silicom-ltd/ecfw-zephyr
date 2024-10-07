@@ -100,11 +100,11 @@ K_THREAD_DEFINE(gpio_thrd_id, EC_TASK_STACK_SIZE, gpiomgmt_thread,
 		&gpio_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
 #endif
-const uint32_t voltage_thrd_period = 250;
+const uint32_t voltage_thrd_period = 1000;
 K_THREAD_DEFINE(voltage_thrd_id, EC_TASK_STACK_SIZE, voltage_monitor_thread,
 		&voltage_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
-const uint32_t current_thrd_period = 250;
+const uint32_t current_thrd_period = 1000;
 K_THREAD_DEFINE(current_thrd_id, EC_TASK_STACK_SIZE, current_monitor_thread,
 		&current_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);

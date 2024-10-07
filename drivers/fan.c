@@ -12,75 +12,34 @@
 #include "hwmon.h"
 #include "gpio_ec.h"
 #include "board_config.h"
-#include "rpmfan.h"
+//#include "rpmfan.h"
+#include "fan.h"
 
 LOG_MODULE_REGISTER(fan, CONFIG_FAN_LOG_LEVEL);
 
-#define FAN(inst) \
-	DEVICE_DT_GET(DT_NODELABEL(rpmfan##inst)),
+extern struct hwmon_sram *hwmon_data;
 
-static const struct device rpm2pwm_fan_dev[] = {
-	DT_INST_FOREACH_STATUS_OKAY(FAN)
+#define MAX_DUTY_CYCLE		100u
+
+#define DT_DRV_COMPAT	microchip_xec_rpm2pwm	
+#define DT_FAN_INST(x)		DEVICE_DT_GET(DT_ALIAS(fan##x)),
+
+static const struct device *rpm2pwm_fan_dev[] = {
+	DT_INST_FOREACH_STATUS_OKAY(DT_FAN_INST)
 };
 
-#define TACH(inst) \
-	DEVICE_DT_GET(DT_NODELABEL(rpmfantach##inst)),
+#undef DT_DRV_COMPAT
+#define DT_DRV_COMPAT	microchip_xec_rpm2pwm_tach
+#define DT_TACH_INST(x)		DEVICE_DT_GET(DT_ALIAS(tach##x)),
 
-setatic const struct device rpm2pwm_tach_dev[] = {
-	DT_INST_FOREACH_STATUS_OKAY(TACH)
+static const struct device *rpm2pwm_tach_dev[] = {
+	DT_INST_FOREACH_STATUS_OKAY(DT_TACH_INST)
 };
 
-static struct fan_dev fan_table[] = {
-	{ RPM2PWM_CH_00,	RPM2PWM_TACH_CH_00	},
-	{ RPM2PWM_CH_01,	RPM2PWM_TACH_CH_01	},
-};
-
-static void init_rpm2pwm_devices(void)
+int fan_init(void)
 {
-#if DT_NODE_HAS_STATUS(DT_RPM2PWM_INST(0), okay)
-	rpm2pwm_dev[RPM2PWM_CH_00] = DEVICE_DT_GET(DT_RPM2PWM_INST(0));
-#endif
-#if DT_NODE_HAS_STATUS(DT_RPM2PWM_INST(1), okay)
-	rpm2pwm_dev[RPM2PWM_CH_01] = DEVICE_DT_GET(DT_RPM2PWM_INST(1));
-#endif
-}
-
-static void init_rpm2pwm_tach_devices(void)
-{
-#if DT_NODE_HAS_STATUS(DT_RPM2PWM_TACH_INST(0), okay)
-	rpm2pwm_tach_dev[RPM2PWM_TACH_CH_00] = DEVICE_DT_GET(DT_RPM2PWM_TACH_INST(0));
-#endif
-#if DT_NODE_HAS_STATUS(DT_RPM2PWM_TACH_INST(1), okay)
-	rpm2pwm_tach_dev[RPM2PWM_TACH_CH_01] = DEVICE_DT_GET(DT_RPM2PWM_TACH_INST(1));
-#endif
-}
-
-int fan_init(int size, struct fan_dev *fan_tbl)
-{
-	init_rpm2pwm_devices();
-	init_rpm2pwm_tach_devices();
-
-	if (size > ARRAY_SIZE(fan_table)) {
-		return -ENOTSUP;
-	}
-
-	for (int idx = 0; idx < size; idx++) {
-
-		if (!rpm2pwm_dev[fan_tbl[idx].rpm2pwm_ch]) {
-			LOG_ERR("PWM ch %d not found", fan_tbl[idx].rpm2pwm_ch);
-			return -ENODEV;
-		}
-
-		if (!rpm2pwm_tach_dev[fan_tbl[idx].rpm2pwm_tach_ch]) {
-			LOG_ERR("Tach ch %d not found", fan_tbl[idx].rpm2pwm_tach_ch);
-			return -ENODEV;
-		}
-
-		fan_table[idx].rpm2pwm_ch = fan_tbl[idx].rpm2pwm_ch;
-		fan_table[idx].rpm2pwm_tach_ch = fan_tbl[idx].rpm2pwm_tach_ch;
-	}
-
-	return 0;
+	LOG_WRN("Rpm2pwm_fan_dev size %d", ARRAY_SIZE(rpm2pwm_fan_dev));	
+	return ARRAY_SIZE(rpm2pwm_fan_dev);
 }
 
 int fan_power_set(bool power_state)
@@ -89,37 +48,61 @@ int fan_power_set(bool power_state)
 	return gpio_write_pin(FAN_PWR_DISABLE_N, power_state);
 }
 
-int fan_set_rpm(enum fan_type fan_idx, uint16_t rpm)
+int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 {
 	int ret;
+	struct hwmon_pdata *pdata;
 
 	if (fan_idx > ARRAY_SIZE(rpm2pwm_fan_dev)) {
 		return -EINVAL;
 	}
 
-	if (rpm > UINT16_MAX) {
-		rpm = UINT16_MAX;
+	if (rpm > MAX_DUTY_CYCLE) {
+		rpm = MAX_DUTY_CYCLE;
 	}
 
-	ret = pwm_set_cycles(rpm2pwm_fan_dev[fan_idx], 0, UINT32_MAX, rpm, 0);
+	const struct device *pwm = rpm2pwm_fan_dev[fan_idx];
+
+		LOG_WRN("Fan %d setting duty cycle %d", fan_idx, rpm);
+	ret = pwm_set_cycles(pwm, 0, UINT32_MAX, rpm, 0);
 
 	if (ret) {
 		LOG_WRN("Fan setting error: %d", ret);
 		return ret;
 	}
+
+	if (hwmon_data == NULL)
+		return 0;
+
+	pdata = &hwmon_data->pwm[fan_idx];
+	pdata->pwm_in = rpm;	
+
 	return 0;
 }
 
-int fan_read_rpm(void)
+int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm)
+{
+	struct hwmon_fdata *fdata;
+       
+	if (fan_idx > ARRAY_SIZE(rpm2pwm_fan_dev))
+		return -ENODEV;
+
+	fdata = &hwmon_data->fan[fan_idx];
+
+	*rpm = fdata->fan_rpm;
+
+	return 0;
+}
+
+int fan_update(void)
 {
 	int ret;
 	int i;
 	struct sensor_value val;
-	struct hmon_fdata *fdata;
+	struct hwmon_fdata *fdata;
 
 	for (i = 0; i < ARRAY_SIZE(rpm2pwm_tach_dev); i++) {
 
-		fdata = &hwmon->fan[i];
 		ret = sensor_sample_fetch_chan(rpm2pwm_tach_dev[i], SENSOR_CHAN_RPM);
 		if (ret) {
 			return ret;
@@ -130,7 +113,11 @@ int fan_read_rpm(void)
 			return ret;
 		}
 
-		fdata->fan_rpm = (val.val1 << 16) | (val.val2 / 16);
+		if (hwmon_data == NULL)
+			return 0;
+
+		fdata = &hwmon_data->fan[i];
+		fdata->fan_rpm = val.val1;
 	}
 
 	return 0;
