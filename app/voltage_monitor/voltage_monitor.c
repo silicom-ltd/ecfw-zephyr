@@ -7,8 +7,9 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include "voltage_monitor.h"
-#include "voltagemon.h"
+//#include "voltage_monitor.h"
+//#include "voltagemon.h"
+#include "hwmon.h"
 #include "board_config.h"
 #include "smc.h"
 #include "sci.h"
@@ -19,13 +20,6 @@
 #include "task_handler.h"
 
 LOG_MODULE_REGISTER(voltagemonitor, CONFIG_VOLTAGE_MONITOR_LOG_LEVEL);
-
-static void init_voltage_sensors(void)
-{
-	if (voltage_monitor_init(0)) {
-		LOG_WRN("Voltage Sensor module init failed!");
-	}
-}
 
 static void manage_voltage_sensors(void)
 {
@@ -50,7 +44,7 @@ void voltage_monitor_thread(void *p1, void *p2, void *p3)
 {
 	uint32_t normal_period = *(uint32_t *)p1;
 
-	init_voltage_sensors();
+//	voltage_monitor_init();
 	
 	while (true) {
 		/* Each thread is aware of CS

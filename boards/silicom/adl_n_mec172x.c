@@ -26,6 +26,7 @@
 #include "board_config.h"
 #include "vci_mec172x.h"
 #include "adl_n_mec172x.h"
+#include "hwmon.h"
 
 LOG_MODULE_DECLARE(board, CONFIG_BOARD_LOG_LEVEL);
 /** @brief EC FW app owned gpios list.
@@ -899,6 +900,7 @@ int board_init(void)
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_OUTPUT_LOW);
 	}
 
+	sensors_init();
 	return 0;
 }
 
