@@ -75,6 +75,31 @@
 					<LED_COLOR_ID_BLUE>;
 		};
 	};
+
+	gpioled0: gpio-led0 {
+		compatible = "gpio-leds";
+		gpio_led0: led-0 {
+			/* GPIO 156 */
+			gpios = <&gpio_140_176 14 GPIO_ACTIVE_HIGH>;
+		};
+	};
+	gpioled1: gpio-led1 {
+		compatible = "gpio-leds";
+		gpio_led1: led-1 {
+			/* GPIO 157 */
+			gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
+		};
+	};
+	gpioled2: gpio-led2 {
+		compatible = "gpio-leds";
+		gpio_led2: led-2 {
+			/* GPIO 153 */
+			gpios = <&gpio_140_176 11 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+
+
 	voltage0: voltage12v {
 		compatible = "voltage-divider";
 		status = "okay";
@@ -191,26 +216,26 @@
 	};
 };
 
-&bbled0 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led0_gpio156>;
-	pinctrl-names = "default";
-};
+//&bbled0 {
+//	compatible = "microchip,xec-bbled";
+//	status = "okay";
+//	pinctrl-0 = <&led0_gpio156>;
+//	pinctrl-names = "default";
+//};
 
-&bbled1 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led1_gpio157>;
-	pinctrl-names = "default";
-};
+//&bbled1 {
+//	compatible = "microchip,xec-bbled";
+//	status = "okay";
+//	pinctrl-0 = <&led1_gpio157>;
+//	pinctrl-names = "default";
+//};
 
-&bbled2 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led2_gpio153>;
-	pinctrl-names = "default";
-};
+//&bbled2 {
+//	compatible = "microchip,xec-bbled";
+//	status = "okay";
+//	pinctrl-0 = <&led2_gpio153>;
+//	pinctrl-names = "default";
+//};
 
 &cpu0 {
 	clock-frequency = <96000000>;
