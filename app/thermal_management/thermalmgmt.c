@@ -40,7 +40,7 @@ LOG_MODULE_REGISTER(thermal, CONFIG_THERMAL_MGMT_LOG_LEVEL);
  * Hence allow 1 sec time before reading temperature from peci.
  * Till then report fail safe temperature of 28C.
  */
-#define CPU_TEMP_ACCESS_DELAY_SEC		1U
+#define CPU_TEMP_ACCESS_DELAY_SEC		5U
 
 /* In CS, temperature needs to be checked only once every 8 seconds.
  * This is because the CPU is anyway not running and any transaction
