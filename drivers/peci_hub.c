@@ -739,6 +739,26 @@ int peci_get_cpuid(enum peci_devices dev, uint32_t *cpuid)
 	return ret;
 }
 
+int peci_get_pltid(enum peci_devices dev, uint32_t *pltid)
+{
+	int ret;
+	uint8_t resp_buf[PECI_RD_PKG_LEN_DWORD + PECI_FCS_LEN];
+	uint8_t req_buf[] = {PECI_CONFIGINDEX_PKGID,
+			     PECI_CONFIGPARAM_PLTID & 0x00FF,
+			     (PECI_CONFIGPARAM_PLTID & 0xFF00) >> 8,
+	};
+
+	ret = peci_rdpkg_config(dev, req_buf, resp_buf, PECI_RD_PKG_LEN_DWORD);
+
+	if (!ret) {
+		*pltid = resp_buf[PECI_RX_BUF_PKGID_OFFSET];
+	}
+
+	LOG_INF("PLTID = 0x%x", *pltid);
+
+	return ret;
+}
+
 extern struct hwmon_sram *hwmon_data;
 
 int peci_get_temp(enum peci_devices dev, int *temperature)
@@ -853,10 +873,14 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 	raw_cpu_temp >>= GET_TEMP_INTEGER_POS;
 	*temperature = tjmax - raw_cpu_temp;
 
+	raw_cpu_temp &= ~GET_TEMP_INTEGER_POS;
+	raw_cpu_temp *= 64;
+	raw_cpu_temp /= 1000;
+
 	if (*temperature > tjmax)
 		*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
 
-	peci_data->peci_in = (uint16_t)*temperature;
+	peci_data->peci_in = ((uint16_t)*temperature * 1000) + (1000 - raw_cpu_temp);
 
 	return 0;
 }
@@ -892,5 +916,6 @@ int peci_init(void)
 	peci_initialized = true;
 	cpu_tjmax = 0;
 	gpu_tjmax = 0;
+
 	return 0;
 }
