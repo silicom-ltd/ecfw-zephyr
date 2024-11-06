@@ -79,7 +79,7 @@ struct hwmon_sdata {
 } __attribute__ ((packed, aligned(32)));
 
 struct hwmon_peci {
-	uint16_t peci_in;	/* 0x0, degrees C resolution */
+	uint16_t peci_in;	/* 0x0, degrees mC resolution */
 	uint16_t peci_tjmax;	/* 0x2 */
 	uint16_t peci_raw;	/* 0x4 2s complement 1/64 degree */
 } __attribute__ ((packed, aligned(32)));
