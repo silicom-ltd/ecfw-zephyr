@@ -53,7 +53,7 @@ void thermal_sensors_update(void)
 	int i, num_sensors = ARRAY_SIZE(ntc_thermal_sensors);
 	struct sensor_value temp;
 	unsigned int temp_val;
-	int multiplier;
+	int multiplier, old_multiplier;
 	struct adc_dt_spec *adc_dt;
 	volatile struct hwmon_sdata *sdata;
 	int err;
@@ -75,15 +75,19 @@ void thermal_sensors_update(void)
 		sensor_channel_get(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP, &temp);
 		LOG_INF("Sensor %d thermistor read: %d.%03dC", i, temp.val1, temp.val2);
 
-		multiplier = 1;
+		old_multiplier = sdata->multiplier;
+		multiplier = 0;
 		temp_val = (temp.val1 * 1000) + (temp.val2 / 1000);
 		while (temp_val & 0xFFFF0000) {
 			temp_val >>= 1;
-			multiplier <<= 1;
+			if (!multiplier)
+				multiplier = 1;
+			else
+				multiplier <<= 1;
 		}
 
 		sdata->mon_in = temp_val;
-		if (multiplier > sdata->multiplier) {
+		if (multiplier > old_multiplier) {
 			sdata->multiplier = multiplier;
 			sdata->mon_max = temp_val;
 		} else if (sdata->mon_in > sdata->mon_max) {
@@ -92,7 +96,7 @@ void thermal_sensors_update(void)
 		}
 		if ((sdata->mon_min == 0) || (sdata->mon_in < sdata->mon_min))
 			sdata->mon_min = sdata->mon_in;
-		if (multiplier < sdata->multiplier) {
+		if (multiplier < old_multiplier) {
 			sdata->multiplier = multiplier;
 			sdata->mon_min = temp_val;
 		}
@@ -174,7 +178,7 @@ void voltage_monitor_update(void)
 			sdata->mon_min = sdata->mon_in;
 		if (sdata->mon_in + sdata->mon_hyst)
 			; /* place saver for hysteresis action ? */
-		sdata->multiplier = 1;
+		sdata->multiplier = 0;
 	}
 }
 
@@ -202,7 +206,7 @@ void current_sense_update(void)
 	struct current_sense_amplifier_dt_spec *current;
 	volatile struct hwmon_sdata *sdata;
 	unsigned int temp_val;
-	int multiplier;
+	int multiplier, old_multiplier;
 	int err;
 
 	if (hwmon_data == NULL) {
@@ -222,11 +226,15 @@ void current_sense_update(void)
 		sensor_channel_get(current_sensors[i], SENSOR_CHAN_CURRENT, &amps);
 		LOG_INF("ADC %d current read: %d.%d mA", i, amps.val1, amps.val2);
 
-		multiplier = 1;
+		old_multiplier = sdata->multiplier;
+		multiplier = 0;
 		temp_val = amps.val1;
 		while (temp_val & 0xFFFF0000) {
 			temp_val >>= 1;
-			multiplier <<= 1;
+			if (!multiplier)
+				multiplier = 1;
+			else
+				multiplier <<= 1;
 		}
 		sdata->mon_in = temp_val;
 		sdata->multiplier = multiplier;
@@ -238,7 +246,6 @@ void current_sense_update(void)
 			sdata->mon_min = sdata->mon_in;
 		if (sdata->mon_min + sdata->mon_hyst)
 			; /* place saver for hysteresis action ? */
-		sdata->multiplier = 1;
 	}
 }
 
