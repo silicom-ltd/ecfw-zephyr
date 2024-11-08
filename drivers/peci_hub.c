@@ -764,6 +764,8 @@ extern struct hwmon_sram *hwmon_data;
 int peci_get_temp(enum peci_devices dev, int *temperature)
 {
 	uint16_t raw_cpu_temp;
+	uint32_t actual_cpu_temp;
+	int multiplier, old_multiplier;
 	uint16_t peci_resp;
 	int ret;
 	struct peci_msg packet;
@@ -871,16 +873,31 @@ int peci_get_temp(enum peci_devices dev, int *temperature)
 	peci_data->peci_raw = (uint16_t)(tjmax - raw_cpu_temp);
 
 	raw_cpu_temp >>= GET_TEMP_INTEGER_POS;
-	*temperature = tjmax - raw_cpu_temp;
+	*temperature = actual_cpu_temp = tjmax - raw_cpu_temp;
 
-	raw_cpu_temp &= ~GET_TEMP_INTEGER_POS;
-	raw_cpu_temp *= 64;
-	raw_cpu_temp /= 1000;
+	raw_cpu_temp &= ~BIT_MASK(GET_TEMP_INTEGER_POS);
+	raw_cpu_temp /= 64;
+	raw_cpu_temp *= 1000;
 
 	if (*temperature > tjmax)
 		*temperature = PECI_CPUGPU_TEMP_FAILSAFE;
 
-	peci_data->peci_in = ((uint16_t)*temperature * 1000) + (1000 - raw_cpu_temp);
+	actual_cpu_temp *= 1000;
+	actual_cpu_temp += (1000 - raw_cpu_temp);
+
+	multiplier = 0;
+	old_multiplier = peci_data->multiplier;
+
+	while (actual_cpu_temp & 0xFFFF0000) {
+		actual_cpu_temp >>= 1;
+		if (multiplier == 0)
+			multiplier = 1;
+		else
+			multiplier <<= 1;
+	}
+
+	peci_data->peci_in = actual_cpu_temp;
+	peci_data->multiplier = multiplier;
 
 	return 0;
 }

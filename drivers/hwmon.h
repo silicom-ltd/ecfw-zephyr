@@ -80,8 +80,11 @@ struct hwmon_sdata {
 
 struct hwmon_peci {
 	uint16_t peci_in;	/* 0x0, degrees C resolution */
+	uint16_t :16;
 	uint16_t peci_tjmax;	/* 0x2 */
 	uint16_t peci_raw;	/* 0x4 2s complement 1/64 degree */
+	uint16_t rsvd[3];
+	uint16_t multiplier;
 } __attribute__ ((packed, aligned(32)));
 
 struct hwmon_fdata {
