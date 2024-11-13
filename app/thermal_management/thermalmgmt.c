@@ -91,18 +91,6 @@ struct fan_lookup {
 	int16_t temp;
 	uint8_t duty_cycle;
 };
-#if 0
-static const struct fan_lookup fan_lookup_tbl[] = {
-	{15, 15},
-	{35, 25},
-	{42, 40},
-	{49, 55},
-	{56, 70},
-	{63, 80},
-	{70, 90},
-	{75, 100}
-};
-#endif
 
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
@@ -117,6 +105,66 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 
 #define NEGATIVE_HYST CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS
 
+#if 1
+K_TIMER_DEFINE(temp_timer, NULL, NULL);
+
+static uint16_t get_fan_speed_for_temp(uint16_t temp)
+{
+	static int idx = 0;
+	static int timer_started = 0;
+
+	/* less than or = lowest temp, return lowest fan speed */
+	if (temp <= fan_lookup_tbl[0].temp) {
+		idx = 0;
+		k_timer_stop(&temp_timer);
+		timer_started = 0;
+		return fan_lookup_tbl[0].duty_cycle;
+	}
+
+	/* greater than highest temp, return highest fan speed */
+	if (temp > fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+		idx = ARRAY_SIZE(fan_lookup_tbl)-1;
+		k_timer_stop(&temp_timer);
+		timer_started = 0;
+		return fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].duty_cycle;
+	}
+
+	/* temp rising past next highest, increase to next speed */
+	while (temp >= fan_lookup_tbl[idx+1].temp) {
+		idx++;
+		k_timer_stop(&temp_timer);
+		timer_started = 0;
+	}
+
+	/* 
+	 * going down, and been below hysteresis longer than timer,
+	 * go to next lowest speed
+	 */
+	while (timer_started && (temp < (fan_lookup_tbl[idx].temp - 2)) &&
+			(k_timer_remaining_get(&temp_timer) == 0)) {
+		idx--;
+	}
+
+	/* 
+	 * if here, then we are lower than current temp, but either
+	 * not below hysteresis or the timer hasn't expired yet or
+	 * we need to start the timer
+	 */
+	if (!timer_started && (temp < (fan_lookup_tbl[idx].temp - 2))) {
+		k_timer_start(&temp_timer, K_SECONDS(10), K_NO_WAIT);
+		timer_started = 1;
+	}
+
+	/* if we are not below hysteresis but maybe had been, stop timer */
+	if (temp >= (fan_lookup_tbl[idx].temp - 2)) {
+		k_timer_stop(&temp_timer);
+		timer_started = 0;
+	}
+
+	return fan_lookup_tbl[idx].duty_cycle;
+
+}
+#else
 static uint16_t get_fan_speed_for_temp(int16_t temp)
 {
 	static int16_t old_temp = 0;
@@ -143,7 +191,7 @@ static uint16_t get_fan_speed_for_temp(int16_t temp)
 					last_index = idx;
 				}
 			}
-		} else if ((temp <= fan_lookup_tbl[last_index-1].temp) &&
+		} else if ((last_index > 1) && (temp <= fan_lookup_tbl[last_index-1].temp) &&
 			  (temp > fan_lookup_tbl[last_index-2].temp)) {
 			speed = fan_lookup_tbl[last_index - 1].duty_cycle;
 			old_temp = fan_lookup_tbl[last_index-1].temp;
@@ -159,6 +207,7 @@ static uint16_t get_fan_speed_for_temp(int16_t temp)
 
 	return speed;
 }
+#endif
 
 void host_update_crit_temp(uint8_t crit_temp)
 {
