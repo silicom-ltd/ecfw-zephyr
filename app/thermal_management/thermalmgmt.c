@@ -131,7 +131,7 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	}
 
 	/* temp rising past next highest, increase to next speed */
-	while (temp >= fan_lookup_tbl[idx+1].temp) {
+	while (temp >= fan_lookup_tbl[idx+1].temp && (idx < ARRAY_SIZE(fan_lookup_tbl)-1)) {
 		idx++;
 		k_timer_stop(&temp_timer);
 		timer_started = 0;
