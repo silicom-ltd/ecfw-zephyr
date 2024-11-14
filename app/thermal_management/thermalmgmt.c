@@ -141,7 +141,7 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	 * going down, and been below hysteresis longer than timer,
 	 * go to next lowest speed
 	 */
-	while (timer_started && (temp < (fan_lookup_tbl[idx].temp - 2)) &&
+	while (timer_started && (temp < (fan_lookup_tbl[idx].temp - NEGATIVE_HYST)) &&
 			(k_timer_remaining_get(&temp_timer) == 0)) {
 		idx--;
 	}
@@ -151,13 +151,13 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	 * not below hysteresis or the timer hasn't expired yet or
 	 * we need to start the timer
 	 */
-	if (!timer_started && (temp < (fan_lookup_tbl[idx].temp - 2))) {
+	if (!timer_started && (temp < (fan_lookup_tbl[idx].temp - NEGATIVE_HYST))) {
 		k_timer_start(&temp_timer, K_SECONDS(10), K_NO_WAIT);
 		timer_started = 1;
 	}
 
 	/* if we are not below hysteresis but maybe had been, stop timer */
-	if (temp >= (fan_lookup_tbl[idx].temp - 2)) {
+	if (temp >= (fan_lookup_tbl[idx].temp - NEGATIVE_HYST)) {
 		k_timer_stop(&temp_timer);
 		timer_started = 0;
 	}
