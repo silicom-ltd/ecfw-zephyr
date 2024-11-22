@@ -63,7 +63,7 @@ static int led_pwm_mc_blink(const struct device *dev, uint32_t led,
 	struct led_pwm_mc_subled_data *data = dev->data;
 	const struct pwm_dt_spec *dt_pwm;
 	uint32_t period_usec, pulse_usec;
-	int i, err = 0;
+	int i, key, err = 0;
 
 	/*
 	 * Convert delays (in ms) into PWM period and pulse (in us) and check
@@ -76,12 +76,15 @@ static int led_pwm_mc_blink(const struct device *dev, uint32_t led,
 	}
 
 	LOG_INF("%s called period %d pulse %d", __func__, period_usec, pulse_usec);
+
+	key = irq_lock();
 	for (i = 0; i < config->num_colors; i++) {
 		dt_pwm = &config->subleds[i].pwm;
 		if (!data[i].intensity)
 			continue;
 		err = pwm_set_dt(dt_pwm, PWM_USEC(period_usec), PWM_USEC(pulse_usec));
 	}
+	irq_unlock(key);
 
 	return err;
 }
@@ -93,7 +96,7 @@ static int led_pwm_mc_set_brightness(const struct device *dev,
 	struct led_pwm_mc_subled_data *data = dev->data;
 
 	const struct pwm_dt_spec *dt_pwm;
-	int i, err = 0;
+	int i, key, err = 0;
 
 	if (value > 255) {
 		return -EINVAL;
@@ -101,11 +104,14 @@ static int led_pwm_mc_set_brightness(const struct device *dev,
 
 	led_pwm_mc_calc_components(dev, value);
 
+	key = irq_lock();
 	for (i = 0; i < config->num_colors; i++) {
 		dt_pwm = &config->subleds[i].pwm;
 		err = pwm_set_pulse_dt(dt_pwm, dt_pwm->period *
 				data[i].brightness / 255);
 	}
+	irq_unlock(key);
+
 	return err;
 }
 
