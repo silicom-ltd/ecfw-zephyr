@@ -1,0 +1,119 @@
+; Everglades SPI Image Generator configuration file 
+[SPI]
+SPISizeMegabits = 16 
+Flashmap = false
+FlshmapAddr = 0
+
+KeyHashLoc = 0x10000
+KeyHashLoc1 = 0x11000
+
+[DEVICE]
+TagAddr0 = 0
+TagAddr1 = 4
+BoardID = 0x316
+
+[KEY "0"]
+KeyHashoffset = 0
+ECDSAPubKeyFile = key0_crt.pem
+
+[KEY "1"]
+KeyHashoffset = 1
+ECDSAPubKeyFile = key1_crt.pem
+
+[KEY "2"]
+KeyHashoffset = 2
+ECDSAPubKeyFile = key2_crt.pem
+
+[KEY "3"]
+KeyHashoffset = 3
+ECDSAPubKeyFile = key3_crt.pem
+
+[KEY "4"]
+KeyHashoffset = 4
+ECDSAPubKeyFile = key4_crt.pem
+
+[KEY "5"]
+KeyHashoffset = 5
+ECDSAPubKeyFile = key5_crt.pem
+
+[IMAGE "0"]
+ImageLocation = 0x1000
+SpiFreqMHz = 48
+SpiReadCommand = Quad
+SpiDriveStrength = 4
+SpiSlewFast = false
+SpiSignalControl = 0x00
+FwBinFile = zephyr.bin
+ImageRevision = 0x00
+FwOffset = 0
+FwLoadAddress = 0x100000
+FwEntryAddress = 0
+UseECDSA = true
+FwAuthtic = false
+AuthenticateKeySelt = 0
+AutoKeyRevEn = false
+KeyRevPermission = 0x0
+AutoRollBackProtEn = false
+RollbackProtPerm031000 = 0
+RollbackProtPerm063032 = 0
+RollbackProtPerm095063 = 0
+RollbackProtPerm127096 = 0
+ECDSAPrivKeyFile = key0.enc.key
+ECDSAPrivKeyPassword = key0
+FwEncrypt = false
+AesGenECPubKeyFile = key0_crt.pem
+SHA256andECDSA = true
+TagBuildNumber= 0x1156
+Comp0ProgDrvStrenEN = true
+Comp0WritCmdTotByts = 1
+Comp0ReadCmdByte = 0x15    
+Comp0WritCmdByte = 0x11   
+Comp0DrvValue = 0x40       
+Comp0DrvMask = 0x60        
+Comp1ProgDrvStrenEN = true
+Comp1WritCmdTotByts = 1
+Comp1ReadCmdByte = 0x15
+Comp1WritCmdByte = 0x11    
+Comp1DrvValue = 0x20       
+Comp1DrvMask = 0x60
+
+[IMAGE "1"]
+ImageLocation = 0x40000
+SpiFreqMHz = 48
+SpiReadCommand = Quad
+SpiDriveStrength = 4
+SpiSlewFast = false
+SpiSignalControl = 0x00
+FwBinFile = zephyr.bin
+ImageRevision = 0x00
+FwOffset = 0
+FwLoadAddress = 0x100000
+FwEntryAddress = 0
+UseECDSA = true
+FwAuthtic = false
+AuthenticateKeySelt = 0
+AutoKeyRevEn = false
+KeyRevPermission = 0x0
+AutoRollBackProtEn = false
+RollbackProtPerm031000 = 0x0
+RollbackProtPerm063032 = 0x0
+RollbackProtPerm095063 = 0x0
+RollbackProtPerm127096 = 0x0
+ECDSAPrivKeyFile = key0.enc.key
+ECDSAPrivKeyPassword = key0
+FwEncrypt = false
+AesGenECPubKeyFile = key0_crt.pem
+SHA256andECDSA = true
+TagBuildNumber= 0x1156
+Comp0ProgDrvStrenEN = true
+Comp0WritCmdTotByts = 1
+Comp0ReadCmdByte = 0x15    
+Comp0WritCmdByte = 0x11   
+Comp0DrvValue = 0x40       
+Comp0DrvMask = 0x60        
+Comp1ProgDrvStrenEN = true
+Comp1WritCmdTotByts = 1
+Comp1ReadCmdByte = 0x15
+Comp1WritCmdByte = 0x11    
+Comp1DrvValue = 0x20       
+Comp1DrvMask = 0x60
