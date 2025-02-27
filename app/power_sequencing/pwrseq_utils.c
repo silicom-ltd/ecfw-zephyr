@@ -19,19 +19,23 @@ LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
 #define DEFAULT_EC_RESET_DELAY_MS	2u
 #define PWROK_RSMRST_DELAY_US		10u
 
-//static struct wdt_timeout_cfg m_cfg_wdt;
+static struct wdt_timeout_cfg m_cfg_wdt;
 
 /** Find the watchdog device instance and setup a timeout
  * to initiate the reset after timeout
  */
 static int ec_arm_reset(void)
 {
-//	int err;
+#if 0
 
+	uint32_t *pwr_reset = (uint32_t *)0x40080114;
 	uint32_t *sys_reset = (uint32_t *)0x40080118;
 
-	*sys_reset = 0x8;	
-#if 0
+	*pwr_reset &= ~0x10;
+
+	*sys_reset |= 0x10;	
+#else
+	int err;
 	const struct device *wdt = DEVICE_DT_GET(WDT_0);
 
 	if (!wdt) {
@@ -68,6 +72,7 @@ void ec_reset(void)
 
 	gpio_write_pin(SYS_PWROK, 0);
 	gpio_write_pin(PCH_PWROK, 0);
+//	gpio_write_pin(PS_ON_OUT, 0);
 #ifdef CONFIG_POSTCODE_MANAGEMENT
 	port80_display_off();
 #endif
@@ -77,7 +82,7 @@ void ec_reset(void)
 	 */
 	k_busy_wait(PWROK_RSMRST_DELAY_US);
 
-	gpio_write_pin(PM_RSMRST, 0);
+//	gpio_write_pin(PM_RSMRST, 0);
 	LOG_DBG("%s: Before calling the reset_ec_chip", __func__);
 
 	ec_arm_reset();
