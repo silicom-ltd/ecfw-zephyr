@@ -29,7 +29,8 @@ manifest:
       groups:
         - hal
     - name: mcuboot
-      remote: upstream
+      remote: silicom-ltd
+      repo-path: mcuboot
       revision: 5970052c7109faf916c5e3e318ab2ba4cdf85533
       path: bootloader/mcuboot
     - name: CPGZephyrDocs
