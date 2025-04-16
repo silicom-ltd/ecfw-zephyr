@@ -1,0 +1,24 @@
+#
+# Copyright (c) 2025, Silicom Connectivity Solutions
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+identifier: mec172x_adl_n_cp
+name: MEC172X ADL-N Checkpoint EC
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+ram: 64
+flash: 352
+supported:
+  - gpio
+  - pinmux
+  - i2c
+  - adc
+  - pwm
+  - espi
+  - spi
+  - eeprom
