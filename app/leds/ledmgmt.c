@@ -7,6 +7,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/led.h>
+#include <zephyr/drivers/espi.h>
 #include "ledmgmt.h"
 #include "led_mec172x.h"
 #include "board_config.h"
@@ -37,6 +38,9 @@ void led_request()
 #else
 static bool led_update;
 #endif
+
+static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
+static struct espi_callback espi_vw_cb;
 
 #if 0
 struct led_device *led_dev_tbl;
@@ -87,6 +91,27 @@ void get_pwm_led_peripherals_status(uint8_t *hw_peripherals_sts)
 }
 #endif
 
+static void host_reset_led_ownership(uint8_t);
+
+static void vw_handler(const struct device *dev, struct espi_callback *cb,
+		       struct espi_event event)
+{
+	if (event.evt_type == ESPI_BUS_EVENT_VWIRE_RECEIVED) {
+		switch (event.evt_details) {
+			case ESPI_VWIRE_SIGNAL_SLP_S5:
+				if (event.evt_data == 0) {/* asserted */
+					for (uint8_t i = 0; i < max_led_dev; i++) {
+						host_update_led_brightness(i, 0);
+						host_reset_led_ownership(i);
+						led_brightness_set(i, 0);
+					}	
+				}
+			break;
+			default: break;
+		}
+	}
+}
+
 static void init_leds(void)
 {
 	board_led_dev_tbl_init(&max_led_dev, &led_tbl);
@@ -113,6 +138,13 @@ void host_update_led_ownership(uint8_t idx)
 {
 	if (idx < max_led_dev) {
 		led_tbl[idx].owned = 1;
+	}
+}
+
+static void host_reset_led_ownership(uint8_t idx)
+{
+	if (idx < max_led_dev) {
+		led_tbl[idx].owned = 0;
 	}
 }
 
@@ -306,6 +338,9 @@ void ledmgmt_thread(void *p1, void *p2, void *p3)
 
 	LOG_INF("LEDMGMT thread starting");
 	init_leds();
+
+	espi_init_callback(&espi_vw_cb, vw_handler, ESPI_BUS_EVENT_VWIRE_RECEIVED);
+	espi_add_callback(espi_dev, &espi_vw_cb);
 
 #ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 	k_sem_init(&led_lock, 0, 1);
