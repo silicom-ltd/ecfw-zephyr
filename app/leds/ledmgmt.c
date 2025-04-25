@@ -98,13 +98,13 @@ static void vw_handler(const struct device *dev, struct espi_callback *cb,
 {
 	if (event.evt_type == ESPI_BUS_EVENT_VWIRE_RECEIVED) {
 		switch (event.evt_details) {
-			case ESPI_VWIRE_SIGNAL_SLP_S5:
+			case ESPI_VWIRE_SIGNAL_PLTRST:
 				if (event.evt_data == 0) {/* asserted */
 					for (uint8_t i = 0; i < max_led_dev; i++) {
 						host_update_led_brightness(i, 0);
 						host_reset_led_ownership(i);
 						led_brightness_set(i, 0);
-					}	
+					}
 				}
 			break;
 			default: break;
