@@ -1,0 +1,122 @@
+# This file contains information on who maintains what. It is parsed by
+# get_maintainer.py.
+#
+# File format
+# ###########
+#
+# "Area title" (the quotes are only needed for titles with special characters,
+#  like colons):
+#     status:
+#         One of the following:
+#
+#         * maintained:
+#             The area has a Maintainer (approved by the TSC) who
+#             looks after the area.
+#
+#         * odd fixes:
+#            The area gets odd fixes and may have collaborators.
+#
+#         * obsolete:
+#             Old code. Something being marked obsolete generally means it has
+#             been replaced by something better that you should be using
+#             instead.
+#
+#     maintainers:
+#         List of GitHub handles for the people who maintain the area. Usually,
+#         there's only one maintainer.
+#
+#     collaborators (not to be confused with the GitHub collaborator role):
+#         Very involved contributors, who know the area well and contribute
+#         significantly to it.
+#
+#     labels:
+#         List of GitHub labels to add to pull requests that modify the area.
+#
+#     files:
+#         List of paths and/or glob patterns giving the files in the area,
+#         relative to the root directory.
+#
+#         If a path or glob pattern ends in a '/', it matches all files within
+#         the given directory or directories. Otherwise, an exact match is
+#         required.
+#
+#         Paths to directories should always have a trailing '/'.
+#
+#     files-regex:
+#         List of regular expressions applied to paths to determine if they
+#         belong to the area. The regular expression may match anywhere within
+#         the path, but can be anchored with ^ and $ as usual.
+#
+#         Can be combined with a 'files' key.
+#
+#         Note: Prefer plain 'files' patterns where possible. get_maintainer.py
+#         will check that they match some file, but won't check regexes
+#         (because it might be slow).
+#
+#     files-exclude:
+#         Like 'files', but any matching files will be excluded from the area.
+#
+#     files-regex-exclude:
+#         Like 'files-regex', but any matching files will be excluded from the
+#         area.
+#
+#     description: >-
+#         Plain-English description. Describe what the system is about, from an
+#         outsider's perspective.
+#
+#
+# All areas must have a 'files' and/or 'files-regex' key. The other keys are
+# optional.
+#
+# It is very advisable to have a `status` key in all entries. Exceptions to
+# this would be sub-areas which add extra fields (for ex. more `collaborators`
+# who work only in that sub-area) to other areas.
+#
+#
+# Workflow
+# ########
+#
+# Ideally, any file in the tree will be covered by some area.
+#
+# When a GitHub pull request is sent, this happens:
+#
+#     * A user mentioned in 'maintainers' is added as Assignee to
+#       the pull request
+#
+#     * Users mentioned in 'maintainers' and 'collaborators' are added as
+#       reviewers to the pull request
+#
+#     * The labels listed in 'labels' are automatically added to the pull
+#       request
+#
+#     * The bot posts this comment:
+#
+#         This PR affects the following areas:
+#         <area name>:
+#           Status: ...
+#           Maintainers: <list of maintainers>
+#           Collaborators: <list of sub-maintainers>
+#
+#         <area name>:
+#           ...
+#
+#
+# Changes to MAINTAINERS.yml need to be approved as follows:
+#
+#     * Changing the 'maintainers' for an area needs approval from the
+#       Technical Steering Committee
+#
+#     * Changing the 'collaborators' lines requires the maintainer and
+#       collaborators of that area to agree (or vote on it)
+
+# Areas are sorted by name
+
+ALL:
+  status: maintained
+  maintainers:
+    - jjdalynh
+
+  files:
+    - *
+  labels:
+    - "area: ALL"
