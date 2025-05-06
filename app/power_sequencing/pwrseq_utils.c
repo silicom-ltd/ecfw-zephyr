@@ -26,15 +26,6 @@ static struct wdt_timeout_cfg m_cfg_wdt;
  */
 static int ec_arm_reset(void)
 {
-#if 0
-
-	uint32_t *pwr_reset = (uint32_t *)0x40080114;
-	uint32_t *sys_reset = (uint32_t *)0x40080118;
-
-	*pwr_reset &= ~0x10;
-
-	*sys_reset |= 0x10;	
-#else
 	int err;
 	const struct device *wdt = DEVICE_DT_GET(WDT_0);
 
@@ -62,7 +53,7 @@ static int ec_arm_reset(void)
 	}
 
 	LOG_DBG("%s: Setup Done Successfully", __func__);
-#endif
+
 	return 0;
 }
 
@@ -82,7 +73,7 @@ void ec_reset(void)
 	 */
 	k_busy_wait(PWROK_RSMRST_DELAY_US);
 
-//	gpio_write_pin(PM_RSMRST, 0);
+	gpio_write_pin(PM_RSMRST, 0);
 	LOG_DBG("%s: Before calling the reset_ec_chip", __func__);
 
 	ec_arm_reset();
