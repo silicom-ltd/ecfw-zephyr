@@ -1,5 +1,5 @@
 manifest:
-  version: 0.7
+  version: 0.8
 
   defaults:
     remote: silicom-ltd
@@ -13,7 +13,7 @@ manifest:
   projects:
     - name: zephyr
       repo-path: zephyr-silicom
-      revision: c65d71df7072129c2d6dd537a42a423bcdd937cf
+      revision: 21583040cd0876f4e063b40812a7bfadfc9caf44
       path: zephyr
       west-commands: scripts/west-commands.yml
     - name: hal_microchip
