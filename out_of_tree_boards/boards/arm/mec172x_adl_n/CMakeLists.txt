@@ -55,13 +55,13 @@ if(DEFINED MEC172X_SPI_GEN)
   #endif()
 
   set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
-    COMMAND cp ${BOARD_DIR}/keys/* ${PROJECT_BINARY_DIR}/
     COMMAND ${MEC172X_SPI_GEN}
     -i ${MEC172X_SPI_CFG_FILE}
     -o ${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME}
   )
   if(DEFINED CONFIG_MCUBOOT)
     set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+      COMMAND cp ${BOARD_DIR}/keys/* ${PROJECT_BINARY_DIR}/
       COMMAND dd if=${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME} of=${PROJECT_BINARY_DIR}/EcRegionPointer.bin bs=1 count=16
       COMMAND dd if=${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME} of=${PROJECT_BINARY_DIR}/EcRegion.bin bs=1 skip=4096
       COMMAND export FLASH_USED=`readelf -s ${PROJECT_BINARY_DIR}/${KERNEL_ELF_NAME} | grep _flash_used | awk -e '{print $$2 }' | sed -r 's/^/x/g' | awk -e '{print and(strtonum("0" $$1) +0xF, 0xFFFFFFF0) +768 +258080 }'`
@@ -80,6 +80,11 @@ if(DEFINED MEC172X_SPI_GEN)
       #      COMMAND cat ${PROJECT_BINARY_DIR}/EcRegion.bin >> ${PROJECT_BINARY_DIR}/zeros.bin
       #COMMAND cp ${PROJECT_BINARY_DIR}/zeros.bin ${PROJECT_BINARY_DIR}/zephyr.bin
       COMMAND cp ${PROJECT_BINARY_DIR}/EcRegion.bin ${PROJECT_BINARY_DIR}/zephyr.bin
+    )
+  else()
+    set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+      COMMAND dd if=${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME} of=${PROJECT_BINARY_DIR}/EcRegionPointer.bin bs=1 count=16
+      COMMAND dd if=${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME} of=${PROJECT_BINARY_DIR}/EcRegion.bin bs=1 skip=4096
     )
   endif()
 
