@@ -825,7 +825,8 @@ void smc_update_thermal_sensor(enum acpi_thrm_sens_idx idx, int16_t temp)
 		g_acpi_tbl.acpi_sen1 = temp;
 		break;
 
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	case ACPI_THRM_SEN_EXTCPU:
 #endif
 	case ACPI_THRM_SEN_SKIN:

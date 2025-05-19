@@ -254,7 +254,8 @@ void sys_therm_sensor_trip(void)
 
 		struct dtt_threshold *thrd = &therm_sensor_tbl[idx].thrd;
 		/* Current sensor temperature */
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 		int16_t snstemp = adc_temp_val[idx];
 #else
 		int16_t snstemp = adc_temp_val[therm_sensor_tbl[idx].adc_ch];

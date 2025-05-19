@@ -56,6 +56,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ PS_ON_OUT,		GPIO_OUTPUT_LOW },
 	{ EC_PCH_SPI_OE_N,	GPIO_INPUT },
 	{ GPIO_UC_2, 		GPIO_INPUT },
+	{ W_DISABLE_M2_SLOT0_N, GPIO_OUTPUT_HIGH },
 	{ LOM_READY,		GPIO_INPUT },
 
 	{ LOM_RESET_OUT_N,	GPIO_OUTPUT_LOW },
@@ -63,7 +64,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ SEC_OVERRIDE_3V3,	GPIO_INPUT },
 	{ FAN4_SENSE,		GPIO_INPUT },
 	{ PM_UC_PG3_ENTRY,	GPIO_OUTPUT_LOW },
-//	{ GPIO_HOST_UC_2	GPIO_INPUT },
+	{ GPIO_HOST_UC_2	GPIO_INPUT },
 
 	{ CATERR_EC_N,		GPIO_INPUT },
 	{ SYS_PWROK,		GPIO_OUTPUT_LOW },
@@ -77,7 +78,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ ALL_SYS_PWRGD,	GPIO_OPEN_DRAIN | GPIO_OUTPUT_HIGH },
 
 	{ LOM_RST_N,		GPIO_OUTPUT_LOW },
-//	{ ENABLE_12V_FAN_N	GPIO_OUTPUT_LOW },
+	{ ENABLE_12V_FAN_N	GPIO_OUTPUT_LOW },
 
 	{ SEC_OVERRIDE_1V8,	GPIO_INPUT }, // change to output when needed
 	{ PM_PWRBTN,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
@@ -125,11 +126,17 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ SX_EXIT_HOLDOFF_N,	GPIO_INPUT },
 	{ DG2_PRESENT,		GPIO_INPUT },
 	{ PEG_RTD3_COLD_MOD_SW_R, GPIO_INPUT },
+	{ SIM_M2_SLOT3A_DET_N,	GPIO_INPUT },
+	{ SIM_M2_SLOT3B_DET_N,	GPIO_INPUT },
+	{ SIM_M2_SLOT2A_DET_N,	GPIO_INPUT },
+	{ SIM_M2_SLOT2B_DET_N,	GPIO_INPUT },
 	{ W_DISABLE_M2_SLOT0_N, GPIO_OUTPUT_HIGH },
 	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH },
+	{ EXP_PWREN_EC,         GPIO_OUTPUT_HIGH },
 };
 
 struct gpio_ec_config mecc172x_vci_cfg[] = {
+	{ MIPI60_PWRBTN_N, 	GPIO_INPUT },
 };
 
 struct gpio_ec_config mecc172x_cfg_sus[] =  {
@@ -139,8 +146,17 @@ struct gpio_ec_config mecc172x_cfg_res[] =  {
 };
 
 struct gpio_ec_config mecc172x_cfg_host[] =  {
+	{ SIM_M2_SLOT3A_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT3B_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT2A_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT2B_DET_N, GPIO_INPUT },
+	{ SIM_M2_SLOT3_MUX_SEL, GPIO_OUTPUT_LOW },
+	{ SIM_M2_SLOT2_MUX_SEL, GPIO_OUTPUT_LOW },
 	{ W_DISABLE_M2_SLOT0_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ W_DISABLE_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ RST_CTL_M2_SLOT1_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ RST_CTL_M2_SLOT2_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ RST_CTL_M2_SLOT3_N, GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 };
 
 int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);
@@ -161,97 +177,97 @@ static void init_led_devices(void)
 #if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(0), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(0));
 	led_tbl[i].rgb = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(1), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(1));
 	led_tbl[i].rgb = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(2), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(2));
 	led_tbl[i].rgb = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_MC_LED_INST(3), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_MC_LED_INST(3));
 	led_tbl[i].rgb = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(0), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(0));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(1), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(1));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(2), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(2));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(3), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(3));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(4), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(4));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(5), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(5));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(6), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(6));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(7), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(7));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(8), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(8));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(9), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(9));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(10), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(10));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_PWM_LED_INST(11), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_PWM_LED_INST(11));
 	led_tbl[i].pwm = 1;
-	led_off(led_tbl[i].dev, 0); 
+	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(0), okay)
@@ -915,13 +931,11 @@ int board_init(void)
 
 		/* LPM optimizations */
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_DISCONNECTED);
-#if !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	} else if (gpio_read_pin(PVT_SPI_BOOT) == 1) {
 		/* ensure no ESPI operations happen when in VTT testing mode */
 		espihub_set_boot_mode(FLASH_BOOT_MODE_OWN);
 
 		gpio_force_configure_pin(RSMRST_PWRGD, GPIO_INPUT | GPIO_PULL_UP);
-#endif
 	} else {
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_OUTPUT_LOW);
 	}

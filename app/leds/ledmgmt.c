@@ -257,7 +257,7 @@ static void manage_local_leds(void)
 {
 	static uint16_t level = 0;
 	static uint16_t countup = 1;
-	static const struct device *led_pwm_mc = DEVICE_DT_GET(DT_NODELABEL(pwmmcled0));
+	static const struct device *led_pwm_mc = DEVICE_DT_GET(DT_ALIAS(led1));
 	int err;
 	static int color_choice = 0;
 	static int loops = 0;

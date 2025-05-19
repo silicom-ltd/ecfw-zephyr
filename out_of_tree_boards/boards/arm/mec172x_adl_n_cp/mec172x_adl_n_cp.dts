@@ -32,7 +32,7 @@
 		tach0 = &rpmfantach0;
 		tach1 = &rpmfantach1;
 		peci-0 = &peci0;
-		led-1 = &pwmmcled0;
+		led1 = &pwmmcled1;
 		eeprom0 = &eeprom;
 	};
 

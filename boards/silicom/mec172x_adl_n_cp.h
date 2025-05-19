@@ -100,14 +100,17 @@ extern uint8_t platformskutype;
 #define FAN1_SENSE			EC_GPIO_226 // XXX
 #define RSMRST_PWRGD			EC_GPIO_227 // XXX
 
+#define SIM_M2_SLOT2B_DET_N		EC_GPIO_232 // XXX
 #define SW_PWR_OK			EC_GPIO_233 //
 #define PM_P3V3_DSW_PG			EC_GPIO_235 //
 #define UART_MUX_SEL			EC_GPIO_236 //
 
 #define EC_CORE_SA_PE			EC_GPIO_240 // XXX
+#define RST_CTL_M2_SLOT3_N		EC_GPIO_241 
 #define SLOT1_LED_OUT			EC_GPIO_242 // XXX
 #define SW_RESET			EC_GPIO_243 //
 #define PM_USB3A_PWR_EN			EC_GPIO_245 //
+#define SIM_M2_SLOT3B_DET_N		EC_GPIO_246 // XXX
 
 #define PM_RSMRST_G3SAF_P 		EC_GPIO_253 // XXX (PM_RSMRST_N)
 #define W_DISABLE_M2_SLOT0_N		EC_GPIO_254 //

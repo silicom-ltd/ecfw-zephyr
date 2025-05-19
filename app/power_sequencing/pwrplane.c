@@ -374,7 +374,8 @@ static inline int pwrseq_task_init(void)
 			pwrseq_error(ERR_ESPIRESET);
 			return ret;
 		}
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	} else if (espihub_boot_mode() == FLASH_BOOT_MODE_OWN) {
 		/* be aware that pvt flash boot mode is used in both VRTT test
 		 * and early board debug
@@ -771,7 +772,8 @@ static void power_off(void)
 	board_suspend();
 
 	LOG_DBG("Shutting down %d", level);
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 //	gpio_write_pin(EC_PWRBTN_LED, HIGH);
 //	fan_set_duty_cycle(FAN_LEFT, 0);
 //	fan_set_duty_cycle(FAN_RIGHT, 0);
@@ -848,7 +850,8 @@ static int power_on(void)
 	LOG_DBG("ALL_SYS_PWRGD is HIGH");
 	k_busy_wait(VR_ON_RAMP_DELAY_US);
 
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	LOG_DBG("Set PS_ON_UC");
 	ret = gpio_write_pin(PS_ON_OUT, 1);
 	if (ret) {
@@ -890,7 +893,8 @@ static int power_on(void)
 		pwrseq_error(ERR_PLT_RST);
 		return ret;
 	}
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	gpio_write_pin(EC_PWRBTN_LED, LOW);
 #else
 	gpio_write_pin(EC_PWRBTN_LED, HIGH);

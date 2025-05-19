@@ -35,7 +35,8 @@ struct btn_info {
 	char		*name;
 };
 
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N) && \
+    !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 static struct btn_info btn_lst[] = {
 	{VOL_UP,          false, GPIO_DEBOUNCE_CNT, NULL, VOL_UP_INIT_POS,
 					{{0}, NULL, 0}, "VolUp"},

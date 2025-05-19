@@ -20,7 +20,8 @@
 #include "rstbutton.h"
 #include "espi_hub.h"
 #include "peci_hub.h"
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+    defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 #include "led_mec172x.h"
 #else
 #include "led.h"
@@ -46,7 +47,8 @@ static void proc_acpi_burst(void);
 static void service_system_acpi_cmds(void);
 static uint8_t smchost_req_length(uint8_t command);
 static void smchost_cmd_handler(uint8_t command);
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N) && \
+    !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 static void handle_kb_backlight_pwm(void);
 #endif
 
@@ -144,7 +146,8 @@ static void smchost_acpi_handler(void)
 #endif
 }
 
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N) && \
+    !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 static void smchost_volbtnup_handler(uint8_t volbtn_sts)
 {
 	LOG_DBG("%s", __func__);
@@ -342,7 +345,8 @@ static inline int smchost_task_init(void)
 	g_acpi_tbl.acpi_flags.lid_open = 1;
 //	g_acpi_tbl.kb_bklt_pwm_duty = 0;
 	prev_kb_bklt_pwm_duty = 0;
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N) && \
+    !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	led_init(LED_KBD_BKLT);
 #endif
 
@@ -376,7 +380,8 @@ static bool smchost_process_tasks(void)
 	check_sci_queue();
 	service_system_acpi_cmds();
 	pend_data = proc_host_send();
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N) && \
+    !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	handle_kb_backlight_pwm();
 #endif
 
@@ -743,7 +748,8 @@ static void smchost_cmd_handler(uint8_t command)
 	}
 }
 
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N) && \
+    !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 static void handle_kb_backlight_pwm(void)
 {
 	if (prev_kb_bklt_pwm_duty != g_acpi_tbl.kb_bklt_pwm_duty) {
