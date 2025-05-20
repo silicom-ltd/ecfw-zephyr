@@ -19,7 +19,7 @@
 
 LOG_MODULE_REGISTER(board, CONFIG_BOARD_LOG_LEVEL);
 
-static uint16_t plat_data = 0x2300;
+static uint16_t plat_data = 0x2400;
 
 uint16_t get_platform_id(void)
 {
