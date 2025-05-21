@@ -10,8 +10,8 @@
 #include "flashhdr.h"
 
 #define KSC_PLAT_ID   1
-#define KSC_MAJOR_VER 3
-#define KSC_MINOR_VER 2
+#define KSC_MAJOR_VER 4
+#define KSC_MINOR_VER 0
 #define KSC_BUILD_VER 0
 
 __in_section(ecfw_info, static, var) struct ksc_img_hdr header = {
@@ -21,7 +21,7 @@ __in_section(ecfw_info, static, var) struct ksc_img_hdr header = {
 	/* version info */
 	.version = {KSC_PLAT_ID, KSC_MAJOR_VER, KSC_MINOR_VER, KSC_BUILD_VER },
 	.copyright = "Copyright (c) 2019 Intel Corporation All Rights Reserved\n\
-		      Copyright (c) 2023 Silicom Ltd. All Rights Reserved",
+		      Copyright (c) 2023-2025 Silicom Ltd. All Rights Reserved",
 	/* image size*/
 	.img_size = 0x00000000,
 	.platform_str = KSC_PLAT_NAME,
