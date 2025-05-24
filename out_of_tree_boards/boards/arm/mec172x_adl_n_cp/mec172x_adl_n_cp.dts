@@ -346,16 +346,16 @@
 	pinctrl-0 = <&i2c08_sda_gpio231 &i2c08_scl_gpio230>;
 	pinctrl-names = "default";
 
-	fanctrl1: dev@4e {
+	fanctrl1: dev@4d {
 		compatible = "vnd,i2c-device";
 		status = "disabled";
-		reg = <0x4e>;
+		reg = <0x4d>;
 	};
 
-	fanctrl2: dev@4f {
+	fanctrl2: dev@2f {
 		compatible = "vnd,i2c-device";
 		status = "disabled";
-		reg = <0x4f>;
+		reg = <0x2f>;
 	};
 
 	fancage1: dev@54 {
