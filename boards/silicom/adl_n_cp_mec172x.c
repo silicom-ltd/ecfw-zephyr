@@ -77,7 +77,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ ALL_SYS_PWRGD,	GPIO_OPEN_DRAIN | GPIO_OUTPUT_HIGH },
 
 	{ LOM_RST_N,		GPIO_OUTPUT_LOW },
-//	{ ENABLE_12V_FAN_N	GPIO_OUTPUT_LOW },
+	{ ENABLE_12V_FAN_N,	GPIO_OUTPUT_LOW },
 
 	{ SEC_OVERRIDE_1V8,	GPIO_INPUT }, // change to output when needed
 	{ PM_PWRBTN,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
