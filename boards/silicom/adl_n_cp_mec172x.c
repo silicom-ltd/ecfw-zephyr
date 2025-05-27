@@ -151,7 +151,7 @@ int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);
 #define DT_GPIO_LED_INST(x)	DT_NODELABEL(gpioled##x)
 #define DT_BBLED_INST(x)	DT_NODELABEL(bbled##x)
 
-static struct led_dev led_tbl[32];
+static struct led_dev led_tbl[64];
 static uint8_t max_led_dev;
 
 static void init_led_devices(void)
@@ -286,6 +286,31 @@ static void init_led_devices(void)
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(6), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(6));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(7), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(7));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(8), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(8));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(9), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(9));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(10), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(10));
+	led_off(led_tbl[i].dev, 0);
+	i++;
+#endif
+#if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(11), okay)
+	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(11));
 	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
