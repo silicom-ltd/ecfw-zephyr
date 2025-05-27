@@ -69,6 +69,11 @@ if(DEFINED MEC172X_SPI_GEN)
       #COMMAND export FLASH_END=$$(expr 258048 + $$FLASH_USED)
       COMMAND dd if=${PROJECT_BINARY_DIR}/EcRegion.bin of=${PROJECT_BINARY_DIR}/zephyr.bin bs=1 count=$$FLASH_USED
       )
+  else()
+    set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+      COMMAND dd if=${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME} of=${PROJECT_BINARY_DIR}/EcRegionPointer.bin bs=1 count=16
+      COMMAND dd if=${PROJECT_BINARY_DIR}/${SPI_IMAGE_NAME} of=${PROJECT_BINARY_DIR}/EcRegion.bin bs=1 skip=4096
+    )
   endif()
 
   if(DEFINED CONFIG_BOOTLOADER_MCUBOOT)
