@@ -329,6 +329,14 @@
 		timeout = <25>;
 		pagesize = <16>;
 	};
+};
+
+&i2c_smb_2 {
+	status = "ok";
+	port_sel = <5>;
+	
+	pinctrl-0 = <&i2c05_sda_gpio141 &i2c05_scl_gpio142>;
+	pinctrl-names = "default";
 
 	lom_mgmt: lom_mgmt@30 {
 		compatible = "i2c-target-lom-mgmt";
@@ -336,14 +344,6 @@
 		reg = <0x30>;
 		//size = <2048>;
 	};
-};
-
-&i2c_smb_2 {
-	status = "disabled";
-	port_sel = <5>;
-	
-	pinctrl-0 = <&i2c05_sda_gpio141 &i2c05_scl_gpio142>;
-	pinctrl-names = "default";
 };
 
 &i2c_smb_3 {
