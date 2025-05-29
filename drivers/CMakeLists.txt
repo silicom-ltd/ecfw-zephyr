@@ -111,6 +111,16 @@ target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
     PUBLIC
     )
 
+if (CONFIG_BOARD_MEC172X_ADL_N OR CONFIG_BOARD_MEC172X_ADL_N_CP)
+    target_sources_ifdef(CONFIG_I2C_TARGET_LOM_MGMT app
+        PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt_target.c
+        PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt_i2c.h
+        )
+endif()
+
+
 target_include_directories(app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}

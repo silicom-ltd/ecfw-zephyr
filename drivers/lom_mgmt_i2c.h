@@ -1,0 +1,101 @@
+#ifndef __DRIVERS_I2C_TARGET_LOM_MGMT_H__
+#define __DRIVERS_I2C_TARGET_LOM_MGMT_H__
+
+#include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/net/net_ip.h>
+
+//#define LOM_MGMT_DBG
+
+#define REQ_DLEN_MAX 64
+#define RES_DLEN_MAX 2048
+
+#define REQ_HEAD_LEN 4
+#define RES_HEAD_LEN 3
+
+#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN)
+#define RES_BUFF_SIZE (RES_DLEN_MAX + RES_HEAD_LEN)
+
+struct lom_mgmt_req {
+	uint16_t size;
+	union {
+		struct {
+			uint8_t seed;
+			uint8_t func;
+			uint8_t dlen;
+			uint8_t csum;
+			uint8_t data[];
+		} __attribute__((__packed__));
+
+		uint8_t  buf[REQ_BUFF_SIZE];
+	};
+};
+
+#define RES_META_F_TIMESTAMP 0x08;
+
+struct lom_mgmt_res {
+	uint16_t size;
+	union {
+		struct {
+			uint8_t  code;
+			uint16_t meta;
+			uint8_t  data[];
+		} __attribute__((__packed__));
+
+		uint8_t buf[RES_BUFF_SIZE];
+	};
+};
+
+typedef int (*lom_mgmt_i2c_cb_request_t)(struct lom_mgmt_req *req, struct lom_mgmt_res *res);
+
+typedef void (*lom_mgmt_i2c_cb_cancel_t)(void);
+
+struct lom_mgmt_i2c_callbacks {
+	lom_mgmt_i2c_cb_request_t send_request;
+	lom_mgmt_i2c_cb_cancel_t  send_cancel;
+};
+
+int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code, uint16_t dat_size, uint8_t flag);
+int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_callbacks *cb);
+
+enum lom_mgmt_msg_func {
+	FUNC_FIRST                = 1,
+	FUNC_GET_ID               = FUNC_FIRST,
+	FUNC_FINI                 ,
+	FUNC_POWER_CTRL           ,
+	FUNC_GET_ACPI_POWER_STATE ,
+	FUNC_GET_SENSORS          ,
+	FUNC_GET_FRU              ,
+	FUNC_GET_FAULT_CODE       ,
+	FUNC_GET_EVENTS           ,
+
+	FUNC_TEST_L2              ,
+	FUNC_TEST_L3              ,
+#ifdef LOM_MGMT_DBG
+	FUNC_DEBUG                ,
+	FUNC_LAST                 = FUNC_DEBUG,
+#else
+	FUNC_LAST                 = FUNC_TEST_L3,
+#endif
+};
+
+enum lom_mgmt_power_ctrl_act {
+	PWC_UP = 1,
+	PWC_SHUTDOWN ,
+	PWC_HARD_RESET,
+	PWC_FORCE_DOWN,
+};
+
+enum lom_mgmt_i2c_stat {
+	EC_RET_NO_PROC = 1,
+	EC_RET_READY,
+	EC_RET_RETRY, /* Data not ready */
+	EC_RET_OK,
+	EC_RET_ERR_CODE_BASE,
+	EC_RET_ERR_INV_SIZE = EC_RET_ERR_CODE_BASE,
+	EC_RET_ERR_INV_FUNC,
+	EC_RET_ERR_INV_CSUM,
+};
+
+
+#endif /* __DRIVERS_I2C_TARGET_LOM_MGMT_H__ */

@@ -329,6 +329,13 @@
 		timeout = <25>;
 		pagesize = <16>;
 	};
+
+	lom_mgmt: lom_mgmt@30 {
+		compatible = "i2c-target-lom-mgmt";
+		status = "okay";
+		reg = <0x30>;
+		//size = <2048>;
+	};
 };
 
 &i2c_smb_2 {

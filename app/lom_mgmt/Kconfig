@@ -1,0 +1,22 @@
+
+config LOM_MGMT_PROC
+	bool "Enable LOM_MGMT Processing"
+	help
+	  Enable LOM_MGMT process module
+
+config LOM_MGMT_PROC_LOG_LEVEL
+	int "LOM management handler log level"
+	depends on LOG
+	depends on LOM_MGMT_PROC
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for LOM management handler module.
+
+
+config HOST_EVENT_ENTRY_MAX
+	int "Maxmium log entries for host event"
+	depends on LOM_MGMT_PROC
+	default 1024
+	help
+	  Set limits of ring buffer for host event log.
