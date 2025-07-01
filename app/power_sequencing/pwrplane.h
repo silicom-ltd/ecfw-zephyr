@@ -103,6 +103,8 @@ bool atx_detect(void);
  */
 void therm_shutdown(void);
 
+void power_off(void);
+
 extern struct pwr_flags g_pwrflags;
 
 #endif /* __PWRPLANE_H__ */

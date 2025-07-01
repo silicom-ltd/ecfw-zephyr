@@ -84,7 +84,7 @@ static enum system_power_state current_state;
 static enum system_power_state next_state;
 
 /* Handle S5 entry/exit and G3 exit */
-static void power_off(void);
+void power_off(void);
 static int power_on(void);
 static void suspend(void);
 static int resume(void);
@@ -747,7 +747,7 @@ void therm_shutdown(void)
 	resume_all_tasks();
 }
 
-static void power_off(void)
+void power_off(void)
 {
 	int level;
 
@@ -794,6 +794,9 @@ static void power_off(void)
 static int power_on(void)
 {
 	int ret;
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+	int level;
+#endif
 
 	LOG_INF("%s", __func__);
 
@@ -849,6 +852,18 @@ static int power_on(void)
 
 	LOG_DBG("ALL_SYS_PWRGD is HIGH");
 	k_busy_wait(VR_ON_RAMP_DELAY_US);
+
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+	LOG_DBG("Turn on Switch card");
+	ret = gpio_write_pin(SW_PWR_ON_OFF, 1);
+
+	level = gpio_read_pin(SW_SENSE_N);
+
+	if (level == 0) {
+		LOG_DBG("Switch card detected!");
+		ret = wait_for_pin(SW_PWR_OK, 50000, 1);
+	}
+#endif
 
 #if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
     defined(CONFIG_BOARD_MEC172X_ADL_N_CP)

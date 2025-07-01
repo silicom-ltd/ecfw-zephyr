@@ -1,0 +1,21 @@
+# Kconfig - Config options for Checkpoint switch power
+#
+# Copyright (c) 2025 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config SW_POWER_SIGNAL 
+	bool "Enable Switch Power signal function"
+	default y
+	help
+	  Indicate if switch power on/off functionality is enabled.
+
+config SW_POWER_SIGNAL_LOG_LEVEL
+	int "switch button log level"
+	depends on LOG
+	depends on SW_POWER_SIGNAL
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for switch power signal.

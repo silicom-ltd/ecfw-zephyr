@@ -58,7 +58,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ GPIO_UC_2, 		GPIO_INPUT },
 	{ LOM_READY,		GPIO_INPUT },
 
-	{ LOM_RESET_OUT_N,	GPIO_OUTPUT_LOW },
+	{ LOM_RESET_OUT_N,	GPIO_INPUT },
 	{ LOM_PWRBTN_N,		GPIO_INPUT },
 	{ SEC_OVERRIDE_3V3,	GPIO_INPUT },
 	{ FAN4_SENSE,		GPIO_INPUT },
@@ -76,7 +76,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 //	{ PM_RSMRST,		GPIO_OUTPUT_LOW },
 	{ ALL_SYS_PWRGD,	GPIO_OPEN_DRAIN | GPIO_OUTPUT_HIGH },
 
-	{ LOM_RST_N,		GPIO_OUTPUT_LOW },
+	{ LOM_RST_N,		GPIO_OUTPUT_HIGH },
 	{ ENABLE_12V_FAN_N,	GPIO_OUTPUT_LOW },
 
 	{ SEC_OVERRIDE_1V8,	GPIO_INPUT }, // change to output when needed
@@ -90,6 +90,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ WAKE_SCI,		GPIO_OUTPUT_HIGH },
 
 	{ SW_PWR_ON_OFF,	GPIO_OUTPUT_LOW },
+	{ SW_PWR_OK,		GPIO_INPUT },
 	{ LOM_GPIO_IN0,		GPIO_INPUT },
 	{ LOM_GPIO_IN1,		GPIO_INPUT },
 	{ SW_GPIO_IN1,		GPIO_INPUT },
@@ -133,6 +134,7 @@ struct gpio_ec_config mecc172x_vci_cfg[] = {
 };
 
 struct gpio_ec_config mecc172x_cfg_sus[] =  {
+	{ SW_PWR_ON_OFF,	GPIO_OUTPUT_LOW },
 };
 
 struct gpio_ec_config mecc172x_cfg_res[] =  {
@@ -148,7 +150,7 @@ int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);
 #ifdef CONFIG_LED_MANAGEMENT
 #define DT_PWM_MC_LED_INST(x)	DT_NODELABEL(pwmmcled##x)
 #define DT_PWM_LED_INST(x)	DT_NODELABEL(pwmled##x)
-#define DT_GPIO_LED_INST(x)	DT_NODELABEL(gpioled##x)
+#define DT_GPIO_LED_INST(x)	DT_NODELABEL(DT_ALIAS(gpioled##x))
 #define DT_BBLED_INST(x)	DT_NODELABEL(bbled##x)
 
 static struct led_dev led_tbl[64];
@@ -256,11 +258,13 @@ static void init_led_devices(void)
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(0), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(0));
+	LOG_ERR("################# GPIO_LED 0 detected ######################");
 	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(1), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(1));
+	LOG_ERR("################# GPIO_LED 1 detected ######################");
 	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif

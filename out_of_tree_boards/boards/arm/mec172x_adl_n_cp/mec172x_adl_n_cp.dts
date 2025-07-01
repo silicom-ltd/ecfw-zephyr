@@ -27,13 +27,17 @@
 		i2c-0 = &i2c_smb_0;
 		i2c3 = &i2c_smb_1;
 		i2c11 = &i2c_smb_2;
-		fan0 = &rpmfan0;
-		fan1 = &rpmfan1;
-		tach0 = &rpmfantach0;
-		tach1 = &rpmfantach1;
 		peci-0 = &peci0;
 		led1 = &pwmmcled1;
 		eeprom0 = &eeprom;
+		fan0 = &fan1_1;
+		fan1 = &fan1_2;
+		fan2 = &fan1_3;
+		fan3 = &fan1_4;
+		tach0 = &fan_speed1;
+		tach1 = &fan_speed2;
+		tach2 = &fan_speed3;
+		tach3 = &fan_speed4;
 	};
 
 	gpio_keys {
@@ -79,19 +83,19 @@
 			/* GPIO 153 */
 			gpios = <&gpio_140_176 11 GPIO_ACTIVE_HIGH>;
 		};
-		fan1: led_2 {
+		fan1led: led_2 {
 			/* GPIO 232 */
 			gpios = <&gpio_200_236 26 GPIO_ACTIVE_LOW>;
 		};
-		fan2: led_3 {
+		fan2led: led_3 {
 			/* GPIO 222 */
 			gpios = <&gpio_200_236 18 GPIO_ACTIVE_LOW>;
 		};
-		fan3: led_4 {
+		fan3led: led_4 {
 			/* GPIO 1 */
 			gpios = <&gpio_000_036 1 GPIO_ACTIVE_LOW>;
 		};
-		fan4: led_5 {
+		fan4led: led_5 {
 			/* GPIO 244 */
 			gpios = <&gpio_240_276 5 GPIO_ACTIVE_LOW>;
 		};
@@ -353,16 +357,94 @@
 	pinctrl-0 = <&i2c08_sda_gpio231 &i2c08_scl_gpio230>;
 	pinctrl-names = "default";
 
-	fanctrl1: dev@4d {
-		compatible = "vnd,i2c-device";
-		status = "disabled";
+	mfd1: dev@4d {
+		compatible = "microchip,emc230x";
+		status = "okay";
 		reg = <0x4d>;
+
+		fanctrl1: fancontroller {
+			compatible = "microchip,emc230x-pwm";
+			status = "okay";
+			#pwm-cells = <2>;
+
+			fan1_1: FAN1 {
+				status = "okay";
+				pwms = <&fanctrl1 0 26000>;
+				edges = <5>;
+				initial = <0>;
+			};
+			fan1_2: FAN2 {
+				status = "okay";
+				pwms = <&fanctrl1 1 26000>;
+				edges = <5>;
+				initial = <0>;
+			};
+			fan1_3: FAN3 {
+				status = "okay";
+				pwms = <&fanctrl1 2 26000>;
+				edges = <5>;
+				initial = <0>;
+			};
+			fan1_4: FAN4 {
+				status = "okay";
+				pwms = <&fanctrl1 3 26000>;
+				edges = <5>;
+				initial = <0>;
+			};
+		};
+		fan_speed1: fanspeed1 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <1>;
+		};
+		fan_speed2: fanspeed2 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <2>;
+		};
+		fan_speed3: fanspeed3 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <3>;
+		};
+		fan_speed4: fanspeed4 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <4>;
+		};
 	};
 
-	fanctrl2: dev@2f {
-		compatible = "vnd,i2c-device";
-		status = "disabled";
+	mfd2: dev@2f {
+		compatible = "microchip,emc230x";
+		status = "okay";
 		reg = <0x2f>;
+
+		fanctrl2: fancontroller {
+			compatible = "microchip,emc230x-pwm";
+			status = "okay";
+			#pwm-cells = <2>;
+
+			fan2_1: FAN1 {
+				pwms = <&fanctrl2 0 26000>;
+				edges = <5>;
+				initial = <0>;
+			};
+			fan2_2: FAN2 {
+				pwms = <&fanctrl2 1 26000>;
+				edges = <5>;
+				initial = <0>;
+			};
+			fan2_3: FAN3 {
+				pwms = <&fanctrl2 2 26000>;
+				edges = <5>;
+				initial = <25>;
+			};
+			fan2_4: FAN4 {
+				pwms = <&fanctrl2 3 26000>;
+				edges = <5>;
+				initial = <25>;
+			};
+		};
 	};
 
 	fancage1: dev@54 {

@@ -15,6 +15,9 @@
 #if CONFIG_RESET_BUTTON
 #include "rstbutton.h"
 #endif
+#if CONFIG_SW_POWER_SIGNAL
+#include "sw_power.h"
+#endif
 #include "board_config.h"
 #include "acpi_region.h"
 #include "smchost.h"
@@ -69,6 +72,8 @@ static struct btn_info btn_lst[] = {
 					{{0}, NULL, 0}, "PwrBtn"},
 	{BTN_RECESSED, false, GPIO_DEBOUNCE_CNT, NULL, BTN_RECESSED_INIT_POS,
 					{{0}, NULL, 0}, "RstBtn"},
+	{SW_PWR_OK, false, 1, NULL, 1,
+			{{0}, NULL, 0}, "SwitchPwrOk"},
 };
 #endif
 
@@ -260,6 +265,11 @@ void periph_thread(void *p1, void *p2, void *p3)
 #ifdef CONFIG_RESET_BUTTON
 	rstbutton_init();
 #endif
+
+#ifdef CONFIG_SW_POWER_SIGNAL
+	sw_power_init();
+#endif
+
 	k_sem_init(&btn_debounce_lock, 0, 1);
 	while (true) {
 		/* Wait until ISR occurs to start debouncing */

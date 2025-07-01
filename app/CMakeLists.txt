@@ -18,6 +18,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/soc_debug_awaren
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/rstbtn)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/leds)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/gpio)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/sw_power)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
@@ -200,6 +201,13 @@ target_sources_ifdef(CONFIG_LOM_MGMT_PROC app
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_mgmt_proc.h
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/host_event.h
+    )
+
+target_sources_ifdef(CONFIG_SW_POWER_SIGNAL app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/sw_power/sw_power.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/sw_power/sw_power.h
     )
 
 target_include_directories(app
