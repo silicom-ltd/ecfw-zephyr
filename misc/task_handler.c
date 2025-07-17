@@ -24,6 +24,9 @@
 #ifdef CONFIG_GPIO_MANAGEMENT
 #include "gpiomgmt.h"
 #endif
+#ifdef CONFIG_LOM_MGMT_PROC
+#include "lom_mgmt_proc.h"
+#endif
 #include "voltagemon.h"
 #include "currmon.h"
 LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
@@ -109,6 +112,15 @@ K_THREAD_DEFINE(current_thrd_id, EC_TASK_STACK_SIZE, current_monitor_thread,
 		&current_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
 
+
+#ifdef CONFIG_LOM_MGMT_PROC
+const uint32_t lom_mgmt_thrd_period = 250;
+K_THREAD_DEFINE(lom_mgmt_thrd_id, EC_TASK_STACK_SIZE, lom_mgmt_thread,
+                &lom_mgmt_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
+                K_INHERIT_PERMS, EC_WAIT_FOREVER);
+
+#endif
+
 struct task_info {
 	k_tid_t thread_id;
 	bool can_suspend;
@@ -166,6 +178,10 @@ static struct task_info tasks[] = {
 	  .tagname = VOLTAGE_MGMT_TASK_NAME },
 	{ .thread_id = current_thrd_id, .can_suspend = false,
 	  .tagname = CURRENT_MGMT_TASK_NAME },
+#ifdef CONFIG_LOM_MGMT_PROC
+	{ .thread_id = lom_mgmt_thrd_id, .can_suspend = false,
+	  .tagname = "LOM_MGMT_PROC" },
+#endif
 };
 
 void start_all_tasks(void)
