@@ -197,10 +197,10 @@ static void handle_spi_sharing(uint8_t boot_mode)
 	}
 }
 
-static int wait_for_pin_level(uint32_t port_pin, uint16_t timeout,
+static int wait_for_pin_level(uint32_t port_pin, uint32_t timeout,
 			uint32_t exp_level)
 {
-	uint16_t loop_cnt = timeout;
+	uint32_t loop_cnt = timeout;
 	int level;
 
 	do {
@@ -230,7 +230,7 @@ static int wait_for_pin_level(uint32_t port_pin, uint16_t timeout,
 	return 0;
 }
 
-static inline int wait_for_pin(uint32_t port_pin, uint16_t timeout,
+static inline int wait_for_pin(uint32_t port_pin, uint32_t timeout,
 			       uint32_t exp_level)
 {
 	if (pwrseq_timeout_disabled) {
@@ -861,7 +861,8 @@ static int power_on(void)
 
 	if (level == 0) {
 		LOG_DBG("Switch card detected!");
-		ret = wait_for_pin(SW_PWR_OK, 50000, 1);
+		ret = wait_for_pin(SW_PWR_OK, 150000, 1);
+		LOG_DBG("Switch card SW_PWR_OK timeout");
 	}
 #endif
 
