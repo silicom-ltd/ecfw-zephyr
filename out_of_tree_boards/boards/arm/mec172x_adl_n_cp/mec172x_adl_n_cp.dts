@@ -371,25 +371,25 @@
 				status = "okay";
 				pwms = <&fanctrl1 0 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 			fan1_2: FAN2 {
 				status = "okay";
 				pwms = <&fanctrl1 1 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 			fan1_3: FAN3 {
 				status = "okay";
 				pwms = <&fanctrl1 2 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 			fan1_4: FAN4 {
 				status = "okay";
 				pwms = <&fanctrl1 3 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 		};
 		fan_speed1: fanspeed1 {
@@ -427,22 +427,22 @@
 			fan2_1: FAN1 {
 				pwms = <&fanctrl2 0 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 			fan2_2: FAN2 {
 				pwms = <&fanctrl2 1 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 			fan2_3: FAN3 {
 				pwms = <&fanctrl2 2 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 			fan2_4: FAN4 {
 				pwms = <&fanctrl2 3 26000>;
 				edges = <5>;
-				initial = <25>;
+				initial = <60>;
 			};
 		};
 	};
