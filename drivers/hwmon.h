@@ -110,6 +110,7 @@ struct hwmon_sram {
 	struct hwmon_peci peci;	
 	struct hwmon_fdata fan[4];
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
+	struct hwmon_fdata emc230x_fan[10];
 } __attribute__ ((packed, aligned(32)));
 
 

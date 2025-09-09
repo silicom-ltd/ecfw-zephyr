@@ -28,16 +28,28 @@
 		i2c3 = &i2c_smb_1;
 		i2c11 = &i2c_smb_2;
 		peci-0 = &peci0;
-		led1 = &pwmmcled1;
+		led0 = &pwmmcled1;
+		led1 = &pwmmcled2;
 		eeprom0 = &eeprom;
 		fan0 = &fan1_1;
 		fan1 = &fan1_2;
 		fan2 = &fan1_3;
 		fan3 = &fan1_4;
-		tach0 = &fan_speed1;
-		tach1 = &fan_speed2;
-		tach2 = &fan_speed3;
-		tach3 = &fan_speed4;
+		fan4 = &fan2_1;
+		fan5 = &fan2_2;
+		fan6 = &fan2_3;
+		fan7 = &fan2_4;
+		gpioled0 = &amber_mid;
+		gpioled1 = &amber_bot;
+		gpioled2 = &fan1led;
+		gpioled3 = &fan2led;
+		gpioled4 = &fan3led;
+		gpioled5 = &fan4led;
+		gpioled6 = &pwr_led_green;
+		gpioled7 = &fan_fail;
+		gpioled8 = &front_location;
+		gpioled9 = &psu_amber;
+		gpioled10 = &psu_green;
 	};
 
 	gpio_keys {
@@ -73,50 +85,80 @@
 		};
 	};
 
-	gpio_leds {
+	amber_mid: led_0 {
 		compatible = "gpio-leds";
-		amber_mid: led_0 {
-			/* GPIO 157 */
+		/* GPIO 157 */
+		led0 {
 			gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
 		};
-		amber_bot: led_1 {
-			/* GPIO 153 */
+	};
+	amber_bot: led_1 {
+		compatible = "gpio-leds";
+		/* GPIO 153 */
+		led1 {
 			gpios = <&gpio_140_176 11 GPIO_ACTIVE_HIGH>;
 		};
-		fan1led: led_2 {
-			/* GPIO 232 */
+	};
+	fan1led: led_2 {
+		compatible = "gpio-leds";
+		/* GPIO 232 */
+		led2 {
 			gpios = <&gpio_200_236 26 GPIO_ACTIVE_LOW>;
 		};
-		fan2led: led_3 {
-			/* GPIO 222 */
+	};
+	fan2led: led_3 {
+		compatible = "gpio-leds";
+		/* GPIO 222 */
+		led3 {	
 			gpios = <&gpio_200_236 18 GPIO_ACTIVE_LOW>;
 		};
-		fan3led: led_4 {
-			/* GPIO 1 */
+	};
+	fan3led: led_4 {
+		compatible = "gpio-leds";
+		/* GPIO 1 */
+		led4 {
 			gpios = <&gpio_000_036 1 GPIO_ACTIVE_LOW>;
 		};
-		fan4led: led_5 {
-			/* GPIO 244 */
+	};
+	fan4led: led_5 {
+		compatible = "gpio-leds";
+		/* GPIO 244 */
+		led5 {
 			gpios = <&gpio_240_276 5 GPIO_ACTIVE_LOW>;
 		};
-		pwr_led_green: led_6 {
-			/* GPIO 115 */
+	};
+	pwr_led_green: led_6 {
+		compatible = "gpio-leds";
+		/* GPIO 115 */
+		led6 {
 			gpios = <&gpio_100_136 13 GPIO_ACTIVE_LOW>;
 		};
-		fan_fail: led_7 {
-			/* GPIO 112 */
+	};
+	fan_fail: led_7 {
+		compatible = "gpio-leds";
+		/* GPIO 112 */
+		led7 {
 			gpios = <&gpio_100_136 10 GPIO_ACTIVE_LOW>;
 		};
-		front_location: led_8 {
-			/* GPIO 131 */
+	};
+	front_location: led_8 {
+		compatible = "gpio-leds";
+		/* GPIO 131 */
+		led8: front_location {
 			gpios = <&gpio_100_136 25 GPIO_ACTIVE_LOW>;
 		};
-		psu_amber: led_9 {
-			/* GPIO 14 */
+	};
+	psu_amber: led_9 {
+		compatible = "gpio-leds";
+		/* GPIO 14 */
+		led9 {
 			gpios = <&gpio_000_036 12 GPIO_ACTIVE_LOW>;
 		};
-		psu_green: led_10 {
-			/* GPIO 2 */
+	};
+	psu_green: led_10 {
+		compatible = "gpio-leds";
+		/* GPIO 2 */
+		led10 {
 			gpios = <&gpio_000_036 2 GPIO_ACTIVE_LOW>;
 		};
 	};
@@ -370,24 +412,28 @@
 			fan1_1: FAN1 {
 				status = "okay";
 				pwms = <&fanctrl1 0 26000>;
+				tach = <&fan_speed1>;
 				edges = <5>;
-				initial = <60>;
+				initial = <10>;
 			};
 			fan1_2: FAN2 {
 				status = "okay";
 				pwms = <&fanctrl1 1 26000>;
+				tach = <&fan_speed2>;
 				edges = <5>;
-				initial = <60>;
+				initial = <10>;
 			};
 			fan1_3: FAN3 {
 				status = "okay";
 				pwms = <&fanctrl1 2 26000>;
+				tach = <&fan_speed3>;
 				edges = <5>;
 				initial = <60>;
 			};
 			fan1_4: FAN4 {
 				status = "okay";
 				pwms = <&fanctrl1 3 26000>;
+				tach = <&fan_speed4>;
 				edges = <5>;
 				initial = <60>;
 			};
@@ -395,22 +441,22 @@
 		fan_speed1: fanspeed1 {
 			compatible = "microchip,emc230x-fan-speed";
 			status = "okay";
-			channel = <1>;
+			channel = <0>;
 		};
 		fan_speed2: fanspeed2 {
 			compatible = "microchip,emc230x-fan-speed";
 			status = "okay";
-			channel = <2>;
+			channel = <1>;
 		};
 		fan_speed3: fanspeed3 {
 			compatible = "microchip,emc230x-fan-speed";
 			status = "okay";
-			channel = <3>;
+			channel = <2>;
 		};
 		fan_speed4: fanspeed4 {
 			compatible = "microchip,emc230x-fan-speed";
 			status = "okay";
-			channel = <4>;
+			channel = <3>;
 		};
 	};
 
@@ -426,24 +472,48 @@
 
 			fan2_1: FAN1 {
 				pwms = <&fanctrl2 0 26000>;
+				tach = <&fan_speed5>;
 				edges = <5>;
 				initial = <60>;
 			};
 			fan2_2: FAN2 {
 				pwms = <&fanctrl2 1 26000>;
+				tach = <&fan_speed6>;
 				edges = <5>;
 				initial = <60>;
 			};
 			fan2_3: FAN3 {
 				pwms = <&fanctrl2 2 26000>;
+				tach = <&fan_speed7>;
 				edges = <5>;
 				initial = <60>;
 			};
 			fan2_4: FAN4 {
 				pwms = <&fanctrl2 3 26000>;
+				tach = <&fan_speed8>;
 				edges = <5>;
 				initial = <60>;
 			};
+		};
+		fan_speed5: fanspeed5 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <0>;
+		};
+		fan_speed6: fanspeed6 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <1>;
+		};
+		fan_speed7: fanspeed7 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <2>;
+		};
+		fan_speed8: fanspeed8 {
+			compatible = "microchip,emc230x-fan-speed";
+			status = "okay";
+			channel = <3>;
 		};
 	};
 
@@ -486,6 +556,19 @@
 		timeout = <25>;
 		pagesize = <16>;
 	};
+
+	switch_temp0: dev@48 {
+		compatible = "lm75";
+		status = "okay";
+		reg = <0x48>;
+	};
+
+	switch_temp1: dev@49 {
+		compatible = "lm75";
+		status = "okay";
+		reg = <0x49>;
+	};
+
 };
 
 &i2c_smb_4 {

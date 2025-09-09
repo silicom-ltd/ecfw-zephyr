@@ -92,6 +92,7 @@ struct fan_lookup {
 	uint8_t duty_cycle;
 };
 
+#if 0
 static const struct fan_lookup fan_lookup_tbl[] = {
 	{15, 10},
 	{50, 25},
@@ -105,10 +106,8 @@ static const struct fan_lookup fan_lookup_tbl[] = {
 };
 
 #define NEGATIVE_HYST CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS
-
 #if 1
 K_TIMER_DEFINE(temp_timer, NULL, NULL);
-
 static uint16_t get_fan_speed_for_temp(uint16_t temp)
 {
 	static int idx = 0;
@@ -208,6 +207,7 @@ static uint16_t get_fan_speed_for_temp(int16_t temp)
 
 	return speed;
 }
+#endif
 #endif
 
 void host_update_crit_temp(uint8_t crit_temp)
@@ -431,6 +431,7 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
+#if !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
 		/* EC Self control fan based on CPU thermal info */
 		uint8_t cpu_fan_speed = get_fan_speed_for_temp(cpu_temp);
@@ -466,15 +467,17 @@ static void manage_fan(void)
 			fan_set_duty_cycle(idx, fan_duty_cycle[idx]);
 		}
 	}
-
+#endif
 	fan_update();
 
 	for (uint8_t idx = 0; idx < max_fan_dev; idx++) {
 		uint16_t rpm;
 
 		fan_read_rpm(idx, &rpm);
+#if !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 		smc_update_fan_tach(idx, rpm);
 		smc_update_fan_pwm(idx, fan_duty_cycle[idx]); /* store fan duty cycle for hwmon */
+#endif
 	}
 
 	/* EC assumes OS is hung/BSOD occurred and takes override actions

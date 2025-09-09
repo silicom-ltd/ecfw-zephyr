@@ -25,18 +25,14 @@ extern struct hwmon_sram *hwmon_data;
 #define DT_FAN_INST(x)		DEVICE_DT_GET(DT_ALIAS(fan##x)),
 
 static const struct device *emc230x_fan_dev[] = {
-	DEVICE_DT_GET_OR_NULL(DT_ALIAS(fan0)),
-	DEVICE_DT_GET_OR_NULL(DT_ALIAS(fan1)),
-	DEVICE_DT_GET_OR_NULL(DT_ALIAS(fan2)),
-//	DT_INST_FOREACH_STATUS_OKAY(DT_FAN_INST)
-};
-
-//#undef DT_DRV_COMPAT
-//#define DT_DRV_COMPAT	microchip_emc230x_fan_speed
-#define DT_TACH_INST(x)		DEVICE_DT_GET(DT_ALIAS(tach##x)),
-
-static const struct device *emc230x_tach_dev[] = {
-	DT_INST_FOREACH_STATUS_OKAY(DT_TACH_INST)
+	DEVICE_DT_GET(DT_ALIAS(fan0)),
+	DEVICE_DT_GET(DT_ALIAS(fan1)),
+	DEVICE_DT_GET(DT_ALIAS(fan2)),
+	DEVICE_DT_GET(DT_ALIAS(fan3)),
+	DEVICE_DT_GET(DT_ALIAS(fan4)),
+	DEVICE_DT_GET(DT_ALIAS(fan5)),
+	DEVICE_DT_GET(DT_ALIAS(fan6)),
+	DEVICE_DT_GET(DT_ALIAS(fan7)),
 };
 
 int fan_init(void)
@@ -54,7 +50,7 @@ int fan_power_set(bool power_state)
 int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 {
 	int ret;
-	struct hwmon_pdata *pdata;
+	struct hwmon_fdata *fdata;
 
 	if (fan_idx > ARRAY_SIZE(emc230x_fan_dev)) {
 		return -EINVAL;
@@ -66,7 +62,7 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 
 	const struct device *fan = emc230x_fan_dev[fan_idx];
 
-		LOG_WRN("Fan %d setting duty cycle %d", fan_idx, rpm);
+	LOG_WRN("Fan %d setting duty cycle %d", fan_idx, rpm);
 	ret = fan_set_cycles(fan, (uint32_t)rpm);
 
 	if (ret) {
@@ -77,8 +73,8 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 	if (hwmon_data == NULL)
 		return 0;
 
-	pdata = &hwmon_data->pwm[fan_idx];
-	pdata->pwm_in = rpm;	
+	fdata = &hwmon_data->emc230x_fan[fan_idx];
+	fdata->fan_target = rpm;
 
 	return 0;
 }
@@ -90,7 +86,7 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm)
 	if (fan_idx > ARRAY_SIZE(emc230x_fan_dev))
 		return -ENODEV;
 
-	fdata = &hwmon_data->fan[fan_idx];
+	fdata = &hwmon_data->emc230x_fan[fan_idx];
 
 	*rpm = fdata->fan_rpm;
 
@@ -104,22 +100,18 @@ int fan_update(void)
 	struct sensor_value val;
 	struct hwmon_fdata *fdata;
 
-	for (i = 0; i < ARRAY_SIZE(emc230x_tach_dev); i++) {
+	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++) {
 
-		ret = sensor_sample_fetch_chan(emc230x_tach_dev[i], SENSOR_CHAN_RPM);
-		if (ret) {
-			return ret;
-		}
+		LOG_DBG("fan index %d, name: %s",i, emc230x_fan_dev[i]->name);
+		ret = fan_get_speed(emc230x_fan_dev[i], &val);
 
-		ret = sensor_channel_get(emc230x_tach_dev[i], SENSOR_CHAN_RPM, &val);
-		if (ret) {
+		if (ret != 0)
 			return ret;
-		}
 
 		if (hwmon_data == NULL)
 			return 0;
 
-		fdata = &hwmon_data->fan[i];
+		fdata = &hwmon_data->emc230x_fan[i];
 		fdata->fan_rpm = val.val1;
 	}
 
