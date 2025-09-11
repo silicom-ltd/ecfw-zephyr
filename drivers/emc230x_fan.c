@@ -113,6 +113,9 @@ int fan_update(void)
 
 		fdata = &hwmon_data->emc230x_fan[i];
 		fdata->fan_rpm = val.val1;
+
+		if ((fdata->fan_target != 0) && (fdata->fan_target <= 100))
+			fan_set_duty_cycle(i, (uint8_t)fdata->fan_target);
 	}
 
 	return 0;
