@@ -150,7 +150,7 @@ int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);
 #ifdef CONFIG_LED_MANAGEMENT
 #define DT_PWM_MC_LED_INST(x)	DT_NODELABEL(pwmmcled##x)
 #define DT_PWM_LED_INST(x)	DT_NODELABEL(pwmled##x)
-#define DT_GPIO_LED_INST(x)	DT_NODELABEL(DT_ALIAS(gpioled##x))
+#define DT_GPIO_LED_INST(x)	DT_ALIAS(gpioled##x)
 #define DT_BBLED_INST(x)	DT_NODELABEL(bbled##x)
 
 static struct led_dev led_tbl[64];
@@ -261,6 +261,8 @@ static void init_led_devices(void)
 	LOG_ERR("################# GPIO_LED 0 detected ######################");
 	led_off(led_tbl[i].dev, 0);
 	i++;
+#else
+#error No GPIO leds defined
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(1), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(1));
