@@ -124,7 +124,7 @@
 		compatible = "gpio-leds";
 		/* GPIO 244 */
 		led5 {
-			gpios = <&gpio_240_276 5 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio_240_276 4 GPIO_ACTIVE_LOW>;
 		};
 	};
 	pwr_led_green: led_6 {
