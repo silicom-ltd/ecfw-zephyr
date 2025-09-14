@@ -414,14 +414,14 @@
 				pwms = <&fanctrl1 0 26000>;
 				tach = <&fan_speed1>;
 				edges = <5>;
-				initial = <10>;
+				initial = <60>;
 			};
 			fan1_2: FAN2 {
 				status = "okay";
 				pwms = <&fanctrl1 1 26000>;
 				tach = <&fan_speed2>;
 				edges = <5>;
-				initial = <10>;
+				initial = <60>;
 			};
 			fan1_3: FAN3 {
 				status = "okay";
