@@ -19,6 +19,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/rstbtn)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/leds)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/gpio)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/sw_power)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/fan_sense)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
@@ -212,6 +213,13 @@ target_sources_ifdef(CONFIG_SW_POWER_SIGNAL app
     ${CMAKE_CURRENT_LIST_DIR}/sw_power/sw_power.h
     )
 
+target_sources_ifdef(CONFIG_FAN_SENSE app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/fan_sense/fan_sense.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/fan_sense/fan_sense.h
+    )
+ 
 target_include_directories(app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}

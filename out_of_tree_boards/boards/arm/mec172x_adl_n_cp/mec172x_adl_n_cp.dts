@@ -41,15 +41,10 @@
 		fan7 = &fan2_4;
 		gpioled0 = &amber_mid;
 		gpioled1 = &amber_bot;
-		gpioled2 = &fan1led;
-		gpioled3 = &fan2led;
-		gpioled4 = &fan3led;
-		gpioled5 = &fan4led;
-		gpioled6 = &pwr_led_green;
-		gpioled7 = &fan_fail;
-		gpioled8 = &front_location;
-		gpioled9 = &psu_amber;
-		gpioled10 = &psu_green;
+		gpioled2 = &pwr_led_green;
+		gpioled3 = &front_location;
+		gpioled4 = &psu_amber;
+		gpioled5 = &psu_green;
 	};
 
 	gpio_keys {
@@ -414,28 +409,28 @@
 				pwms = <&fanctrl1 0 26000>;
 				tach = <&fan_speed1>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 			fan1_2: FAN2 {
 				status = "okay";
 				pwms = <&fanctrl1 1 26000>;
 				tach = <&fan_speed2>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 			fan1_3: FAN3 {
 				status = "okay";
 				pwms = <&fanctrl1 2 26000>;
 				tach = <&fan_speed3>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 			fan1_4: FAN4 {
 				status = "okay";
 				pwms = <&fanctrl1 3 26000>;
 				tach = <&fan_speed4>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 		};
 		fan_speed1: fanspeed1 {
@@ -474,25 +469,25 @@
 				pwms = <&fanctrl2 0 26000>;
 				tach = <&fan_speed5>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 			fan2_2: FAN2 {
 				pwms = <&fanctrl2 1 26000>;
 				tach = <&fan_speed6>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 			fan2_3: FAN3 {
 				pwms = <&fanctrl2 2 26000>;
 				tach = <&fan_speed7>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 			fan2_4: FAN4 {
 				pwms = <&fanctrl2 3 26000>;
 				tach = <&fan_speed8>;
 				edges = <5>;
-				initial = <60>;
+				initial = <30>;
 			};
 		};
 		fan_speed5: fanspeed5 {

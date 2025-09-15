@@ -18,6 +18,9 @@
 #if CONFIG_SW_POWER_SIGNAL
 #include "sw_power.h"
 #endif
+#if CONFIG_FAN_SENSE
+#include "fan_sense.h"
+#endif
 #include "board_config.h"
 #include "acpi_region.h"
 #include "smchost.h"
@@ -74,6 +77,10 @@ static struct btn_info btn_lst[] = {
 					{{0}, NULL, 0}, "RstBtn"},
 	{SW_PWR_OK, false, 1, NULL, 1,
 			{{0}, NULL, 0}, "SwitchPwrOk"},
+	{FAN1_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan1Sense"},
+	{FAN2_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan2Sense"},
+	{FAN3_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan3Sense"},
+	{FAN4_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan4Sense"},
 };
 #endif
 
@@ -264,6 +271,10 @@ void periph_thread(void *p1, void *p2, void *p3)
 
 #ifdef CONFIG_RESET_BUTTON
 	rstbutton_init();
+#endif
+
+#ifdef CONFIG_FAN_SENSE
+	fan_sense_init();
 #endif
 
 #ifdef CONFIG_SW_POWER_SIGNAL

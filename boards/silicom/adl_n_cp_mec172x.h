@@ -69,6 +69,7 @@ extern uint8_t platformskutype;
 #define GPIO_HOST_UC_1			EC_GPIO_110
 #define GPIO_UC_1			EC_GPIO_113
 #define WAKE_SCI			EC_GPIO_114 // XXX
+#define EC_PWRBTN_LED			EC_GPIO_115
 
 #define SW_PWR_ON_OFF			EC_GPIO_120 //
 #define LOM_GPIO_IN0			EC_GPIO_121 //
@@ -108,6 +109,7 @@ extern uint8_t platformskutype;
 #define SLOT1_LED_OUT			EC_GPIO_242 // XXX
 #define SW_RESET			EC_GPIO_243 //
 #define PM_USB3A_PWR_EN			EC_GPIO_245 //
+#define FAN2_SENSE			EC_GPIO_246
 
 #define PM_RSMRST_G3SAF_P 		EC_GPIO_253 // XXX (PM_RSMRST_N)
 #define W_DISABLE_M2_SLOT0_N		EC_GPIO_254 //
@@ -118,8 +120,6 @@ extern uint8_t platformskutype;
 #define TIMEOUT_DISABLE			EC_DUMMY_GPIO_HIGH
 #define FAN_PWR_DISABLE_N		EC_DUMMY_GPIO_LOW
 //#define THERM_STRAP			EC_DUMMY_GPIO_HIGH
-
-#define EC_PWRBTN_LED			EC_DUMMY_GPIO_LOW
 
 /* EC GPIOS */
 #define THERM_STRAP			EC_DUMMY_GPIO_HIGH // GPIO_UC_2 (for when the PU/PD works)

@@ -28,6 +28,8 @@ rsource "app/rstbtn/Kconfig"
 rsource "app/leds/Kconfig"
 rsource "app/lom_mgmt/Kconfig"
 rsource "app/sw_power/Kconfig"
+rsource "app/fan_sense/Kconfig"
+
 rsource "app/soc_debug_awareness/Kconfig"
 rsource "boards/Kconfig"
 

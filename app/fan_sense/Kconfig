@@ -1,0 +1,21 @@
+# Kconfig - Config options for EC FAN sense inputs
+#
+# Copyright (c) 2025 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config FAN_SENSE
+	bool "Enable FAN Sensing function"
+	default y
+	help
+	  Indicate if Fan sensing functionality is enabled.
+
+config FAN_SENSE_LOG_LEVEL
+	int "Fan sense log level"
+	depends on LOG
+	depends on FAN_SENSE
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for Fan sense.

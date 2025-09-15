@@ -43,6 +43,8 @@ LOG_MODULE_DECLARE(board, CONFIG_BOARD_LOG_LEVEL);
 
 /* APP-owned gpios */
 struct gpio_ec_config mecc172x_cfg[] = {
+	{ EC_PWRBTN_LED,	GPIO_OUTPUT_HIGH },
+	{ SW_RESET,		GPIO_OUTPUT_HIGH },
 	{ PM_SLP_SUS,		GPIO_INPUT },
 	{ TOP_SWAP_STRAP,	GPIO_INPUT },
 	{ RSMRST_PWRGD_G3SAF_P,	GPIO_INPUT },
@@ -118,6 +120,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ SLP_S3_N,             GPIO_INPUT },
 	{ PM_SLP_S0_CS,		GPIO_INPUT },
 	{ FAN1_SENSE,		GPIO_INPUT },
+	{ FAN2_SENSE,		GPIO_INPUT },
 	{ RSMRST_PWRGD,		GPIO_INPUT },
 
 	{ BC_ACOK,		GPIO_INPUT },
@@ -957,6 +960,32 @@ int board_init(void)
 		gpio_configure_pin(PM_RSMRST_G3SAF_P, GPIO_OUTPUT_LOW);
 	}
 
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+	{
+		int level;
+		level = gpio_read_pin(FAN1_SENSE);
+		if (level == 0) {
+			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan1led));
+			(void)led_on(led, 0);
+		}
+		level = gpio_read_pin(FAN2_SENSE);
+		if (level == 0) {
+			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan2led));
+			(void)led_on(led, 0);
+		}
+		level = gpio_read_pin(FAN3_SENSE);
+		if (level == 0) {
+			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan3led));
+			(void)led_on(led, 0);
+		}
+		level = gpio_read_pin(FAN4_SENSE);
+		if (level == 0) {
+			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan4led));
+			(void)led_on(led, 0);
+		}
+	}
+#endif
+			
 	sensors_init();
 	return 0;
 }
