@@ -35,6 +35,11 @@ static void update_led_host_ownership(void)
 	host_update_led_ownership(g_acpi_tbl.acpi_led_idx);
 }
 
+static void clear_led_host_ownership(void)
+{
+	host_clear_led_ownership(g_acpi_tbl.acpi_led_idx);
+}
+
 static void update_led_color(void)
 {
 	host_update_led_color(g_acpi_tbl.acpi_led_idx, g_acpi_tbl.acpi_led_val_l,
@@ -75,6 +80,9 @@ void smchost_cmd_led_handler(uint8_t command)
 		break;
 	case SMCHOST_UPDATE_LED_SET_OWNER:
 		update_led_host_ownership();
+		break;
+	case SMCHOST_CLEAR_LED_SET_OWNER:
+		clear_led_host_ownership();
 		break;
 	default:
 		LOG_WRN("%s: command 0x%X without handler", __func__, command);

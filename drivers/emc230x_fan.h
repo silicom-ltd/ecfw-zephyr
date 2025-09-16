@@ -105,4 +105,8 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm);
 
 int fan_update(void);
 
+void fans_spin_down(void);
+
+void fans_set_default(void);
+
 #endif	/* __FAN_H__ */

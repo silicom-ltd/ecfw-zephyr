@@ -99,6 +99,7 @@ bool is_led_controlled_by_host(uint8_t idx)
 {
 	if (!is_system_in_acpi_mode()) {
 		LOG_DBG("LED control is over-ridden when not in ACPI mode.");
+		led_tbl[idx].owned = 0;
 		return 0;
 	}
 
@@ -114,6 +115,22 @@ void host_update_led_ownership(uint8_t idx)
 	if (idx < max_led_dev) {
 		led_tbl[idx].owned = 1;
 	}
+}
+
+void host_clear_led_ownership(uint8_t idx)
+{
+	if (idx < max_led_dev) {
+		led_tbl[idx].owned = 0;
+	}
+}
+
+static int local_led_blinking = 0;
+void host_clear_all_led_ownership()
+{
+	int i;
+	for (i = 0; i < max_led_dev; i++)
+		host_clear_led_ownership(i);
+	local_led_blinking = 0;
 }
 
 void host_update_led_color(uint8_t idx, uint16_t greenblue, uint16_t red)
@@ -203,6 +220,7 @@ static void manage_leds(void)
 		led_update = 0;
 #endif
 		for (uint8_t idx = 0; idx < max_led_dev; idx++) {
+			if (!is_led_controlled_by_host(idx)) continue;
 			if (led_tbl[idx].update_color) {
 				uint8_t color[3];
 				color[0] = (led_tbl[idx].color) >> 16;
@@ -227,6 +245,7 @@ static void manage_leds(void)
 #endif
 #if 1
 	for (uint8_t idx = 0; idx < max_led_dev; idx++) {
+		if (!is_led_controlled_by_host(idx)) continue;
 		if (!led_tbl[idx].on || led_tbl[idx].update_brightness) { // don't change brightness of a blinker
 			led_brightness_set(idx, led_tbl[idx].brightness);
 			led_tbl[idx].update_brightness = 0;
@@ -250,24 +269,26 @@ static int color_table[] = {
 	0x99FF99, /* very light green */
 	0xF0183C, /* darkish red */
 #endif
-	0xFF7F00, /* amber */
+	0x0000FF, /* blue */
+	0x00FF00, /* green */
 };
 
 static void manage_local_leds(void)
 {
 	static uint16_t level = 0;
 	static uint16_t countup = 1;
-	static const struct device *led_pwm_mc = DEVICE_DT_GET(DT_ALIAS(led1));
+	static const struct device *led_pwm_mc = DEVICE_DT_GET(DT_ALIAS(led0));
 	int err;
 	static int color_choice = 0;
 	static int loops = 0;
 	uint8_t colors[3];
 	if (pwrseq_system_state() != SYSTEM_S0_STATE) {
+		color_choice = 0;
 		colors[0] = color_table[color_choice] >> 16;
 		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
 		colors[2] = color_table[color_choice] & 0xFF;
 	
-		led_set_color(led_pwm_mc, 0, 3, colors);
+		err = led_set_color(led_pwm_mc, 0, 3, colors);
 		err = led_set_brightness(led_pwm_mc, 0, level);
 		if (err)
 			return;
@@ -276,26 +297,32 @@ static void manage_local_leds(void)
 		else
 			level--;
 
-		if (level == 100) {
+		if (level == 255) {
 			countup = 0;
 			loops++;
 		}
 		else if (level == 0)
 			countup = 1;
 	}
-	else if (!is_led_controlled_by_host(0)) {
+	else if (!is_led_controlled_by_host(0) && !local_led_blinking) {
+		color_choice = 1;
 		colors[0] = color_table[color_choice] >> 16;
 		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
 		colors[2] = color_table[color_choice] & 0xFF;
-		/* set to amber when BIOS booting */
-		led_set_color(led_pwm_mc, 0, 3, colors);
-		err = led_set_brightness(led_pwm_mc, 0, 100);
+		/* set to green when BIOS booting */
+		err = led_set_color(led_pwm_mc, 0, 3, colors);
+		err = led_set_brightness(led_pwm_mc, 0, 255);
+		err = led_blink(led_pwm_mc, 0, 500, 500);
+		local_led_blinking = 1;
 	}
-
+#if 0
 	if (loops == 10) {
 		color_choice = (color_choice + 1) % ARRAY_SIZE(color_table);
 		loops = 0;
 	}
+#else
+	if (loops == 10) loops = 0;
+#endif
 }
 
 void ledmgmt_thread(void *p1, void *p2, void *p3)

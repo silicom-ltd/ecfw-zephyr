@@ -705,6 +705,7 @@ static void smchost_cmd_handler(uint8_t command)
 	case SMCHOST_UPDATE_LED_BRIGHTNESS:
 	case SMCHOST_UPDATE_LED_BLINK:
 	case SMCHOST_UPDATE_LED_SET_OWNER:
+	case SMCHOST_CLEAR_LED_SET_OWNER:
 		smchost_cmd_led_handler(command);
 		break;
 #endif

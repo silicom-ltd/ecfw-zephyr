@@ -34,7 +34,7 @@
 #include "errcodes.h"
 #include "vci.h"
 #ifdef CONFIG_THERMAL_MANAGEMENT
-#include "fan.h"
+#include "emc230x_fan.h"
 #endif
 #ifdef CONFIG_THERMAL_MANAGEMENT_V2
 #include "rpmfan.h"
@@ -774,7 +774,12 @@ void power_off(void)
 	LOG_DBG("Shutting down %d", level);
 #if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
     defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-//	gpio_write_pin(EC_PWRBTN_LED, HIGH);
+	gpio_write_pin(EC_PWRBTN_LED, HIGH);
+extern void fans_spin_down(void);
+	fans_spin_down();
+extern void host_clear_all_led_ownership(void);
+	host_clear_all_led_ownership();
+
 //	fan_set_duty_cycle(FAN_LEFT, 0);
 //	fan_set_duty_cycle(FAN_RIGHT, 0);
 #else
@@ -912,6 +917,9 @@ static int power_on(void)
 #if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
     defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
 	gpio_write_pin(EC_PWRBTN_LED, LOW);
+extern void fans_set_default(void);
+	fans_set_default();
+
 #else
 	gpio_write_pin(EC_PWRBTN_LED, HIGH);
 #endif

@@ -21,6 +21,7 @@ LOG_MODULE_REGISTER(fan, CONFIG_FAN_LOG_LEVEL);
 extern struct hwmon_sram *hwmon_data;
 
 #define MAX_DUTY_CYCLE		100u
+#define EMC230X_FAN_DEFAULT_DUTY_CYCLE 30u
 
 #define DT_FAN_INST(x)		DEVICE_DT_GET(DT_ALIAS(fan##x)),
 
@@ -91,6 +92,32 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm)
 	*rpm = fdata->fan_rpm;
 
 	return 0;
+}
+
+void fans_turn_off(struct k_timer *timer_id)
+{
+	int i;
+	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++)
+		fan_set_duty_cycle(i, 0);
+}
+
+K_TIMER_DEFINE(fan_off_timer, fans_turn_off, NULL);
+
+void fans_spin_down(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++) {
+		fan_set_duty_cycle(i, 15);
+	}
+	k_timer_start(&fan_off_timer, K_SECONDS(30), K_NO_WAIT);
+}
+
+void fans_set_default(void)
+{
+	int i;
+	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++)
+		fan_set_duty_cycle(i, EMC230X_FAN_DEFAULT_DUTY_CYCLE);
 }
 
 int fan_update(void)

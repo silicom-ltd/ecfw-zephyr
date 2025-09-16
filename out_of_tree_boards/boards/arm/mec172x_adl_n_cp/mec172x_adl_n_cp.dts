@@ -43,8 +43,6 @@
 		gpioled1 = &amber_bot;
 		gpioled2 = &pwr_led_green;
 		gpioled3 = &front_location;
-		gpioled4 = &psu_amber;
-		gpioled5 = &psu_green;
 	};
 
 	gpio_keys {
@@ -141,20 +139,6 @@
 		/* GPIO 131 */
 		led8: front_location {
 			gpios = <&gpio_100_136 25 GPIO_ACTIVE_LOW>;
-		};
-	};
-	psu_amber: led_9 {
-		compatible = "gpio-leds";
-		/* GPIO 14 */
-		led9 {
-			gpios = <&gpio_000_036 12 GPIO_ACTIVE_LOW>;
-		};
-	};
-	psu_green: led_10 {
-		compatible = "gpio-leds";
-		/* GPIO 2 */
-		led10 {
-			gpios = <&gpio_000_036 2 GPIO_ACTIVE_LOW>;
 		};
 	};
 
