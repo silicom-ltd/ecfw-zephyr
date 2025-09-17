@@ -288,11 +288,7 @@ static void smchost_pltrst_handler(uint8_t pltrst_sts)
 	}
 #endif
 #if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	if (!pltrst_sts) {
-		gpio_write_pin(SW_RESET, 0);
-		k_sleep(K_MSEC(10));
-		gpio_write_pin(SW_RESET, 1);
-	}
+	gpio_write_pin(SW_RESET, !!pltrst_sts);
 #endif
 		
 		
