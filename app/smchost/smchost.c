@@ -46,9 +46,6 @@ static void proc_acpi_burst(void);
 static void service_system_acpi_cmds(void);
 static uint8_t smchost_req_length(uint8_t command);
 static void smchost_cmd_handler(uint8_t command);
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
-static void handle_kb_backlight_pwm(void);
-#endif
 
 /* Track OS requests for different ACPI modes */
 static uint8_t acpi_burst_flag;
@@ -144,129 +141,6 @@ static void smchost_acpi_handler(void)
 #endif
 }
 
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
-static void smchost_volbtnup_handler(uint8_t volbtn_sts)
-{
-	LOG_DBG("%s", __func__);
-
-	if (!check_btn_sci_sts(HID_BTN_SCI_VOL_UP))
-		return;
-
-	if (g_acpi_state_flags.acpi_mode) {
-		if (volbtn_sts) {
-			enqueue_sci(SCI_VU_REL);
-		} else {
-			enqueue_sci(SCI_VU_PRES);
-		}
-	}
-}
-
-static void smchost_volbtndown_handler(uint8_t volbtn_sts)
-{
-	LOG_DBG("%s", __func__);
-
-	if (!check_btn_sci_sts(HID_BTN_SCI_VOL_DOWN))
-		return;
-
-	if (g_acpi_state_flags.acpi_mode) {
-		if (volbtn_sts) {
-			enqueue_sci(SCI_VD_REL);
-		} else {
-			enqueue_sci(SCI_VD_PRES);
-		}
-	}
-}
-
-static void smchost_homebtn_handler(uint8_t hmbtn_sts)
-{
-	LOG_DBG("%s", __func__);
-
-	if (!check_btn_sci_sts(HID_BTN_SCI_HOME))
-		return;
-
-	if (g_acpi_state_flags.acpi_mode) {
-		if (hmbtn_sts) {
-			enqueue_sci(SCI_HB_REL);
-		} else {
-			enqueue_sci(SCI_HB_PRES);
-		}
-	}
-}
-
-static void smchost_lid_handler(uint8_t lid_sts)
-{
-	LOG_DBG("%s", __func__);
-
-	g_acpi_tbl.acpi_flags.lid_open = lid_sts;
-	if (g_acpi_state_flags.acpi_mode) {
-		enqueue_sci(SCI_LID);
-		if (pwrseq_system_state() == SYSTEM_S3_STATE) {
-			if (lid_sts) {
-				smc_generate_wake(WAKE_LID_EVENT);
-			}
-		}
-	}
-}
-#endif
-#ifdef EC_SLATEMODE_HALLOUT_SNSR_R
-static void smchost_slatemode_handler(uint8_t slatemode_sts)
-{
-	LOG_DBG("%s", __func__);
-
-	if (g_acpi_state_flags.acpi_mode) {
-		if (slatemode_sts) {
-			enqueue_sci(SCI_SLATEMODE_RELEASE);
-		} else {
-			enqueue_sci(SCI_SLATEMODE_PRESS);
-		}
-	}
-}
-#endif
-
-#if defined(VIRTUAL_BAT) || defined(VIRTUAL_DOCK)
-static void smchost_virtualbat_handler(uint8_t virbat_sts)
-{
-	int level;
-
-	LOG_DBG("%s", __func__);
-	level = gpio_read_pin(VIRTUAL_BAT);
-	if (level < 0) {
-		LOG_ERR("Fail to read virtual battery io expander");
-	} else {
-		level = (level > 0) ? 1 : 0;
-		if (g_acpi_tbl.acpi_flags2.vb_sw_closed != level &&
-			g_acpi_state_flags.acpi_mode) {
-			enqueue_sci(SCI_VB);
-			LOG_DBG("Virtual bat %d", level);
-		}
-		g_acpi_tbl.acpi_flags2.vb_sw_closed = level;
-		LOG_DBG("%s: vb_sw_closed :%d", __func__,
-				g_acpi_tbl.acpi_flags2.vb_sw_closed);
-	}
-}
-
-static void smchost_virtualdock_handler(uint8_t virdock_sts)
-{
-	int level;
-
-	LOG_DBG("%s", __func__);
-	level = gpio_read_pin(VIRTUAL_DOCK);
-	if (level < 0) {
-		LOG_ERR("Fail to read virtual dock io expander");
-	} else {
-		level = (level > 0) ?
-			VIRTUAL_DOCK_CONNECTED : VIRTUAL_DOCK_DISCONNECTED;
-		if (g_acpi_tbl.acpi_flags2.pcie_docked != level &&
-			g_acpi_state_flags.acpi_mode) {
-			enqueue_sci(SCI_VIRTDOCK);
-			LOG_DBG("Virtual dock %d", level);
-		}
-		g_acpi_tbl.acpi_flags2.pcie_docked = level;
-	}
-}
-
-#endif
-
 static void smchost_pltrst_handler(uint8_t pltrst_sts)
 {
 	LOG_DBG("PLT_RST status changed %d", pltrst_sts);
@@ -309,27 +183,8 @@ static inline int smchost_task_init(void)
 
 	/* Register event handler */
 	pwrbtn_register_handler(smchost_pwrbtn_handler);
-#if 1
 #ifdef CONFIG_RESET_BUTTON
 	rstbtn_register_handler(smchost_rstbtn_handler);
-#endif
-#endif
-#ifdef CONFIG_BOARD_MEC172X_AZBEACH
-#ifdef EC_M_2_SSD_PLN
-	pwrbtn_register_handler(smchost_pwrbtn_pln_handler);
-#endif
-	periph_register_button(VOL_UP, smchost_volbtnup_handler);
-	periph_register_button(VOL_DOWN, smchost_volbtndown_handler);
-	periph_register_button(SMC_LID, smchost_lid_handler);
-	periph_register_button(HOME_BUTTON, smchost_homebtn_handler);
-#if defined(VIRTUAL_BAT) || defined(VIRTUAL_DOCK)
-	periph_register_button(VIRTUAL_BAT, smchost_virtualbat_handler);
-	periph_register_button(VIRTUAL_DOCK, smchost_virtualdock_handler);
-#endif
-#ifdef EC_SLATEMODE_HALLOUT_SNSR_R
-	periph_register_button(EC_SLATEMODE_HALLOUT_SNSR_R,
-				smchost_slatemode_handler);
-#endif
 #endif
 	espihub_add_acpi_handler(ESPIHUB_ACPI_PUBLIC, smchost_acpi_handler);
 	espihub_add_warn_handler(ESPIHUB_RESET_WARNING,
@@ -342,9 +197,6 @@ static inline int smchost_task_init(void)
 	g_acpi_tbl.acpi_flags.lid_open = 1;
 //	g_acpi_tbl.kb_bklt_pwm_duty = 0;
 	prev_kb_bklt_pwm_duty = 0;
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
-	led_init(LED_KBD_BKLT);
-#endif
 
 #ifdef EC_M_2_SSD_PLN
 	/* Default PLN state as no change, driven by gpio initialization */
@@ -376,9 +228,6 @@ static bool smchost_process_tasks(void)
 	check_sci_queue();
 	service_system_acpi_cmds();
 	pend_data = proc_host_send();
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
-	handle_kb_backlight_pwm();
-#endif
 
 	return (sci_pending() || pend_data);
 }
@@ -742,13 +591,3 @@ static void smchost_cmd_handler(uint8_t command)
 		break;
 	}
 }
-
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
-static void handle_kb_backlight_pwm(void)
-{
-	if (prev_kb_bklt_pwm_duty != g_acpi_tbl.kb_bklt_pwm_duty) {
-		led_blink(LED_KBD_BKLT, g_acpi_tbl.kb_bklt_pwm_duty);
-		prev_kb_bklt_pwm_duty = g_acpi_tbl.kb_bklt_pwm_duty;
-	}
-}
-#endif

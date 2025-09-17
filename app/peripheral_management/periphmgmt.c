@@ -35,41 +35,12 @@ struct btn_info {
 	char		*name;
 };
 
-#if !defined(CONFIG_BOARD_MEC172X_AZBEACH) && !defined(CONFIG_BOARD_MEC172X_ADL_N)
-static struct btn_info btn_lst[] = {
-	{VOL_UP,          false, GPIO_DEBOUNCE_CNT, NULL, VOL_UP_INIT_POS,
-					{{0}, NULL, 0}, "VolUp"},
-	{PWRBTN_EC_IN_N,  false, GPIO_DEBOUNCE_CNT, NULL, PWR_BTN_INIT_POS,
-					{{0}, NULL, 0}, "PwrBtn"},
-	{VOL_DOWN,        false, GPIO_DEBOUNCE_CNT, NULL, VOL_DN_INIT_POS,
-					{{0}, NULL, 0}, "VolDown"},
-	{HOME_BUTTON,	false, GPIO_DEBOUNCE_CNT, NULL, HOME_INIT_POS,
-					{{0}, NULL, 0}, "hmbtn"},
-	{SMC_LID,        false, GPIO_DEBOUNCE_CNT, NULL, LID_INIT_POS,
-					{{0}, NULL, 0}, "LidBtn"},
-#if defined(VIRTUAL_BAT) || defined(VIRTUAL_DOCK)
-	{VIRTUAL_BAT,    false, GPIO_DEBOUNCE_CNT, NULL, VIRTUAL_BAT_INIT_POS,
-					{{0}, NULL, 0}, "VirBat"},
-	{VIRTUAL_DOCK,   false, GPIO_DEBOUNCE_CNT, NULL, VIRTUAL_DOCK_INIT_POS,
-					{{0}, NULL, 0}, "VirDock"},
-#endif
-#ifdef EC_SLATEMODE_HALLOUT_SNSR_R
-	{EC_SLATEMODE_HALLOUT_SNSR_R, false, GPIO_DEBOUNCE_CNT, NULL,
-				SLATEMODE_INIT_POS, {{0}, NULL, 0}, "Slatesw"},
-#endif
-#if defined(CONFIG_SOC_DEBUG_AWARENESS) && defined(TIMEOUT_DISABLE)
-	{TIMEOUT_DISABLE, false, GPIO_DEBOUNCE_CNT, NULL, 1,
-					{{0}, NULL, 0}, "Timeout"},
-#endif
-};
-#else
 static struct btn_info btn_lst[] = {
 	{PWRBTN_EC_IN_N,  false, GPIO_DEBOUNCE_CNT, NULL, PWR_BTN_INIT_POS,
 					{{0}, NULL, 0}, "PwrBtn"},
 	{BTN_RECESSED, false, GPIO_DEBOUNCE_CNT, NULL, BTN_RECESSED_INIT_POS,
 					{{0}, NULL, 0}, "RstBtn"},
 };
-#endif
 
 static int debouncing_ongoing;
 static struct k_sem btn_debounce_lock;
@@ -216,39 +187,6 @@ int periph_register_button(uint32_t port_pin, btn_handler_t handler)
 
 	return ret;
 }
-
-#if defined(VIRTUAL_DOCK) || defined(VIRTUAL_BAT)
-void update_virtual_bat_dock_status(void)
-{
-	int level;
-
-	level = gpio_read_pin(VIRTUAL_BAT);
-	if (level < 0) {
-		LOG_ERR("Fail to read virtual battery io expander");
-	} else {
-		g_acpi_tbl.acpi_flags2.vb_sw_closed = (level > 0) ? level : 0;
-	}
-
-	level = gpio_read_pin(VIRTUAL_DOCK);
-	if (level < 0) {
-		LOG_ERR("Fail to read virtual dock io expander");
-	} else {
-		g_acpi_tbl.acpi_flags2.pcie_docked =
-			(level > 0) ?
-			VIRTUAL_DOCK_CONNECTED : VIRTUAL_DOCK_DISCONNECTED;
-	}
-}
-
-bool is_virtual_battery_prsnt(void)
-{
-	return g_acpi_tbl.acpi_flags2.vb_sw_closed ? false : true;
-}
-
-bool is_virtual_dock_prsnt(void)
-{
-	return g_acpi_tbl.acpi_flags2.pcie_docked;
-}
-#endif
 
 void periph_thread(void *p1, void *p2, void *p3)
 {

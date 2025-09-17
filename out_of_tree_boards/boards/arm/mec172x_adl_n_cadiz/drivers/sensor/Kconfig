@@ -1,0 +1,12 @@
+# NTC Thermistor temperature sensing options
+#
+# Copyright (c) 2023 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+config NTC_THERMISTOR
+	bool "NTC Thermistor Temperature Sensor"
+	default y
+	depends on DT_HAS_NTC_THERMISTOR_ENABLED
+	depends on ADC
+	help
+	  Enable driver for NTC Thermistor Temperature Sensing via ADC
