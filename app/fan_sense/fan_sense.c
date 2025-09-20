@@ -20,42 +20,73 @@
 
 LOG_MODULE_REGISTER(fan_sense, CONFIG_FAN_SENSE_LOG_LEVEL);
 
+static int set_front_led;
+const struct device *front_led = DEVICE_DT_GET(DT_NODELABEL(fan_fail));
+
 void fan1_sense_evt_processor(uint8_t sense_evt)
 {
 	const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan1led));
 
-	if (sense_evt)
-		(void)led_off(led, 0);
-	else
+	if (sense_evt) {
 		(void)led_on(led, 0);
+		set_front_led++;
+		(void)led_on(front_led, 0);
+	}
+	else {
+		(void)led_off(led, 0);
+		set_front_led--;
+		if (set_front_led == 0)
+			(void)led_off(front_led, 0);
+	}
 }
 
 void fan2_sense_evt_processor(uint8_t sense_evt)
 {
 	const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan2led));
 
-	if (sense_evt)
-		(void)led_off(led, 0);
-	else
+	if (sense_evt) {
 		(void)led_on(led, 0);
+		set_front_led++;
+		(void)led_on(front_led, 0);
+	}
+	else {
+		(void)led_off(led, 0);
+		set_front_led--;
+		if (set_front_led == 0)
+			(void)led_off(front_led, 0);
+	}
 }
 void fan3_sense_evt_processor(uint8_t sense_evt)
 {
 	const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan3led));
 
-	if (sense_evt)
-		(void)led_off(led, 0);
-	else
+	if (sense_evt) {
 		(void)led_on(led, 0);
+		set_front_led++;
+		(void)led_on(front_led, 0);
+	}
+	else {
+		(void)led_off(led, 0);
+		set_front_led--;
+		if (set_front_led == 0)
+			(void)led_off(front_led, 0);
+	}
 }
 void fan4_sense_evt_processor(uint8_t sense_evt)
 {
 	const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan4led));
 
-	if (sense_evt)
-		(void)led_off(led, 0);
-	else
+	if (sense_evt) {
 		(void)led_on(led, 0);
+		set_front_led++;
+		(void)led_on(front_led, 0);
+	}
+	else {
+		(void)led_off(led, 0);
+		set_front_led--;
+		if (set_front_led == 0)
+			(void)led_off(front_led, 0);
+	}
 }
 void fan_sense_init(void)
 {

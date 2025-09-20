@@ -261,15 +261,11 @@ static void init_led_devices(void)
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(0), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(0));
-	LOG_ERR("################# GPIO_LED 0 detected ######################");
 	led_off(led_tbl[i].dev, 0);
 	i++;
-#else
-#error No GPIO leds defined
 #endif
 #if DT_NODE_HAS_STATUS(DT_GPIO_LED_INST(1), okay)
 	led_tbl[i].dev = DEVICE_DT_GET(DT_GPIO_LED_INST(1));
-	LOG_ERR("################# GPIO_LED 1 detected ######################");
 	led_off(led_tbl[i].dev, 0);
 	i++;
 #endif
@@ -966,22 +962,22 @@ int board_init(void)
 		level = gpio_read_pin(FAN1_SENSE);
 		if (level == 0) {
 			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan1led));
-			(void)led_on(led, 0);
+			(void)led_off(led, 0);
 		}
 		level = gpio_read_pin(FAN2_SENSE);
 		if (level == 0) {
 			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan2led));
-			(void)led_on(led, 0);
+			(void)led_off(led, 0);
 		}
 		level = gpio_read_pin(FAN3_SENSE);
 		if (level == 0) {
 			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan3led));
-			(void)led_on(led, 0);
+			(void)led_off(led, 0);
 		}
 		level = gpio_read_pin(FAN4_SENSE);
 		if (level == 0) {
 			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan4led));
-			(void)led_on(led, 0);
+			(void)led_off(led, 0);
 		}
 	}
 #endif
