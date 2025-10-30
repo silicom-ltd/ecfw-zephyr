@@ -26,6 +26,7 @@ rsource "app/dnx/Kconfig"
 rsource "app/vrtt/Kconfig"
 rsource "app/rstbtn/Kconfig"
 rsource "app/leds/Kconfig"
+rsource "app/lom_mgmt/Kconfig"
 rsource "app/soc_debug_awareness/Kconfig"
 rsource "boards/Kconfig"
 
