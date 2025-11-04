@@ -43,7 +43,6 @@ LOG_MODULE_DECLARE(board, CONFIG_BOARD_LOG_LEVEL);
 
 /* APP-owned gpios */
 struct gpio_ec_config mecc172x_cfg[] = {
-	{ EC_PWRBTN_LED,	GPIO_OUTPUT_HIGH },
 	{ SW_RESET,		GPIO_OUTPUT_HIGH },
 	{ PM_SLP_SUS,		GPIO_INPUT },
 	{ TOP_SWAP_STRAP,	GPIO_INPUT },
