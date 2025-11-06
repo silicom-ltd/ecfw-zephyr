@@ -141,6 +141,13 @@
 			gpios = <&gpio_100_136 25 GPIO_ACTIVE_LOW>;
 		};
 	};
+//	alert: led_9 {
+//		compatible = "gpio-leds";
+//		/* GPIO 174 */
+//		led9: alert {
+//			gpios = <&gpio_140_176 28 GPIO_ACTIVE_LOW>;
+//		};
+//	};
 
 	voltage0: voltage12v {
 		compatible = "voltage-divider";
@@ -247,12 +254,154 @@
 		sense-gain-mult = <50>;
 	};
 
+	smbus1: smbus1 {
+		compatible = "microchip,xec-smbus";
+		i2c = <&i2c_smb_3>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mfd3: mpq8788@31 {
+			compatible = "mps,mpq8785";
+			reg = <0x31>;
+
+			mfd3_vin: mpq8788_31vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd3_vout: mpq8788_31vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd3_iout: mpq8788_31iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd3_temp: mpq8788_31temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
+		mfd4: mpq8788@32 {
+			compatible = "mps,mpq8785";
+			reg = <0x32>;
+
+			mfd4_vin: mpq8788_32vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd4_vout: mpq8788_32vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd4_iout: mpq8788_32iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd4_temp: mpq8788_32temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
+		mfd5: mpq8790@30 {
+			compatible = "mps,mpq8785";
+			reg = <0x30>;
+
+			mfd5_vin: mpq8790vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd5_vout: mpq8790vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd5_iout: mpq8790iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd5_temp: mpq8790temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
+		mfd6: crps@58 {
+			compatible = "ocp,crps";
+			reg = <0x58>;
+
+			mfd6_temp_amb: crps58ambient {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <141>;
+			};
+			mfd6_temp_hot: crps58hot {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <142>;
+			};
+			mfd6_iout: crps58iout {
+				compatible = "ocp,crps-iout";
+				page = <0>;
+			};
+		};
+		mfd7: mp2928@20 {
+			compatible = "mps,mp2928";
+			reg = <0x20>;
+
+			mfd7_temp: mps2928_temp {
+				compatible = "mps,mp2928-temp";
+				page = <0>;
+			};
+			mfd7_vout: mps2928_vout_r0 {
+				compatible = "mps,mp2928-vout";
+				page = <0>;
+			};
+			mfd8_vout: mps2928_vout_r1 {
+				compatible = "mps,mp2928-vout";
+				page = <1>;
+			};
+			mfd9_vout: mps2928_vout_r2 {
+				compatible = "mps,mp2928-vout";
+				page = <2>;
+			};
+		};
+	};
+
 	zephyr,user {
 //		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
 		pinctrl-names = "default";
 	};
 };
+
+&gpio_100_136 {
+	n1 {
+		gpio-hog;
+		gpios = <16 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+//&gpio_140_176 {
+//	pinctrl-0 = <&gpio174>;
+//	pinctrl-names = "default";
+//	
+//	hogs {
+//		gpio-hog;
+//		gpios = <28 GPIO_ACTIVE_HIGH>;
+//		output-low;
+//	};
+//		
+//};
 
 //&bbled0 {
 //	compatible = "microchip,xec-bbled";
@@ -817,6 +966,10 @@
 	};
 	gpio173: gpio173 {
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
+		bias-disable;
+	};
+	gpio174: gpio174 {
+		pinmux = < MCHP_XEC_PINMUX(0174, MCHP_AF0) >;
 		bias-disable;
 	};
 	gpio_uc_0: gpio112 {
