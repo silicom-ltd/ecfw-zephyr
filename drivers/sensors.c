@@ -113,11 +113,15 @@ void thermal_sensors_update(void)
 #define VOLTAGE_MONITOR(inst)				\
        DEVICE_DT_GET(DT_NODELABEL(voltage##inst)),	
 
+#define VMON(inst)	\
+	DEVICE_DT_GET_OR_NULL(DT_ALIAS(vmon##inst)),
+
 #define VOLTAGE_MONITOR_DT(inst)			\
 	VOLTAGE_DIVIDER_DT_SPEC_GET(DT_NODELABEL(voltage##inst)),
 
+#define GET_DEVICE_BY_NODE(node_id)	DEVICE_DT_GET(node_id),
 static const struct device *voltage_sensors[] = {
-	DT_INST_FOREACH_STATUS_OKAY(VOLTAGE_MONITOR)
+	DT_FOREACH_STATUS_OKAY(voltage_divider, GET_DEVICE_BY_NODE)
 };
 
 static struct voltage_divider_dt_spec data[] = {
