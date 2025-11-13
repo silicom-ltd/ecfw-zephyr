@@ -41,6 +41,8 @@ static struct sw_sens_info sw_thermal_sensors[] = {
 	{SENSOR_DECLARE(mfd6_temp_amb, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
 	{SENSOR_DECLARE(mfd6_temp_hot, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
 	{SENSOR_DECLARE(mfd7_temp,     SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
+	{SENSOR_DECLARE(mfd8_temp_amb, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
+	{SENSOR_DECLARE(mfd8_temp_hot, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
 };
 
 static struct sw_sens_info sw_voltage_sensors[] = {
@@ -59,7 +61,8 @@ static struct sw_sens_info sw_current_sensors[] = {
 	{SENSOR_DECLARE(mfd3_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
 	{SENSOR_DECLARE(mfd4_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
 	{SENSOR_DECLARE(mfd5_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
-	{SENSOR_DECLARE(mfd6_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
+	{SENSOR_DECLARE(mfd6_iout, SENSOR_CHAN_CURRENT, SENSOR_CHAN_CURRENT)},
+	{SENSOR_DECLARE(mfd8_iout, SENSOR_CHAN_CURRENT, SENSOR_CHAN_CURRENT)},
 };
 
 
@@ -105,7 +108,7 @@ static void _sw_sensors_update(struct sw_sens_info * sens_info, int num_sensors,
 			continue;
 		}
 
-		LOG_PRINTK(">> %13s: %d.%03d\n", sens_info[i].name,
+		LOG_ERR(">> %13s: %d.%03d\n", sens_info[i].name,
 			sens_val.val1/1000, sens_val.val1 % 1000);
 
 		hwmon_sdata_update(&hwmon[i], &sens_val);
@@ -135,6 +138,21 @@ void sw_sensors_hwmon_setting(void)
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_current[i], hwmon_curr);
 	}
+
+	if (ARRAY_SIZE(sw_thermal_sensors) != SW_THERMAL_SENSOR_NUM)
+		LOG_ERR("Size mismatch of hwmon.sw_mon_thermal");
+	else
+		LOG_INF("The number of SW thermal sensors is %d", SW_THERMAL_SENSOR_NUM);
+
+	if (ARRAY_SIZE(sw_voltage_sensors) != SW_VOLTAGE_SENSOR_NUM)
+		LOG_ERR("Size mismatch of hwmon.sw_mon_voltage");
+	else
+		LOG_INF("The number of SW voltage sensors is %d", SW_VOLTAGE_SENSOR_NUM);
+
+	if (ARRAY_SIZE(sw_current_sensors) != SW_CURRENT_SENSOR_NUM)
+		LOG_ERR("Size mismatch of hwmon.sw_mon_current");
+	else
+		LOG_INF("The number of SW current sensors is %d", SW_CURRENT_SENSOR_NUM);
 }
 
 void sw_thermal_sensors_update(void)

@@ -128,9 +128,9 @@ struct hwmon_sram {
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	struct hwmon_fdata emc230x_fan[10];
-	struct hwmon_sdata sw_mon_thermal[SW_THERMAL_SENSOR_NUM]; /* 6 */
-	struct hwmon_sdata sw_mon_voltage[SW_VOLTAGE_SENSOR_NUM]; /* 9 */
-	struct hwmon_sdata sw_mon_current[SW_CURRENT_SENSOR_NUM]; /* 4 */
+	struct hwmon_sdata sw_mon_thermal[SW_THERMAL_SENSOR_NUM];
+	struct hwmon_sdata sw_mon_voltage[SW_VOLTAGE_SENSOR_NUM];
+	struct hwmon_sdata sw_mon_current[SW_CURRENT_SENSOR_NUM];
 #endif
 } __attribute__ ((packed, aligned(32)));
 
