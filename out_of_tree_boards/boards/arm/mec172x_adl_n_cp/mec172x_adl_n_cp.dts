@@ -375,6 +375,25 @@
 				page = <2>;
 			};
 		};
+		mfd8: crps@59 {
+			compatible = "ocp,crps";
+			reg = <0x59>;
+
+			mfd8_temp_amb: crps59ambient {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <141>;
+			};
+			mfd8_temp_hot: crps59hot {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <142>;
+			};
+			mfd8_iout: crps59iout {
+				compatible = "ocp,crps-iout";
+				page = <0>;
+			};
+		};
 	};
 
 	zephyr,user {

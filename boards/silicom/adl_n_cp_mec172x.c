@@ -26,6 +26,7 @@
 #include "board_config.h"
 #include "vci_mec172x.h"
 #include "adl_n_cp_mec172x.h"
+#include "fan_sense.h"
 #include "hwmon.h"
 
 LOG_MODULE_DECLARE(board, CONFIG_BOARD_LOG_LEVEL);
@@ -959,24 +960,20 @@ int board_init(void)
 	{
 		int level;
 		level = gpio_read_pin(FAN1_SENSE);
-		if (level == 0) {
-			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan1led));
-			(void)led_off(led, 0);
+		if (level == 1) {
+			fan1_sense_evt_processor(1);
 		}
 		level = gpio_read_pin(FAN2_SENSE);
-		if (level == 0) {
-			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan2led));
-			(void)led_off(led, 0);
+		if (level == 1) {
+			fan2_sense_evt_processor(1);
 		}
 		level = gpio_read_pin(FAN3_SENSE);
-		if (level == 0) {
-			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan3led));
-			(void)led_off(led, 0);
+		if (level == 1) {
+			fan3_sense_evt_processor(1);
 		}
 		level = gpio_read_pin(FAN4_SENSE);
-		if (level == 0) {
-			const struct device *led = DEVICE_DT_GET(DT_NODELABEL(fan4led));
-			(void)led_off(led, 0);
+		if (level == 1) {
+			fan4_sense_evt_processor(1);
 		}
 	}
 #endif
