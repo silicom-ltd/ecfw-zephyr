@@ -18,6 +18,8 @@
 #include "hwmon.h"
 #include "board_config.h"
 
+#include "sensors.h"
+
 struct hwmon_sram *hwmon_data;
 
 LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
@@ -25,7 +27,7 @@ LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 #define DT_DRV_COMPAT murata_ncp15xh103
 
 #define THERMAL_SENSOR(inst) \
-	DEVICE_DT_GET(DT_NODELABEL(therm##inst)),	
+	DEVICE_DT_GET(DT_NODELABEL(therm##inst)),
 
 static const struct device *ntc_thermal_sensors[] = {
 	DT_INST_FOREACH_STATUS_OKAY(THERMAL_SENSOR)
@@ -41,12 +43,17 @@ int thermal_sensors_init()
 		LOG_INF("Sensor %d, name: %s\n", i, ntc_thermal_sensors[i]->name);
 		adc = &ntc_thermal_sensors[i].config;
 
-		hwmon->cfg[adc->channel_id] = adc->channel_id + THERMISTOR_TYPE 
+		hwmon->cfg[adc->channel_id] = adc->channel_id + THERMISTOR_TYPE
 #endif
-	}	
+	}
 
 	return 0;
 }
+
+/* used for debug */
+//static uint64_t upd_count_1 = 0;
+//static uint64_t upd_count_2 = 0;
+//static uint64_t upd_count_3 = 0;
 
 void thermal_sensors_update(void)
 {
@@ -61,6 +68,12 @@ void thermal_sensors_update(void)
 	if (hwmon_data == NULL) {
 		return; // espi emi not configured yet
 	}
+
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+	//if (upd_count_1++ % 8 == 0) {
+		sw_thermal_sensors_update();
+	//}
+#endif
 
 	for (i = 0; i < num_sensors; i++) {
 		adc_dt = (struct adc_dt_spec *)ntc_thermal_sensors[i]->config;
@@ -111,7 +124,7 @@ void thermal_sensors_update(void)
 #define DT_DRV_COMPAT voltage_divider
 
 #define VOLTAGE_MONITOR(inst)				\
-       DEVICE_DT_GET(DT_NODELABEL(voltage##inst)),	
+       DEVICE_DT_GET(DT_NODELABEL(voltage##inst)),
 
 #define VMON(inst)	\
 	DEVICE_DT_GET_OR_NULL(DT_ALIAS(vmon##inst)),
@@ -139,7 +152,7 @@ int voltage_monitor_init(void)
 		LOG_INF("Sensor %d, name: %s\n", i, voltage_sensors[i]->name);
 		hwmon->cfg[voltage->port.channel_id] = voltage->port.channel_id + VOLTAGE_TYPE;
 #endif
-	}	
+	}
 
 	return 0;
 }
@@ -159,6 +172,12 @@ void voltage_monitor_update(void)
 	else {
 		LOG_INF("ESPI EC1_SRAM: 0x%08x\n",(uint32_t)hwmon_data);
 	}
+
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+	//if (upd_count_2++ % 8 == 0) {
+	sw_voltage_sensors_update();
+		//}
+#endif
 
 	for (i = 0; i < num_sensors; i++) {
 		voltage = &data[i];
@@ -217,6 +236,12 @@ void current_sense_update(void)
 		return; // espi emi not configured yet
 	}
 
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+	//if (upd_count_3++ % 8 == 0) {
+		sw_current_sensors_update();
+	//}
+#endif
+
 	for (i = 0; i < num_sensors; i++) {
 		current = &current_data[i];
 
@@ -272,6 +297,10 @@ static void init_hwmon_data(const struct device *dev, struct espi_callback *cb,
 				if (ret != 0)
 					LOG_INF("Error %d returned from read_lpc_request", ret);
 				hwmon_data = (struct hwmon_sram *)hwmon_d;
+
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+				sw_sensors_hwmon_setting();
+#endif
 			}
 		}
 	}
@@ -294,5 +323,7 @@ void sensors_update()
 	voltage_monitor_update();
 	thermal_sensors_update();
 	current_sense_update();
+
+
 }
 #undef DT_DRV_COMPAT

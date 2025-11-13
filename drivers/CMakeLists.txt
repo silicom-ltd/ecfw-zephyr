@@ -44,23 +44,31 @@ target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
 if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N OR
     CONFIG_BOARD_MEC172X_ADL_N_CP)
     if (CONFIG_THERMAL_MANAGEMENT)
-	target_sources(app
-	PRIVATE
-	${CMAKE_CURRENT_LIST_DIR}/sensors.c
-	${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
-	PUBLIC
-	${CMAKE_CURRENT_LIST_DIR}/hwmon.h
-	${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
-    )
+        target_sources(app
+            PRIVATE
+            ${CMAKE_CURRENT_LIST_DIR}/sensors.c
+	          ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+	          PUBLIC
+	          ${CMAKE_CURRENT_LIST_DIR}/hwmon.h
+	          ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+        )
+        if (CONFIG_BOARD_MEC172X_ADL_N_CP)
+            target_sources(app
+                PRIVATE
+                ${CMAKE_CURRENT_LIST_DIR}/sensors_cp.c
+                PUBLIC
+	              ${CMAKE_CURRENT_LIST_DIR}/hwmon_cp.h
+            )
+        endif()
     else()
         target_sources(app
-        PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.c
-        ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
-        PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
-        ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
-    )
+            PRIVATE
+            ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.c
+            ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+            PUBLIC
+            ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
+            ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+        )
     endif()
 endif()
 

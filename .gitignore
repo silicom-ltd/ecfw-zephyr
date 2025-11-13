@@ -76,4 +76,4 @@ obj/*
 .cproject
 .project
 .pydevproject
-.settings/*
+.settings/*-h

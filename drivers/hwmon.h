@@ -7,6 +7,11 @@
 #ifndef __HWMON_H__
 #define __HWMON_H__
 
+
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#include <hwmon_cp.h>
+#endif
+
 #define THERMISTOR_TYPE 16
 #define VOLTAGE_TYPE 96
 #define CURRENT_TYPE 32
@@ -64,6 +69,16 @@ enum sensor_type {
 };
 #endif
 
+enum sensor_types {
+	hwmon_temp,
+	hwmon_in,
+	hwmon_curr,
+	hwmon_power,
+	hwmon_energy,
+	hwmon_fan,
+	hwmon_pwm,
+};
+
 struct hwmon_sdata {
 	uint16_t mon_in;	/* 0x0 */
 	uint16_t mon_max;	/* 0x2 */
@@ -104,15 +119,31 @@ struct hwmon_pdata {
 	uint16_t pwm_in;
 } __attribute__ ((packed, aligned(32)));
 
+
 struct hwmon_sram {
 	uint8_t rsvd[0x100];
 	struct hwmon_sdata mon[16];
-	struct hwmon_peci peci;	
+	struct hwmon_peci peci;
 	struct hwmon_fdata fan[4];
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	struct hwmon_fdata emc230x_fan[10];
+	struct hwmon_sdata sw_mon_thermal[SW_THERMAL_SENSOR_NUM]; /* 6 */
+	struct hwmon_sdata sw_mon_voltage[SW_VOLTAGE_SENSOR_NUM]; /* 9 */
+	struct hwmon_sdata sw_mon_current[SW_CURRENT_SENSOR_NUM]; /* 4 */
+#endif
 } __attribute__ ((packed, aligned(32)));
 
+#define HWMON_SRAM_ENTRY_IDX(entry_ptr, hwmon_data)			\
+	(((uintptr_t)entry_ptr - (uintptr_t)hwmon_data)/32)
+
+#define SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data, entry_ptr, type)		\
+	do {								\
+		int idx = HWMON_SRAM_ENTRY_IDX(entry_ptr, hwmon_data);	\
+		__ASSERT(idx < sizeof(hwmon_data->rsvd),		\
+			"Out of range of hwmon sram entry idx %d", idx); \
+		hwmon_data->rsvd[idx] = type;				\
+	} while (0)
 
 //struct hwmon_sram *hwmon_data;
 
