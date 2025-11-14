@@ -254,7 +254,8 @@ void sys_therm_sensor_trip(void)
 
 		struct dtt_threshold *thrd = &therm_sensor_tbl[idx].thrd;
 		/* Current sensor temperature */
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+	defined(CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
 		int16_t snstemp = adc_temp_val[idx];
 #else
 		int16_t snstemp = adc_temp_val[therm_sensor_tbl[idx].adc_ch];
@@ -353,7 +354,8 @@ static void init_fans(void)
 	max_fan_dev = fan_init();
 
 	fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+	defined(CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
 	fan_duty_cycle[FAN_RIGHT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
 #endif
 	fan_duty_cycle_change = 1;
@@ -452,7 +454,8 @@ static void manage_fan(void)
 	 */
 	if (fan_override) {
 		fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+	defined(CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
 		fan_duty_cycle[FAN_RIGHT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
 #endif
 		fan_duty_cycle_change = 1;
@@ -509,7 +512,8 @@ static void manage_thermal_sensors(void)
 	for (uint8_t idx = 0; idx < max_adc_sensors; idx++) {
 		smc_update_thermal_sensor(
 			therm_sensor_tbl[idx].acpi_loc,
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
+#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
+	defined(CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
 			adc_temp_val[idx]);
 #else
 			cpu_temp);
