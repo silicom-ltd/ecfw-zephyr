@@ -167,4 +167,22 @@ config THERMAL_SENSOR_LOG_LEVEL
 	help
 	  Set log level for thermal sensor driver.
 
+
+endmenu
+
+menu "EC LOM management interface"
+
+config I2C_TARGET_LOM_MGMT
+	bool "I2C Target LOM_MGMT driver"
+	depends on I2C_TARGET
+	help
+	  Enable virtual I2C Target LOM_MGMT driver
+
+config LOM_MGMT_I2C_LOG_LEVEL
+	int "lom mgmt i2c log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for thermal sensor driver.
 endmenu

@@ -1,0 +1,13 @@
+# Copyright (c) 2023, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: LOM_MGMT I2C Target
+
+compatible: "i2c-target-lom-mgmt"
+
+include: i2c-device.yaml
+
+properties:
+  size:
+    type: int
+    description: Total address space size in bytes

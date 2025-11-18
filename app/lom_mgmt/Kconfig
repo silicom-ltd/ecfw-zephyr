@@ -1,0 +1,36 @@
+
+config LOM_MGMT_PROC
+	bool "Enable LOM_MGMT Processing"
+	help
+	  Enable LOM_MGMT process module
+
+config LOM_MGMT_PROC_LOG_LEVEL
+	int "LOM management handler log level"
+	depends on LOG
+	depends on LOM_MGMT_PROC
+	default 2
+	default 4 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for LOM management handler module.
+
+config HOST_EVENT_ENTRY_MAX
+	int "Maxmium log entries for host event"
+	depends on LOM_MGMT_PROC
+	default 1024
+	help
+	  Set limits of ring buffer for host event log.
+
+config POSTCODE_MONITOR
+	bool "Monitor host's postcodes"
+	depends on LOM_MGMT_PROC
+  depends on POSTCODE_MANAGEMENT
+  default n
+	help
+	  Monitor host's postcode.
+
+config HOST_POSTCODE_ENT_MAX_PER_BATCH
+	int "Maxmium log entries for host postcode"
+	depends on LOM_MGMT_PROC
+	default 200
+	help
+	  Set limits of entries for host postcode log.

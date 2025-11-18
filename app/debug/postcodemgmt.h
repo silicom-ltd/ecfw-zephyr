@@ -15,6 +15,10 @@
 #define POSTCODE_PORT80    0
 #define POSTCODE_PORT81    1
 
+#ifdef CONFIG_POSTCODE_MONITOR
+typedef void (*postcode_disp_event_handler_t)(uint16_t code);
+#endif
+
 /**
  * @brief BIOS debug port debug management.
  *
@@ -32,5 +36,16 @@ void postcode_thread(void *p1, void *p2, void *p3);
  * @param errcode the board error code identifier.
  */
 void update_error(uint8_t errcode);
+
+
+#ifdef CONFIG_POSTCODE_MONITOR
+/**
+ * @brief Add a post-code display event handler
+ *
+ * @param handler for monitoring the post-code changes.
+ */
+
+int postcode_add_disp_event_handler(postcode_disp_event_handler_t handler);
+#endif
 
 #endif /* __POSTCODE_MGMT_H__ */

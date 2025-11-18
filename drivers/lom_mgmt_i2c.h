@@ -1,0 +1,131 @@
+#ifndef __DRIVERS_I2C_TARGET_LOM_MGMT_H__
+#define __DRIVERS_I2C_TARGET_LOM_MGMT_H__
+
+#include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/net/net_ip.h>
+
+//#define LOM_MGMT_DBG
+
+#define REQ_DLEN_MAX 64
+#define RES_DLEN_MAX 2048
+
+#define REQ_HEAD_LEN 4
+#define RES_HEAD_LEN 3
+
+#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN)
+#define RES_BUFF_SIZE (RES_DLEN_MAX + RES_HEAD_LEN)
+
+struct lom_mgmt_req {
+	uint16_t size;
+	union {
+		struct {
+			uint8_t seed;
+			uint8_t func;
+			uint8_t dlen;
+			uint8_t csum;
+			uint8_t data[];
+		} __attribute__((__packed__));
+
+		uint8_t  buf[REQ_BUFF_SIZE];
+	};
+};
+
+#define RES_META_F_TIMESTAMP 0x08;
+
+struct lom_mgmt_res {
+	uint16_t size;
+	union {
+		struct {
+			uint8_t  code;
+			union {
+				struct {
+#if __BYTE_ORDER == __ORDER_LITTLE_ENDIAN__
+					uint16_t dlen_or_error:12;
+					uint16_t rsvd:3;
+					uint16_t has_timestamp:1;
+#else
+					uint16_t has_timestamp:1;
+					uint16_t rsvd:3;
+					uint16_t dlen_or_error:12;
+#endif
+				};
+				uint16_t meta;
+			};
+
+			uint8_t  data[];
+		} __attribute__((__packed__));
+
+		uint8_t buf[RES_BUFF_SIZE];
+	};
+};
+
+typedef int (*lom_mgmt_i2c_cb_request_t)(struct lom_mgmt_req *req, struct lom_mgmt_res *res);
+
+typedef void (*lom_mgmt_i2c_cb_cancel_t)(void);
+
+struct lom_mgmt_i2c_callbacks {
+	lom_mgmt_i2c_cb_request_t send_request;
+	lom_mgmt_i2c_cb_cancel_t  send_cancel;
+};
+
+int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code, uint16_t dat_size, uint8_t flag);
+int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_callbacks *cb);
+int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t mask, uint8_t avail);
+
+#define AVAIL_RES_BIT_POSTCODE 7
+#define AVAIL_RES_BIT_EVENT    6
+
+#define AVAIL_RES_MASK_POSTCODE (1 << AVAIL_RES_BIT_POSTCODE)
+#define AVAIL_RES_MASK_EVENT    (1 << AVAIL_RES_BIT_EVENT)
+
+#define AVAIL_RES_BIT_VAL_POSTCODE(val) (((val) & 0x1) << AVAIL_RES_BIT_POSTCODE)
+#define AVAIL_RES_BIT_VAL_EVENT(val) (((val) & 0x1) << AVAIL_RES_BIT_EVENT)
+
+enum lom_mgmt_msg_func {
+	FUNC_FIRST                = 1,
+	FUNC_GET_ID               = FUNC_FIRST,
+	FUNC_FINI                 , /*02*/
+	FUNC_POWER_CTRL           , /*03*/
+	FUNC_GET_ACPI_POWER_STATE , /*04*/
+	FUNC_GET_SENSORS          , /*05*/
+	FUNC_GET_FRU              , /*06*/
+	FUNC_GET_FAULT_CODE       , /*07*/
+	FUNC_GET_EVENTS           , /*08*/
+	FUNC_GET_POSTCODE         , /*09*/
+	FUNC_GET_BIOS_VER         , /*10*/
+
+	FUNC_TEST_L2              , /*11*/
+	FUNC_TEST_L3              , /*12*/
+#ifdef LOM_MGMT_DBG
+	FUNC_DEBUG                , /*13*/
+	FUNC_LAST                 = FUNC_DEBUG,
+#else
+	FUNC_LAST                 = FUNC_TEST_L3,
+#endif
+};
+
+enum lom_mgmt_power_ctrl_act {
+	PWC_UP = 1,
+	PWC_SHUTDOWN ,
+	PWC_HARD_RESET,
+	PWC_FORCE_DOWN,
+};
+
+enum lom_mgmt_i2c_stat {
+	EC_RET_NO_PROC = 1,
+	EC_RET_READY,
+	EC_RET_RETRY, /* Data not ready */
+	EC_RET_OK,
+	EC_RET_ERR_CODE_BASE,
+	EC_RET_ERR_INV_SIZE = EC_RET_ERR_CODE_BASE,
+	EC_RET_ERR_INV_FUNC,
+	EC_RET_ERR_INV_CSUM,
+	EC_RET_ERR_NOT_IMPL,
+	EC_RET_ERR_IN_PROCESS,
+	EC_RET_ERR_FAIL,
+};
+
+
+
+#endif /* __DRIVERS_I2C_TARGET_LOM_MGMT_H__ */
