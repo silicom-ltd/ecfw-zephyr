@@ -72,7 +72,6 @@ struct gpio_ec_config mecc172x_cfg[] = {
 
 	{ SCM_PRSNT_N,		GPIO_INPUT },
 	{ PLTRST_N,		GPIO_INPUT },
-	{ PM_RSMRST,		GPIO_INPUT },
 	{ ALL_SYS_PWRGD,	GPIO_OPEN_DRAIN | GPIO_OUTPUT_HIGH },
 
 	{ REDUNDANT_MAINS_N,	GPIO_INPUT },
