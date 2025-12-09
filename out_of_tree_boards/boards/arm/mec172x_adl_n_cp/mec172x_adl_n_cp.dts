@@ -353,6 +353,11 @@
 				compatible = "ocp,crps-iout";
 				page = <0>;
 			};
+			mfd6_pin: crps58pin {
+				compatible = "ocp,crps-power";
+				page = <0>;
+				sensor-type = "POWER";
+			};
 		};
 		mfd7: mp2928@20 {
 			compatible = "mps,mp2928";
@@ -362,16 +367,28 @@
 				compatible = "mps,mp2928-temp";
 				page = <0>;
 			};
-			mfd7_vout: mps2928_vout_r0 {
+			mfd7_r0_vout: mps2928_vout_r0 {
 				compatible = "mps,mp2928-vout";
 				page = <0>;
 			};
-			mfd8_vout: mps2928_vout_r1 {
+			mfd7_r1_vout: mps2928_vout_r1 {
 				compatible = "mps,mp2928-vout";
 				page = <1>;
 			};
-			mfd9_vout: mps2928_vout_r2 {
+			mfd7_r2_vout: mps2928_vout_r2 {
 				compatible = "mps,mp2928-vout";
+				page = <2>;
+			};
+			mfd7_r0_iout: mps2928_iout_r0 {
+				compatible = "mps,mp2928-iout";
+				page = <0>;
+			};
+			mfd7_r1_iout: mps2928_iout_r1 {
+				compatible = "mps,mp2928-iout";
+				page = <1>;
+			};
+			mfd7_r2_iout: mps2928_iout_r2 {
+				compatible = "mps,mp2928-iout";
 				page = <2>;
 			};
 		};
@@ -392,6 +409,11 @@
 			mfd8_iout: crps59iout {
 				compatible = "ocp,crps-iout";
 				page = <0>;
+			};
+			mfd8_pin: crps59pin {
+				compatible = "ocp,crps-power";
+				page = <0>;
+				sensor-type = "POWER";
 			};
 		};
 	};
@@ -704,13 +726,13 @@
 		pagesize = <16>;
 	};
 
-	switch_temp0: dev@48 {
+	switch_temp0: lm75dev@48 {
 		compatible = "lm75";
 		status = "okay";
 		reg = <0x48>;
 	};
 
-	switch_temp1: dev@49 {
+	switch_temp1: lm75dev@49 {
 		compatible = "lm75";
 		status = "okay";
 		reg = <0x49>;
