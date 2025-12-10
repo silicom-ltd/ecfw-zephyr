@@ -356,7 +356,6 @@
 			mfd6_pin: crps58pin {
 				compatible = "ocp,crps-power";
 				page = <0>;
-				sensor-type = "POWER";
 			};
 		};
 		mfd7: mp2928@20 {
@@ -413,7 +412,6 @@
 			mfd8_pin: crps59pin {
 				compatible = "ocp,crps-power";
 				page = <0>;
-				sensor-type = "POWER";
 			};
 		};
 	};
