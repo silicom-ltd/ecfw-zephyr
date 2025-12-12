@@ -57,7 +57,7 @@ if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N OR
                 PRIVATE
                 ${CMAKE_CURRENT_LIST_DIR}/sensors_cp.c
                 PUBLIC
-	              ${CMAKE_CURRENT_LIST_DIR}/hwmon_cp.h
+                ${CMAKE_CURRENT_LIST_DIR}/hwmon_cp.h
             )
         endif()
     else()

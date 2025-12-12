@@ -70,9 +70,7 @@ void thermal_sensors_update(void)
 	}
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	//if (upd_count_1++ % 8 == 0) {
-		sw_thermal_sensors_update();
-	//}
+	sw_thermal_sensors_update();
 #endif
 
 	for (i = 0; i < num_sensors; i++) {
@@ -174,9 +172,7 @@ void voltage_monitor_update(void)
 	}
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	//if (upd_count_2++ % 8 == 0) {
 	sw_voltage_sensors_update();
-		//}
 #endif
 
 	for (i = 0; i < num_sensors; i++) {
@@ -237,9 +233,8 @@ void current_sense_update(void)
 	}
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	//if (upd_count_3++ % 8 == 0) {
-		sw_current_sensors_update();
-	//}
+	sw_current_sensors_update();
+	sw_power_sensors_update();
 #endif
 
 	for (i = 0; i < num_sensors; i++) {
@@ -323,7 +318,6 @@ void sensors_update()
 	voltage_monitor_update();
 	thermal_sensors_update();
 	current_sense_update();
-
 
 }
 #undef DT_DRV_COMPAT

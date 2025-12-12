@@ -131,6 +131,7 @@ struct hwmon_sram {
 	struct hwmon_sdata sw_mon_thermal[SW_THERMAL_SENSOR_NUM];
 	struct hwmon_sdata sw_mon_voltage[SW_VOLTAGE_SENSOR_NUM];
 	struct hwmon_sdata sw_mon_current[SW_CURRENT_SENSOR_NUM];
+	struct hwmon_sdata sw_mon_power[SW_POWER_SENSOR_NUM];
 #endif
 } __attribute__ ((packed, aligned(32)));
 

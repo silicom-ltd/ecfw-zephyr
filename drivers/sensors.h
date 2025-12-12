@@ -35,6 +35,7 @@ void sw_sensors_hwmon_setting(void);
 void sw_thermal_sensors_update(void);
 void sw_voltage_sensors_update(void);
 void sw_current_sensors_update(void);
+void sw_power_sensors_update(void);
 void sw_sensors_update(void);
 #endif
 

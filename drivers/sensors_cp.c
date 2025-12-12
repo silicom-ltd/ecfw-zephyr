@@ -16,9 +16,10 @@
 
 #include "board_config.h"
 #include "sensors.h"
+#include "sensors_cp.h"
 
 
-LOG_MODULE_REGISTER(swsens_cp, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
+LOG_MODULE_REGISTER(swsens_cp, CONFIG_SW_SENSOR_LOG_LEVEL);
 
 #define SW_SENSOR_DBG
 
@@ -26,60 +27,44 @@ extern struct hwmon_sram *hwmon_data;
 
 struct sw_sens_info {
 	const struct device * dev;
-	enum sensor_channel   chan1; /* param1: sample channel */
-	enum sensor_channel   chan2; /* param2: read channel */
+	enum sensor_channel   chan; /* param2: get channel */
 	char                * name;
 };
 
-#define SENSOR_DECLARE(name, chan1, chan2)			\
-	DEVICE_DT_GET(DT_NODELABEL(name)), chan1, chan2, #name
-
 static struct sw_sens_info sw_thermal_sensors[] = {
-	{SENSOR_DECLARE(mfd3_temp,     SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd4_temp,     SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd5_temp,     SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd6_temp_amb, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd6_temp_hot, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd7_temp,     SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd8_temp_amb, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
-	{SENSOR_DECLARE(mfd8_temp_hot, SENSOR_CHAN_ALL, SENSOR_CHAN_DIE_TEMP)},
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_die_temp_sensors, DIE_TEMP_SENSOR_DECLARE)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_amb_temp_sensors, AMB_TEMP_SENSOR_DECLARE)
 };
 
 static struct sw_sens_info sw_voltage_sensors[] = {
-	{SENSOR_DECLARE(mfd3_vin,  SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd3_vout, SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd4_vin,  SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd4_vout, SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd5_vin,  SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd5_vout, SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd7_vout, SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd8_vout, SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
-	{SENSOR_DECLARE(mfd9_vout, SENSOR_CHAN_ALL, SENSOR_CHAN_VOLTAGE)},
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_volt_sensors, VOLT_SENSOR_DECLARE)
 };
 
 static struct sw_sens_info sw_current_sensors[] = {
-	{SENSOR_DECLARE(mfd3_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
-	{SENSOR_DECLARE(mfd4_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
-	{SENSOR_DECLARE(mfd5_iout, SENSOR_CHAN_ALL, SENSOR_CHAN_CURRENT)},
-	{SENSOR_DECLARE(mfd6_iout, SENSOR_CHAN_CURRENT, SENSOR_CHAN_CURRENT)},
-	{SENSOR_DECLARE(mfd8_iout, SENSOR_CHAN_CURRENT, SENSOR_CHAN_CURRENT)},
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_curr_sensors, CURR_SENSOR_DECLARE)
 };
 
+static struct sw_sens_info sw_power_sensors[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_powr_sensors, POWR_SENSOR_DECLARE)
+};
+
+BUILD_ASSERT(ARRAY_SIZE(sw_thermal_sensors) == SW_THERMAL_SENSOR_NUM, "Invalid size of sw_thermal_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_voltage_sensors) == SW_VOLTAGE_SENSOR_NUM, "Invalid size of sw_voltage_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_current_sensors) == SW_CURRENT_SENSOR_NUM, "Invalid size of sw_current_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_power_sensors)   == SW_POWER_SENSOR_NUM,   "Invalid size of sw_power_sensors");
 
 static void hwmon_sdata_update(struct hwmon_sdata *sdata, struct sensor_value *sens_value)
 {
 	uint32_t ret_value;
 	uint16_t multiplier = 0;
 
-	ret_value = sens_value->val1;
+	ret_value = (sens_value->val1 * 1000) + (sens_value->val2 / 1000);
 
 	while ((ret_value >> multiplier) & 0xFFFF0000)
 		multiplier++;
 
 	sdata->multiplier = multiplier;
 	sdata->mon_in = ret_value >> sdata->multiplier;
-
-	//LOG_ERR("Set hwmon_data@%p: IN %d MUL %d", sdata, sdata->mon_in, sdata->multiplier);
 
 	if (sdata->mon_in > sdata->mon_max)
 		sdata->mon_max = sdata->mon_in;
@@ -94,24 +79,29 @@ static void _sw_sensors_update(struct sw_sens_info * sens_info, int num_sensors,
 	struct sensor_value sens_val;
 
 	for (i = 0; i < num_sensors; i++) {
-		err = sensor_sample_fetch_chan(sens_info[i].dev, sens_info[i].chan1);
+		err = sensor_sample_fetch(sens_info[i].dev);
 		if (err) {
-			LOG_ERR("SW Sensor %s chan %d sample failed: %d", sens_info[i].name,
-				sens_info[i].chan1, err);
+			LOG_ERR("SW Sensor %s sample failed: %d", sens_info[i].name, err);
 			continue;
 		}
 
-		sensor_channel_get(sens_info[i].dev, sens_info[i].chan2, &sens_val);
+		sensor_channel_get(sens_info[i].dev, sens_info[i].chan, &sens_val);
 		if (err) {
 			LOG_ERR("SW Sensor %s chan %d read failed: %d", sens_info[i].name,
-				sens_info[i].chan2, err);
+				sens_info[i].chan, err);
 			continue;
 		}
 
-		LOG_ERR(">> %13s: %d.%03d\n", sens_info[i].name,
-			sens_val.val1/1000, sens_val.val1 % 1000);
-
 		hwmon_sdata_update(&hwmon[i], &sens_val);
+
+#if (CONFIG_SW_SENSOR_LOG_LEVEL >= LOG_LEVEL_DBG)
+		LOG_INF(" %16s@hwmon[%02ld]: %3d.%03d (IN 0x%04x MUL %d)%s", sens_info[i].name,
+			HWMON_SRAM_ENTRY_IDX(&hwmon[i], hwmon_data),
+			hwmon[i].mon_in/1000, hwmon[i].mon_in % 1000,
+			hwmon[i].mon_in, hwmon[i].multiplier,
+			hwmon[i].multiplier > 1 ? "(*)" : "");
+		//LOG_INF(" %26s: %3d.%d", "", sens_val.val1, sens_val.val2);
+#endif
 	}
 }
 
@@ -139,20 +129,16 @@ void sw_sensors_hwmon_setting(void)
 			&hwmon_data->sw_mon_current[i], hwmon_curr);
 	}
 
-	if (ARRAY_SIZE(sw_thermal_sensors) != SW_THERMAL_SENSOR_NUM)
-		LOG_ERR("Size mismatch of hwmon.sw_mon_thermal");
-	else
-		LOG_INF("The number of SW thermal sensors is %d", SW_THERMAL_SENSOR_NUM);
+	num_sensors = ARRAY_SIZE(sw_power_sensors);
+	for (i = 0; i < num_sensors; i++) {
+		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
+			&hwmon_data->sw_mon_power[i], hwmon_power);
+	}
 
-	if (ARRAY_SIZE(sw_voltage_sensors) != SW_VOLTAGE_SENSOR_NUM)
-		LOG_ERR("Size mismatch of hwmon.sw_mon_voltage");
-	else
-		LOG_INF("The number of SW voltage sensors is %d", SW_VOLTAGE_SENSOR_NUM);
-
-	if (ARRAY_SIZE(sw_current_sensors) != SW_CURRENT_SENSOR_NUM)
-		LOG_ERR("Size mismatch of hwmon.sw_mon_current");
-	else
-		LOG_INF("The number of SW current sensors is %d", SW_CURRENT_SENSOR_NUM);
+	LOG_INF("The number of SW thermal sensors is %d", SW_THERMAL_SENSOR_NUM);
+	LOG_INF("The number of SW voltage sensors is %d", SW_VOLTAGE_SENSOR_NUM);
+	LOG_INF("The number of SW current sensors is %d", SW_CURRENT_SENSOR_NUM);
+	LOG_INF("The number of SW power sensors is %d", SW_POWER_SENSOR_NUM);
 }
 
 void sw_thermal_sensors_update(void)
@@ -194,6 +180,19 @@ void sw_current_sensors_update(void)
 		hwmon_data->sw_mon_current);
 }
 
+void sw_power_sensors_update(void)
+{
+	if (hwmon_data == NULL) {
+		return;
+	}
+
+	__ASSERT(ARRAY_SIZE(sw_power_sensors) == ARRAY_SIZE(hwmon_data->sw_mon_power),
+		"Invalid size of hwmon sw_mon_power");
+
+	_sw_sensors_update(sw_power_sensors, ARRAY_SIZE(sw_power_sensors),
+		hwmon_data->sw_mon_power);
+}
+
 void sw_sensors_update(void)
 {
 	if (hwmon_data == NULL) {
@@ -215,4 +214,7 @@ void sw_sensors_update(void)
 
 	_sw_sensors_update(sw_current_sensors, ARRAY_SIZE(sw_current_sensors),
 		hwmon_data->sw_mon_current);
+
+	_sw_sensors_update(sw_power_sensors, ARRAY_SIZE(sw_power_sensors),
+		hwmon_data->sw_mon_power);
 }

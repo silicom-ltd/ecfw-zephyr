@@ -167,6 +167,14 @@ config THERMAL_SENSOR_LOG_LEVEL
 	help
 	  Set log level for thermal sensor driver.
 
+config SW_SENSOR_LOG_LEVEL
+	int "set SW sensor driver log level"
+	depends on LOG
+	default 2
+	default 4 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for SW sensor driver.
+
 endmenu
 
 menu "EC LOM management interface"
