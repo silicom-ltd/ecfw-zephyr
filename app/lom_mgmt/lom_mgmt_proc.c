@@ -13,6 +13,7 @@
 #include "board_config.h"
 #include "smchost.h"
 #include "hwmon.h"
+#include "hwmon_cp.h"
 
 #include "pwrplane.h"
 #include "pwrbtnmgmt.h"
@@ -23,7 +24,15 @@
 #include "host_event.h"
 #include "lom_mgmt_i2c.h"
 
+
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
+
+#if (CONFIG_SW_SENSOR_LOG_LEVEL >= LOG_LEVEL_DBG)
+#define LOM_MGMT_DBG LOG_INF
+#else
+#define LOM_MGMT_DBG
+#endif
+//#define SENSOR_DRY_RUN
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
@@ -32,62 +41,150 @@ static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 extern struct hwmon_sram *hwmon_data;
 
 struct hwmon_sram_entry_desc {
-	uint16_t offset;
-	uint8_t  kind;
-	uint8_t  sens_info;
+	uint16_t          entry_idx;
+	enum sensor_types sens_type;
+	uint8_t           sens_info;
 };
 
-#define HWMON_KIND_TEMP 0
-#define HWMON_KIND_VOLT 1
-#define HWMON_KIND_CURR 2
-#define HWMON_KIND_FRPM 3
-
-#define SENS_INFO_TYP_BIT 7
+#define SENS_INFO_TYP_BIT 7 /* data type: 0: integer, 1: float with struct */
 #define SENS_INFO_MUL_BIT 6
+#define SENS_INFO_ID_MASK 0x3F
+#define SENS_INFO_TYP_MASK (0x1 << SENS_INFO_TYP_BIT)
 
 #define SENS_INFO_DEF(t, m, id) \
-	((t) << SENS_INFO_TYP_BIT | ((m) << SENS_INFO_MUL_BIT) | ((id) & 0x3F))
+	((t) << SENS_INFO_TYP_BIT | ((m) << SENS_INFO_MUL_BIT) | ((id) & SENS_INFO_ID_MASK))
 
+/*
+   The new added sensors always be stored in contiguous memory locations and at the end,
+   so the sensor_id could be calculated by sequence
+*/
+#if 0
 static const struct hwmon_sram_entry_desc hwmon_entries[] = {
 	/* hwmon_sdata[16]: 0x100 */
-	{ 0x100, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0,  6) }, /* P12V0A        */
-	{ 0x120, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0,  7) }, /* P5V0A         */
-	{ 0x140, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0,  8) }, /* P3V3_ALW_ON   */
-	{ 0x160, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0,  9) }, /* P1V8_ALW_ON   */
-	{ 0x180, HWMON_KIND_TEMP, SENS_INFO_DEF(1, 0,  1) }, /* AmbientTemp   */
-	{ 0x1a0, HWMON_KIND_TEMP, SENS_INFO_DEF(1, 0,  2) }, /* VR_Temp       */
-	{ 0x1c0, HWMON_KIND_TEMP, SENS_INFO_DEF(1, 0,  3) }, /* DDR_Temp      */
-	{ 0x220, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0, 10) }, /* P1V8A         */
-	{ 0x240, HWMON_KIND_TEMP, SENS_INFO_DEF(1, 0,  4) }, /* CPU_Temp      */
-	{ 0x260, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0, 11) }, /* VCCIN_AUX     */
-	{ 0x280, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0, 12) }, /* P1V065_VDD2   */
-	{ 0x2a0, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0, 13) }, /* P0V95S        */
-	{ 0x2c0, HWMON_KIND_VOLT, SENS_INFO_DEF(1, 0, 14) }, /* P0V5_VDDQ     */
-
-	{ 0x2e0, HWMON_KIND_CURR, SENS_INFO_DEF(1, 0, 17) }, /* PWR_MON       */
+	{  8/*0x100*/, hwmon_in,   SENS_INFO_DEF(1, 0,  6) }, /* P12V0A        */ /* 12V */
+	{  9/*0x120*/, hwmon_in,   SENS_INFO_DEF(1, 0,  7) }, /* P5V0A         */ /* 5V */
+	{ 10/*0x140*/, hwmon_in,   SENS_INFO_DEF(1, 0,  8) }, /* P3V3_ALW_ON   */ /* 3.3V Always On */
+	{ 11/*0x160*/, hwmon_in,   SENS_INFO_DEF(1, 0,  9) }, /* P1V8_ALW_ON   */ /* 1.8V Always On */
+	{ 12/*0x180*/, hwmon_temp, SENS_INFO_DEF(1, 0,  1) }, /* AmbientTemp   */ /* Ambient */
+	{ 13/*0x1a0*/, hwmon_temp, SENS_INFO_DEF(1, 0,  2) }, /* VR_Temp       */ /* Core VR */
+	{ 14/*0x1c0*/, hwmon_temp, SENS_INFO_DEF(1, 0,  3) }, /* DDR_Temp      */ /* DDR */
+	{ 17/*0x220*/, hwmon_in,   SENS_INFO_DEF(1, 0, 10) }, /* P1V8A         */ /* 1.8V */
+	{ 18/*0x240*/, hwmon_temp, SENS_INFO_DEF(1, 0,  4) }, /* CPU_Temp      */ /* CPU */
+	{ 19/*0x260*/, hwmon_in,   SENS_INFO_DEF(1, 0, 11) }, /* VCCIN_AUX     */ /* VCCIN_AUX */
+	{ 20/*0x280*/, hwmon_in,   SENS_INFO_DEF(1, 0, 12) }, /* 1.2V_VDD2     */ /* 1.2V_VDD2 */
+	//{ /*21*/0x2a0, hwmon_in,   SENS_INFO_DEF(1, 0, 13) }, /* P0V95S        -*/
+	{ 22/*0x2c0*/, hwmon_in,   SENS_INFO_DEF(1, 0, 14) }, /* VTT_SODIMM    */ /* VTT_SODIMM */
+	{ 23/*0x2e0*/, hwmon_curr, SENS_INFO_DEF(1, 0, 17) }, /* PWR_MON       */ /* Board Power */
 
 	/* hwmon_peci:      0x300 */
-	{ 0x300, HWMON_KIND_TEMP, SENS_INFO_DEF(1, 0,  5) }, /* CPU_PECI_Temp */
+	{ 24/*0x300*/, hwmon_temp, SENS_INFO_DEF(1, 0,  5) }, /* CPU_PECI_Temp */ /* CPU PECI */
 
 	/* hwmon_fdata[4]:  0x320 */
-	{ 0x320, HWMON_KIND_FRPM, SENS_INFO_DEF(0, 0, 15) }, /* Fan1_Speed    */
-	{ 0x340, HWMON_KIND_FRPM, SENS_INFO_DEF(0, 0, 16) }, /* Fan2_Speed    */
+	//{ 0x320, hwmon_fan, SENS_INFO_DEF(0, 0, 15) }, /* Fan1_Speed    */
+	//{ 0x340, hwmon_fan, SENS_INFO_DEF(0, 0, 16) }, /* Fan2_Speed    */
 
-	/* hwmon_pdata[4]:  0x3a0 */
-	//{ 0x3a0, 0, F0, 0, "Fan1_PWM" },
-	//{ 0x3c0, 0, F0, 0, "Fan2_PWM" },
-	{ 0, 0, 0}
+	/*
+	 * !! From here the Max sens_id is 17 !!
+	 */
+
+	/* hwmon.emc230x_fan@33, 8 entries*/
+	{ 33/*0x420*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 18) }, /* Fan1_RPM    */
+	{ 34/*0x440*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan2_RPM    */
+	{ 35/*0x460*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan3_RPM    */
+	{ 36/*0x480*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan4_RPM    */
+	{ 37/*0x4a0*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan5_RPM    */
+	{ 38/*0x4c0*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan6_RPM    */
+	{ 39/*0x4e0*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan7_RPM    */
+	{ 40/*0x500*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan8_RPM    */
+
+	/* hwmon.sw_mon_thermal@43, 8 entries*/
+	{ 43/*0x560*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd3_temp     : 3.3V Left(id 23) */
+	{ 44/*0x580*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd4_temp     : 3.3V Right */
+	{ 45/*0x5a0*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd5_temp     : VDDH 1.1V */
+	{ 46/*0x5c0*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd6_temp_amb : PSU1 Left Ambient */
+	{ 47/*0x5e0*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd6_temp_hot : PSU1 Left Hot */
+	{ 48/*0x600*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd7_temp     : Main 3x Rails */
+	{ 49/*0x620*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd8_temp_amb : PSU2 Right Ambient */
+	{ 50/*0x640*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* mfd8_temp_hot : PSU2 Right Hot*/
+	{ 51/*0x660*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* switch_temp0 */
+	{ 52/*0x680*/, hwmon_temp, SENS_INFO_DEF(1, 0, 00) }, /* switch_temp1 */
+
+	/* hwmon.sw_mon_voltage@51, 9 entries */
+	{ 53/*0x6a0*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd3_vin     : 3.3V Left Vin (id 31) */
+	{ 54/*0x6c0*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd3_vout    : 3.3V Left Vout */
+	{ 55/*0x6e0*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd4_vin     : 3.3V Right Vin */
+	{ 56/*0x700*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd4_vout    : 3.3V Right Vout */
+	{ 57/*0x720*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd5_vin     : VDDH 1.1V Vin */
+	{ 58/*0x740*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd5_vout    : VDDH 1.1V Vout */
+	{ 59/*0x760*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd7_r0_vout : Core VDD */
+	{ 60/*0x780*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd7_r1_vout : GOP VDD .8V */
+	{ 61/*0x7a0*/, hwmon_in,   SENS_INFO_DEF(1, 0, 00) },  /* mfd7_r2_vout : VDDA .9V */
+
+	/* hwmon.sw_mon_current@60, 5 entries */
+	{ 62/*0x7c0*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd3_iout    : 3.3V Left Iout (id 40) */
+	{ 63/*0x7e0*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd4_iout    : 3.3V Right Iout */
+	{ 64/*0x800*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd5_iout    : VDDH 1.1V Iout */
+	{ 65/*0x820*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd6_iout    : PSU1 Left Iout */
+	{ 66/*0x840*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd7_r0_iout : PSU2 Right Iout */
+	{ 67/*0x860*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd7_r1_iout : PSU2 Right Iout */
+	{ 68/*0x880*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd7_r2_iout : PSU2 Right Iout */
+	{ 69/*0x8a0*/, hwmon_curr, SENS_INFO_DEF(1, 0, 00) },  /* mfd8_iout    : PSU2 Right Iout */
+
+	{ 70/*0x8c0*/, hwmon_power, SENS_INFO_DEF(1, 0, 00) },  /* mfd6_pin :  */
+	{ 71/*0x8e0*/, hwmon_power, SENS_INFO_DEF(1, 0, 00) },  /* mfd8_pin :  */
+
+	{ 0xFFFF, 0, 0 }
 };
+#else
+
+#define LOM_SENSOR_MAX 256
+#define DYN_SENSOR_ENTRY_IDX_BASE 43
+#define DYN_SENSOR_ID_BASE 18
+
+static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
+	/* hwmon_sdata[16]: 0x100 */
+	{  8/*0x100*/, hwmon_in,   SENS_INFO_DEF(1, 0,  6) }, /* P12V0A        */ /* 12V */
+	{  9/*0x120*/, hwmon_in,   SENS_INFO_DEF(1, 0,  7) }, /* P5V0A         */ /* 5V */
+	{ 10/*0x140*/, hwmon_in,   SENS_INFO_DEF(1, 0,  8) }, /* P3V3_ALW_ON   */ /* 3.3V Always On */
+	{ 11/*0x160*/, hwmon_in,   SENS_INFO_DEF(1, 0,  9) }, /* P1V8_ALW_ON   */ /* 1.8V Always On */
+	{ 12/*0x180*/, hwmon_temp, SENS_INFO_DEF(1, 0,  1) }, /* AmbientTemp   */ /* Ambient */
+	{ 13/*0x1a0*/, hwmon_temp, SENS_INFO_DEF(1, 0,  2) }, /* VR_Temp       */ /* Core VR */
+	{ 14/*0x1c0*/, hwmon_temp, SENS_INFO_DEF(1, 0,  3) }, /* DDR_Temp      */ /* DDR */
+	{ 17/*0x220*/, hwmon_in,   SENS_INFO_DEF(1, 0, 10) }, /* P1V8A         */ /* 1.8V */
+	{ 18/*0x240*/, hwmon_temp, SENS_INFO_DEF(1, 0,  4) }, /* CPU_Temp      */ /* CPU */
+	{ 19/*0x260*/, hwmon_in,   SENS_INFO_DEF(1, 0, 11) }, /* VCCIN_AUX     */ /* VCCIN_AUX */
+	{ 20/*0x280*/, hwmon_in,   SENS_INFO_DEF(1, 0, 12) }, /* 1.2V_VDD2     */ /* 1.2V_VDD2 */
+	//{ /*21*/0x2a0, hwmon_in,   SENS_INFO_DEF(1, 0, 13) }, /* P0V95S        -*/
+	{ 22/*0x2c0*/, hwmon_in,   SENS_INFO_DEF(1, 0, 14) }, /* VTT_SODIMM    */ /* VTT_SODIMM */
+	{ 23/*0x2e0*/, hwmon_curr, SENS_INFO_DEF(1, 0, 17) }, /* PWR_MON       */ /* Board Power */
+
+	/* hwmon_peci:      0x300 */
+	{ 24/*0x300*/, hwmon_temp, SENS_INFO_DEF(1, 0,  5) }, /* CPU_PECI_Temp */ /* CPU PECI */
+
+	/* hwmon_fdata[4]:  0x320 */
+	//{ 0x320, hwmon_fan, SENS_INFO_DEF(0, 0, 15) }, /* Fan1_Speed    */
+	//{ 0x340, hwmon_fan, SENS_INFO_DEF(0, 0, 16) }, /* Fan2_Speed    */
+
+	/*
+	 * !! new sens_id should start from 18 !!
+	 */
+
+	/* hwmon.emc230x_fan@33, 8 entries*/
+	{ 33/*0x420*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 18) }, /* Fan1_RPM    */ /*new sens_id start from 18 */
+	{ 34/*0x440*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan2_RPM    */
+	{ 35/*0x460*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan3_RPM    */
+	{ 36/*0x480*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan4_RPM    */
+	{ 37/*0x4a0*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan5_RPM    */
+	{ 38/*0x4c0*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan6_RPM    */
+	{ 39/*0x4e0*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan7_RPM    */
+	{ 40/*0x500*/, hwmon_fan,  SENS_INFO_DEF(0, 0, 00) }, /* Fan8_RPM    */
+
+	{ 0xFFFF, 0, 0 },
+};
+#endif
 
 struct sensor_record {
-	union {
-		struct {
-			uint8_t type:1;
-			uint8_t multiplier:1;
-			uint8_t id:6;
-		};
-		uint8_t info;
-	};
+	uint8_t  info;
 	uint16_t value;
 } __attribute__((__packed__));
 
@@ -105,6 +202,78 @@ struct lom_mgmt_task {
 
 static struct lom_mgmt_task lom_mgmt_task;
 
+
+static void lom_mgmt_dyn_sensor_table_init(void)
+{
+	int start_idx;
+	int entry_idx = DYN_SENSOR_ENTRY_IDX_BASE;
+	int i;
+
+	LOM_MGMT_DBG("Dynamic sensors items init");
+
+	for (i = 0; i < LOM_SENSOR_MAX; i++) {
+		if (hwmon_entries[i].entry_idx == 0xFFFF) {
+			break;
+		}
+	}
+	start_idx = i;
+
+	for (i = 0; i < SW_THERMAL_SENSOR_NUM; i++, entry_idx++) {
+		hwmon_entries[start_idx + i].entry_idx = entry_idx;
+		hwmon_entries[start_idx + i].sens_type = hwmon_temp;
+		hwmon_entries[start_idx + i].sens_info = SENS_INFO_DEF(1, 0, 00);
+
+		LOM_MGMT_DBG("<TEMP> SENS[%02d]: { %d, %d, %02x }", start_idx +i,
+			hwmon_entries[start_idx + i].entry_idx,
+			hwmon_entries[start_idx + i].sens_type,
+			hwmon_entries[start_idx + i].sens_info);
+	}
+	start_idx += SW_THERMAL_SENSOR_NUM;
+
+	for (i = 0; i < SW_VOLTAGE_SENSOR_NUM; i++, entry_idx++) {
+		hwmon_entries[start_idx + i].entry_idx = entry_idx;
+		hwmon_entries[start_idx + i].sens_type = hwmon_in;
+		hwmon_entries[start_idx + i].sens_info = SENS_INFO_DEF(1, 0, 00);
+
+		LOM_MGMT_DBG("<VOLT> SENS[%02d]: { %d, %d, %02x }", start_idx +i,
+			hwmon_entries[start_idx + i].entry_idx,
+			hwmon_entries[start_idx + i].sens_type,
+			hwmon_entries[start_idx + i].sens_info);
+	}
+	start_idx += SW_VOLTAGE_SENSOR_NUM;
+
+	for (i = 0; i < SW_CURRENT_SENSOR_NUM; i++, entry_idx++) {
+		hwmon_entries[start_idx + i].entry_idx = entry_idx;
+		hwmon_entries[start_idx + i].sens_type = hwmon_curr;
+		hwmon_entries[start_idx + i].sens_info = SENS_INFO_DEF(1, 0, 00);
+
+		LOM_MGMT_DBG("<CURR> SENS[%02d]: { %d, %d, %02x }", start_idx +i,
+			hwmon_entries[start_idx + i].entry_idx,
+			hwmon_entries[start_idx + i].sens_type,
+			hwmon_entries[start_idx + i].sens_info);
+
+	}
+	start_idx += SW_CURRENT_SENSOR_NUM;
+
+	for (i = 0; i < SW_POWER_SENSOR_NUM; i++, entry_idx++) {
+		hwmon_entries[start_idx + i].entry_idx = entry_idx;
+		hwmon_entries[start_idx + i].sens_type = hwmon_power;
+		hwmon_entries[start_idx + i].sens_info = SENS_INFO_DEF(1, 0, 00);
+
+		LOM_MGMT_DBG("<POWR> SENS[%02d]: { %d, %d, %02x }", start_idx +i,
+			hwmon_entries[start_idx + i].entry_idx,
+			hwmon_entries[start_idx + i].sens_type,
+			hwmon_entries[start_idx + i].sens_info);
+	}
+	start_idx += SW_POWER_SENSOR_NUM;
+
+	hwmon_entries[start_idx].entry_idx = 0xFFFF;
+
+	LOM_MGMT_DBG("<LAST> SENS[%02d]: { %d, %d, %02x }", start_idx,
+		hwmon_entries[start_idx].entry_idx,
+		hwmon_entries[start_idx].sens_type,
+		hwmon_entries[start_idx].sens_info);
+}
 
 /*
  * Callbacks for lom_mgmt_i2c
@@ -133,35 +302,55 @@ static struct lom_mgmt_i2c_callbacks callbacks = {
 	lom_mgmt_i2c_cancel,
 };
 
-static inline void fill_one_sensor(struct sensor_record *srd, const struct hwmon_sram_entry_desc * ent)
+static inline void fill_one_sensor(struct sensor_record *srd,
+	const struct hwmon_sram_entry_desc * ent, uint8_t *sens_id_max)
 {
 	uint16_t *sram = (uint16_t *)hwmon_data;
+	uint16_t offset = (ent->entry_idx * 32) / 2; /* offset in two byte unit */
 
-	srd->info  = ent->sens_info;
-	if (ent->kind != HWMON_KIND_FRPM) {
-		srd->info |= (uint8_t)(sram[ent->offset/2 + 7] & 0x1) << SENS_INFO_MUL_BIT; /* multiplier */
+	/* set sens_id */
+	uint8_t sens_id = ent->sens_info & SENS_INFO_ID_MASK;
+	if (sens_id == 0) {
+		sens_id = ++(*sens_id_max) & SENS_INFO_ID_MASK;
+	}
+	else if (sens_id > *sens_id_max) {
+		*sens_id_max = sens_id;
+	}
+	else {
+		__ASSERT(sens_id != *sens_id_max, "Duplicated sens_id %d", sens_id);
 	}
 
-	srd->value = htons(sram[ent->offset/2]);
+	uint8_t mul = 0;
+	if (ent->sens_type != hwmon_fan && ent->sens_type != hwmon_pwm) {
+		mul = (uint8_t)(sram[offset + 7] & 0x1) << SENS_INFO_MUL_BIT; /* mul */
+	}
 
-	//LOG_INF(">> orig: info 0x%02x", ent->sens_info);
-	//LOG_INF(">> 0x%02x 0x%02x 0x%02x", srd->info, ((uint8_t*)srd)[1], ((uint8_t *)srd)[2]);
-	//LOG_INF(">> val : 0x%04x", srd->value);
+	srd->info = (ent->sens_info & SENS_INFO_TYP_MASK) | mul | sens_id;
+	srd->value = htons(sram[offset]);
+#ifdef SENSOR_DRY_RUN
+	if (ent->entry_idx >= 33) {
+		srd->value = htons(ent->entry_idx * 32);
+	}
+#endif
 }
 
 static int do_get_sensors(uint8_t *res_data, uint16_t *dat_size)
 {
 	struct sensor_record * srd;
 	uint16_t data_off = 0;
+	uint8_t sens_id_max = 0;
 
-	for (int i = 0; hwmon_entries[i].offset != 0; i++) {
+	for (int i = 0; hwmon_entries[i].entry_idx != 0xFFFF; i++) {
 		if (data_off + SENSOR_RECORD_SIZE > RES_DLEN_MAX) {
 			return -1;
 		}
 
 		srd = (struct sensor_record *)&(res_data[data_off]);
 
-		fill_one_sensor(srd, &hwmon_entries[i]);
+		fill_one_sensor(srd, &hwmon_entries[i], &sens_id_max);
+
+		LOM_MGMT_DBG(">> SENS@hwmon[%03d] 0x%02x 0x%04x", hwmon_entries[i].entry_idx,
+			srd->info, ntohs(srd->value));
 
 		data_off += SENSOR_RECORD_SIZE;
 	}
@@ -236,7 +425,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 			break;
 		}
 
-		LOG_DBG("sensors data size %d", dat_size);
+		LOG_INF("sensors data size %d", dat_size);
 
 #if 0
 		LOG_INF("+=+ 0x%02x 0x%02x 0x%02x 0x%02x",
@@ -483,6 +672,8 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 	init_espi_event_monitor();
 	init_gpio_event_monitor();
+
+	lom_mgmt_dyn_sensor_table_init();
 
 	wait_hwdata_ready(normal_period);
 
