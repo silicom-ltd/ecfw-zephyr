@@ -414,6 +414,64 @@
 				page = <0>;
 			};
 		};
+		mfd9: mp2985@60 {
+			compatible = "mps,mp2985";
+			reg = <0x60>;
+
+			mfd9_temp_1: mp2985_60_temp_rail1 {
+				compatible = "mps,mp2985-temp";
+				page = <0>;
+			};
+			mfd9_temp_2: mp2985_60_temp_rail2 {
+				compatible = "mps,mp2985-temp";
+				page = <1>;
+			};
+			mfd9_iout_1: mp2985_60_iout_rail1 {
+				compatible = "mps,mp2985-iout";
+				page = <0>;
+			};
+			mfd9_iout_2: mp2985_60_iout_rail2 {
+				compatible = "mps,mp2985-iout";
+				page = <1>;
+			};
+			mfd9_vout_1: mp2985_60_vout_rail1 {
+				compatible = "mps,mp2985-vout";
+				page = <0>;
+			};
+			mfd9_vout_2: mp2985_60_vout_rail2 {
+				compatible = "mps,mp2985-vout";
+				page = <1>;
+			};
+		};
+		mfd10: mp2985@61 {
+			compatible = "mps,mp2985";
+			reg = <0x61>;
+
+			mfd10_temp_1: mp2985_61_temp_rail1 {
+				compatible = "mps,mp2985-temp";
+				page = <0>;
+			};
+			mfd10_temp_2: mp2985_61_temp_rail2 {
+				compatible = "mps,mp2985-temp";
+				page = <1>;
+			};
+			mfd10_iout_1: mp2985_61_iout_rail1 {
+				compatible = "mps,mp2985-iout";
+				page = <0>;
+			};
+			mfd10_iout_2: mp2985_61_iout_rail2 {
+				compatible = "mps,mp2985-iout";
+				page = <1>;
+			};
+			mfd10_vout_1: mp2985_61_vout_rail1 {
+				compatible = "mps,mp2985-vout";
+				page = <0>;
+			};
+			mfd10_vout_2: mp2985_61_vout_rail2 {
+				compatible = "mps,mp2985-vout";
+				page = <1>;
+			};
+		};
 	};
 
 	zephyr,user {
