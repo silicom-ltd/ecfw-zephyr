@@ -48,10 +48,14 @@ static struct sw_sens_info sw_power_sensors[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_powr_sensors, POWR_SENSOR_DECLARE)
 };
 
-BUILD_ASSERT(ARRAY_SIZE(sw_thermal_sensors) == SW_THERMAL_SENSOR_NUM, "Invalid size of sw_thermal_sensors");
-BUILD_ASSERT(ARRAY_SIZE(sw_voltage_sensors) == SW_VOLTAGE_SENSOR_NUM, "Invalid size of sw_voltage_sensors");
-BUILD_ASSERT(ARRAY_SIZE(sw_current_sensors) == SW_CURRENT_SENSOR_NUM, "Invalid size of sw_current_sensors");
-BUILD_ASSERT(ARRAY_SIZE(sw_power_sensors)   == SW_POWER_SENSOR_NUM,   "Invalid size of sw_power_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_thermal_sensors) == SW_THERMAL_SENSOR_NUM,
+	"Invalid size of sw_thermal_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_voltage_sensors) == SW_VOLTAGE_SENSOR_NUM,
+	"Invalid size of sw_voltage_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_current_sensors) == SW_CURRENT_SENSOR_NUM,
+	"Invalid size of sw_current_sensors");
+BUILD_ASSERT(ARRAY_SIZE(sw_power_sensors)   == SW_POWER_SENSOR_NUM,
+	"Invalid size of sw_power_sensors");
 
 static void hwmon_sdata_update(struct hwmon_sdata *sdata, struct sensor_value *sens_value)
 {

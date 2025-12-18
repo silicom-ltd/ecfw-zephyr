@@ -20,7 +20,7 @@
 #if !DT_NODE_HAS_PROP(DT_PATH(zephyr_user), sw_amb_temp_sensors)
 #warn "Property sw_amb_temp_sensors does not exist in zephyr,user node!"
 #define SW_AMB_THERMAL_SENSOR_NUM 0
-	#else
+#else
 #define SW_AMB_THERMAL_SENSOR_NUM 				\
 	DT_PROP_LEN(DT_PATH(zephyr_user), sw_amb_temp_sensors)
 #endif
