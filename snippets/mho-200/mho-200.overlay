@@ -89,7 +89,7 @@
 				compatible = "mps,mp2985-temp";
 				page = <1>;
 			};
-			mfd10_iout_1: vdd_iout {
+			mfd10_iout_1: vdda_iout {
 				compatible = "mps,mp2985-iout";
 				page = <0>;
 			};
@@ -97,7 +97,7 @@
 				compatible = "mps,mp2985-iout";
 				page = <1>;
 			};
-			mfd10_vout_1: vdd_vout {
+			mfd10_vout_1: vdda_vout {
 				compatible = "mps,mp2985-vout";
 				page = <0>;
 			};
