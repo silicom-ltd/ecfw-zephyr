@@ -1,0 +1,202 @@
+/*
+ * Copyright (c) 2025 Silicom Connectivity Solutions, Ltd.
+ *
+ * DTS overlay file for MHO-150/MHO-180 Switch card.
+ */
+/ {
+	smbus1: smbus1 {
+		compatible = "microchip,xec-smbus";
+		i2c = <&i2c_smb_3>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mfd3: mpq8788@31 {
+			compatible = "mps,mpq8785";
+			reg = <0x31>;
+
+			mfd3_vin: 3v3_left_vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd3_vout: 3v3_left_vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd3_iout: 3v3_left_iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd3_temp: 3v3_left_temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
+		mfd4: mpq8788@32 {
+			compatible = "mps,mpq8785";
+			reg = <0x32>;
+
+			mfd4_vin: 3v3_right_vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd4_vout: 3v3_right_vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd4_iout: 3v3_right_iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd4_temp: 3v3_right_temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
+		mfd5: mpq8790@30 {
+			compatible = "mps,mpq8785";
+			reg = <0x30>;
+
+			mfd5_vin: vddh_vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd5_vout: vddh_vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd5_iout: vddh_iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd5_temp: vddh_temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
+		mfd6: crps@58 {
+			compatible = "ocp,crps";
+			reg = <0x58>;
+
+			mfd6_temp_amb: psu1_ambient {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <141>;
+			};
+			mfd6_temp_hot: psu1_hot {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <142>;
+			};
+			mfd6_iout: psu1_iout {
+				compatible = "ocp,crps-iout";
+				page = <0>;
+			};
+			mfd6_pin: psu1_pin {
+				compatible = "ocp,crps-power";
+				page = <0>;
+			};
+		};
+		mfd7: mp2928@20 {
+			compatible = "mps,mp2928";
+			reg = <0x20>;
+
+			mfd7_temp: core_vdd_temp {
+				compatible = "mps,mp2928-temp";
+				page = <0>;
+			};
+			mfd7_r0_vout: core_vdd_vout {
+				compatible = "mps,mp2928-vout";
+				page = <0>;
+			};
+			mfd7_r1_vout: gop_vdd_vout {
+				compatible = "mps,mp2928-vout";
+				page = <1>;
+			};
+			mfd7_r2_vout: vdda_vout {
+				compatible = "mps,mp2928-vout";
+				page = <2>;
+			};
+			mfd7_r0_iout: core_vdd_iout {
+				compatible = "mps,mp2928-iout";
+				page = <0>;
+			};
+			mfd7_r1_iout: gop_vdd_iout {
+				compatible = "mps,mp2928-iout";
+				page = <1>;
+			};
+			mfd7_r2_iout: vdda_iout {
+				compatible = "mps,mp2928-iout";
+				page = <2>;
+			};
+		};
+		mfd8: crps@59 {
+			compatible = "ocp,crps";
+			reg = <0x59>;
+
+			mfd8_temp_amb: psu2_ambient {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <141>;
+			};
+			mfd8_temp_hot: psu2_hot {
+				compatible = "ocp,crps-temp";
+				page = <0>;
+				temp-reg = <142>;
+			};
+			mfd8_iout: psu2_iout {
+				compatible = "ocp,crps-iout";
+				page = <0>;
+			};
+			mfd8_pin: psu2_pin {
+				compatible = "ocp,crps-power";
+				page = <0>;
+			};
+		};
+	};
+
+	zephyr,user {
+		sw-die-temp-sensors = <&mfd3_temp>,
+				      <&mfd4_temp>,
+				      <&mfd5_temp>,
+				      <&mfd6_temp_amb>,
+				      <&mfd6_temp_hot>,
+				      <&mfd7_temp>,
+				      <&mfd8_temp_amb>,
+				      <&mfd8_temp_hot>;
+
+		sw-amb-temp-sensors = <&switch_temp0>, <&switch_temp1>;
+
+		sw-volt-sensors = <&mfd3_vin>,
+				  <&mfd3_vout>,
+				  <&mfd4_vin>,
+				  <&mfd4_vout>,
+				  <&mfd5_vin>,
+				  <&mfd5_vout>,
+				  <&mfd7_r0_vout>,
+				  <&mfd7_r1_vout>,
+				  <&mfd7_r2_vout>;
+
+		sw-curr-sensors = <&mfd3_iout>,
+				  <&mfd4_iout>,
+				  <&mfd5_iout>,
+				  <&mfd6_iout>,
+				  <&mfd7_r0_iout>,
+				  <&mfd7_r1_iout>,
+				  <&mfd7_r2_iout>,
+				  <&mfd8_iout>;
+
+		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
+	};
+};
