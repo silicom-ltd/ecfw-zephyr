@@ -99,9 +99,10 @@ static void _sw_sensors_update(struct sw_sens_info * sens_info, int num_sensors,
 		hwmon_sdata_update(&hwmon[i], &sens_val);
 
 #if (CONFIG_SW_SENSOR_LOG_LEVEL >= LOG_LEVEL_DBG)
+		uint32_t final_val = hwmon[i].mon_in << hwmon[i].multiplier;
 		LOG_INF(" %16s@hwmon[%02ld]: %3d.%03d (IN 0x%04x MUL %d)%s", sens_info[i].name,
 			HWMON_SRAM_ENTRY_IDX(&hwmon[i], hwmon_data),
-			hwmon[i].mon_in/1000, hwmon[i].mon_in % 1000,
+			final_val/1000, final_val % 1000,
 			hwmon[i].mon_in, hwmon[i].multiplier,
 			hwmon[i].multiplier > 1 ? "(*)" : "");
 		//LOG_INF(" %26s: %3d.%d", "", sens_val.val1, sens_val.val2);
