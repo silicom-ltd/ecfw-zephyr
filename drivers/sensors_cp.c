@@ -116,34 +116,49 @@ void sw_sensors_hwmon_setting(void)
 
 	__ASSERT(hwmon_data != NULL, "hwmon_data is NULL");
 
+	LOG_INF("The number of SW thermal sensors is %d", SW_THERMAL_SENSOR_NUM);
+	LOG_INF("The number of SW voltage sensors is %d", SW_VOLTAGE_SENSOR_NUM);
+	LOG_INF("The number of SW current sensors is %d", SW_CURRENT_SENSOR_NUM);
+	LOG_INF("The number of SW power sensors is %d", SW_POWER_SENSOR_NUM);
+
 	num_sensors = ARRAY_SIZE(sw_thermal_sensors);
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_thermal[i], hwmon_temp);
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_thermal[i], hwmon_data),
+			sw_thermal_sensors[i].name);
 	}
 
 	num_sensors = ARRAY_SIZE(sw_voltage_sensors);
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_voltage[i], hwmon_in);
+
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_voltage[i], hwmon_data),
+			sw_voltage_sensors[i].name);
 	}
 
 	num_sensors = ARRAY_SIZE(sw_current_sensors);
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_current[i], hwmon_curr);
+
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_current[i], hwmon_data),
+			sw_current_sensors[i].name);
 	}
 
 	num_sensors = ARRAY_SIZE(sw_power_sensors);
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_power[i], hwmon_power);
-	}
 
-	LOG_INF("The number of SW thermal sensors is %d", SW_THERMAL_SENSOR_NUM);
-	LOG_INF("The number of SW voltage sensors is %d", SW_VOLTAGE_SENSOR_NUM);
-	LOG_INF("The number of SW current sensors is %d", SW_CURRENT_SENSOR_NUM);
-	LOG_INF("The number of SW power sensors is %d", SW_POWER_SENSOR_NUM);
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_power[i], hwmon_data),
+			sw_power_sensors[i].name);
+	}
 }
 
 void sw_thermal_sensors_update(void)
