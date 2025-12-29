@@ -178,11 +178,8 @@
 
 		sw-amb-temp-sensors = <&switch_temp0>, <&switch_temp1>;
 
-		sw-volt-sensors = <&mfd3_vin>,
-				  <&mfd3_vout>,
-				  <&mfd4_vin>,
+		sw-volt-sensors = <&mfd3_vout>,
 				  <&mfd4_vout>,
-				  <&mfd5_vin>,
 				  <&mfd5_vout>,
 				  <&mfd7_r0_vout>,
 				  <&mfd7_r1_vout>,
