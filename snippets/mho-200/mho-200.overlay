@@ -164,16 +164,15 @@
 				      <&mfd6_temp_amb>,
 				      <&mfd6_temp_hot>,
 				      <&mfd3_temp_1>,
+				      <&mfd9_temp_1>,
+				      <&mfd10_temp_1>,
 				      <&mfd8_temp_amb>,
 				      <&mfd8_temp_hot>;
 
 		sw-amb-temp-sensors = <&switch_temp0>, <&switch_temp1>;
 
-		sw-volt-sensors = <&mfd9_vin_2>,
-				  <&mfd9_vout_2>,
-				  <&mfd10_vin_2>,
+		sw-volt-sensors = <&mfd9_vout_2>,
 				  <&mfd10_vout_2>,
-				  <&mfd3_vin_2>,
 				  <&mfd3_vout_2>,
 				  <&mfd3_vout_1>,
 				  <&mfd9_vout_1>,
