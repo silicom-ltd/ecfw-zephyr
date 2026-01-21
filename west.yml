@@ -13,7 +13,7 @@ manifest:
   projects:
     - name: zephyr
       repo-path: zephyr-silicom
-      revision: eb988c35947a4496f9fe06429ad0ca2858840e11
+      revision: 7f2468e55741d4089ab92a3620664c8afde08120
       path: zephyr
       west-commands: scripts/west-commands.yml
     - name: hal_microchip
