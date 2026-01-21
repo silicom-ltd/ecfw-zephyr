@@ -28,10 +28,6 @@ manifest:
       path: modules/hal/cmsis
       groups:
         - hal
-    - name: mcuboot
-      remote: upstream
-      revision: 5970052c7109faf916c5e3e318ab2ba4cdf85533
-      path: bootloader/mcuboot
     - name: CPGZephyrDocs
       remote: microchip
       revision: de150196c8ae5bf00f47c9e2f4cccfafee5844ab
