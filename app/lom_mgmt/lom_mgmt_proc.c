@@ -33,6 +33,8 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
+#define WAIT_SIG_SLEEP_TIME 10
+
 static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 
 static const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
@@ -105,7 +107,6 @@ struct sensor_record {
 static const struct device *lom_mgmt_dev = DEVICE_DT_GET(DT_NODELABEL(lom_mgmt));
 
 K_SEM_DEFINE(lom_mgmt_sem, 0, 1);
-K_SEM_DEFINE(pwr_ctrl_sem, 0, 1);
 
 struct lom_mgmt_task {
 	struct lom_mgmt_req *req;
@@ -125,6 +126,7 @@ struct pwrctrl_work_data
 static struct pwrctrl_work_data pwrctrl_work_data;
 
 static volatile int slp_sig_PLTRST;
+static volatile int in_force_down;
 
 
 /*
@@ -315,13 +317,10 @@ static void pwrctrl_do_shutdown()
 	}
 }
 
-#define WAIT_SIG_SLEEP_TIME 10
-#define WAIT_SIG_TIMEOUT(t) (t/WAIT_SIG_SLEEP_TIME)
-
 static bool wait_sig_value(volatile int *sig,
 	int set_val, int exp_val, uint16_t timeout)
 {
-	uint16_t loop_cnt = timeout;
+	uint16_t loop_cnt = timeout / WAIT_SIG_SLEEP_TIME + ((timeout % WAIT_SIG_SLEEP_TIME) ? 1 : 0);
 
 	*sig = set_val;
 
@@ -332,8 +331,6 @@ static bool wait_sig_value(volatile int *sig,
 
 	return (*sig == exp_val);
 }
-
-static int in_force_down = 0;
 
 static void pwrctrl_do_force_down()
 {
@@ -346,13 +343,13 @@ static void pwrctrl_do_force_down()
 		/* first try normal shutdown */
 		pwrctrl_do_shutdown();
 
-		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, WAIT_SIG_TIMEOUT(6000));
+		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, 6000);
 		if (!ret) {
 			LOG_INF(">> Normal down failed, try Force Down");
 
 			gpio_write_pin(PM_PWRBTN, 0);
 
-			ret = wait_sig_value(&in_force_down, 1, 0, WAIT_SIG_TIMEOUT(7000));
+			ret = wait_sig_value(&in_force_down, 1, 0, 7200);
 			if (!ret) {
 				LOG_INF(">> Wait Sig 1 FAIL");
 				gpio_write_pin(PM_PWRBTN, 1);
@@ -375,6 +372,18 @@ static void pwrctrl_do_hard_reset()
 	gpio_write_pin(SOC_RSTBTN_N, 1);
 
 	LOG_INF(">> Do Hard Reset end");
+}
+
+static void pwrctrl_forcedown_post(void)
+{
+	if (in_force_down) {
+		gpio_write_pin(PM_PWRBTN, 1);
+		in_force_down = 0;
+
+		/* The system is already in the process of powering down,
+		   disable SCI */
+		g_acpi_state_flags.sci_enabled = 0;
+	}
 }
 
 static void pwrctrl_worker(struct k_work *work)
@@ -649,10 +658,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 	switch (event.evt_details) {
 	case ESPI_VWIRE_SIGNAL_SLP_WLAN:
 		if (event.evt_data == 0) {
-			if (in_force_down) {
-				gpio_write_pin(PM_PWRBTN, 1);
-				in_force_down = 0;
-			}
+			pwrctrl_forcedown_post();
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_SLP_S5:
@@ -708,16 +714,13 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 	}
 }
 
-static void espi_reset_monitor(const struct device *dev, struct espi_callback *cb,
+#if 0
+static void espi_bus_reset_monitor(const struct device *dev, struct espi_callback *cb,
 	struct espi_event event)
 {
-	LOG_INF("eSPI BUS reset %d", event.evt_data);
-
-	//if (in_force_down && event.evt_data == 0) {
-	//	gpio_write_pin(PM_PWRBTN, 1);
-	//	in_force_down = 0;
-	//}
+	LOG_DBG("eSPI BUS reset %d", event.evt_data);
 }
+#endif
 
 static struct espi_callback espi_vwi_cb;
 static struct espi_callback espi_rst_cb;
@@ -730,7 +733,7 @@ void init_espi_event_monitor(void)
 		return;
 	}
 
-	espi_init_callback(&espi_rst_cb, espi_reset_monitor, ESPI_BUS_RESET);
+	//espi_init_callback(&espi_rst_cb, espi_bus_reset_monitor, ESPI_BUS_RESET);
 	espi_init_callback(&espi_vwi_cb, espi_vwire_monitor, ESPI_BUS_EVENT_VWIRE_RECEIVED);
 
 	espi_add_callback(espi_dev, &espi_rst_cb);
