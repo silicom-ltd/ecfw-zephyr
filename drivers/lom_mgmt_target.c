@@ -525,7 +525,7 @@ static bool check_csum(struct lom_mgmt_i2c_context *ctx)
 
 static void lom_mgmt_tgt_do_fini(struct lom_mgmt_i2c_context *ctx)
 {
-	LOG_INF("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]", ctx->req_func_last,
+	LOG_DBG("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]", ctx->req_func_last,
 		ctx_sta_string[ctx->state_last], ctx->res_idx, ctx->res.size-1);
 
 	ctx_meta_data_reset(ctx, COM_META_ALL);
