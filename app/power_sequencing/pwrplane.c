@@ -144,22 +144,20 @@ static void pwrseq_slp_handler(uint32_t signal, uint32_t status)
 		}
 	} else  {
 		/* SLPx assertion indicates a specific power system state */
-		switch (current_state) {
-		case SYSTEM_S0_STATE:
+		if (current_state >= SYSTEM_S0_STATE && current_state <= SYSTEM_S5_STATE) {
 			if (signal == ESPI_VWIRE_SIGNAL_SLP_S3) {
 				LOG_DBG("SLP S3 asserted");
 				next_state = SYSTEM_S3_STATE;
 			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S4) {
 				LOG_DBG("SLP S4 asserted");
-		//		if (next_state != SYSTEM_S5_STATE) 
-					next_state = SYSTEM_S4_STATE;
+				next_state = SYSTEM_S4_STATE;
 			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S5) {
 				LOG_DBG("SLP S5 asserted");
 				next_state = SYSTEM_S5_STATE;
 			}
-			break;
-		default:
-			LOG_WRN("SLP_SX=1 while at %x", current_state);
+		}
+		else {
+			LOG_ERR("<DN> SLP_SX[%d]=1 while at %x", signal, current_state);
 		}
 	}
 }
@@ -931,4 +929,3 @@ static int resume(void)
 	board_resume();
 	return ret;
 }
-
