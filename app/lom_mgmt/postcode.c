@@ -133,7 +133,7 @@ int postcode_get(uint8_t *ret, uint16_t *ret_size)
 		struct postcode_batch *pb = &postcode_batches[batch_id];
 		uint16_t batch_size = ring_buf_size_get(pb->codes);
 
-		LOG_INF(">> Process PC_BATCH[%u]: boot[%u] size[%03u] time[%08x] count %d",
+		LOG_DBG(">> Process PC_BATCH[%u]: boot[%u] size[%03u] time[%08x] count %d",
 			batch_id, pb->boot_count, batch_size, pb->start_time, pb->count);
 
 		if (batch_size) {
