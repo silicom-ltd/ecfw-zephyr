@@ -272,7 +272,7 @@ static int do_get_fru(uint8_t *data, uint16_t * dat_size)
 
 	uint16_t fru_dat_len = data[9] << 8 | data[10];
 
-	LOG_DBG("Fru data size 0x%04x", fru_dat_len);
+	LOG_INF("Fru data size 0x%04x", fru_dat_len);
 
 	size_t read_size = 0;
 	for (uint16_t remains = fru_dat_len; remains > 0; remains -= read_size) {
@@ -406,13 +406,20 @@ static void pwrctrl_do_force_down()
 
 static void pwrctrl_do_hard_reset()
 {
-	LOG_INF(">> Do Hard Reset");
+	uint8_t pwr_state = pwrseq_system_state();
 
-	gpio_write_pin(SOC_RSTBTN_N, 0);
-	k_msleep(20);
-	gpio_write_pin(SOC_RSTBTN_N, 1);
+	if (pwr_state == SYSTEM_S0_STATE) {
+		LOG_INF(">> Do Hard Reset");
 
-	LOG_INF(">> Do Hard Reset end");
+		gpio_write_pin(SOC_RSTBTN_N, 0);
+		k_msleep(20);
+		gpio_write_pin(SOC_RSTBTN_N, 1);
+
+		LOG_INF(">> Do Hard Reset end");
+	}
+	else {
+		LOG_INF(">> Skip Hard Reset");
+	}
 }
 
 static void pwrctrl_worker(struct k_work *work)
