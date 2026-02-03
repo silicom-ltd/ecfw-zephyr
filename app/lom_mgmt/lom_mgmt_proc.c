@@ -33,13 +33,36 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
-#define WAIT_SIG_SLEEP_TIME 10
+#define HOST_SHUTDOWN_WAIT_TIME_MS  10000
+#define HOST_FORCEDOWN_WAIT_TIME_MS 7200
+
+#define WAIT_SIG_SLEEP_TIME_MS 10
+#define MS_TIMEOUT_TO_CNT(t)						\
+	((t) / WAIT_SIG_SLEEP_TIME_MS + (((t) % WAIT_SIG_SLEEP_TIME_MS) ? 1 : 0))
+
+#define WORK_RET_OK      0
+#define WORK_RET_TIMEOUT 1
+#define WORK_RET_QUIT    2
+
+
+#define FRU_HDR_SIZE 11
+static uint8_t fru_hdr_title[] = "TlvInfo";
+
+#define FRU_READ_MAX 64 /* Read FRU should not occupy cpu for long time */
+
+#define SET_FAIL_CODE(res, err)				\
+	do {						\
+		(res)->dlen_or_error = htons(err);	\
+	} while (0)
+
 
 static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 
 static const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
 
 extern struct hwmon_sram *hwmon_data;
+
+static atomic_t work_quit = ATOMIC_INIT(0);
 
 struct hwmon_sram_entry_desc {
 	uint16_t offset;
@@ -134,7 +157,6 @@ static volatile int in_force_down;
  */
 static void lom_mgmt_i2c_cancel(void)
 {
-	return;
 }
 
 static int lom_mgmt_i2c_request(struct lom_mgmt_req *req, struct lom_mgmt_res *res)
@@ -155,16 +177,6 @@ static struct lom_mgmt_i2c_callbacks callbacks = {
 	lom_mgmt_i2c_request,
 	lom_mgmt_i2c_cancel,
 };
-
-#define FRU_HDR_SIZE 11
-static uint8_t fru_hdr_title[] = "TlvInfo";
-
-#define FRU_READ_MAX 64 /* Read FRU should not occupy cpu for long time */
-
-#define SET_FAIL_CODE(res, err) \
-	do { \
-		(res)->dlen_or_error = htons(err); \
-	} while (0)
 
 static inline void fill_one_sensor(struct sensor_record *srd,
 	const struct hwmon_sram_entry_desc * ent)
@@ -317,25 +329,42 @@ static void pwrctrl_do_shutdown()
 	}
 }
 
-static bool wait_sig_value(volatile int *sig,
+
+static int wait_sig_value(volatile int *sig,
 	int set_val, int exp_val, uint16_t timeout)
 {
-	uint16_t loop_cnt = timeout / WAIT_SIG_SLEEP_TIME + ((timeout % WAIT_SIG_SLEEP_TIME) ? 1 : 0);
+	uint16_t loop_cnt = MS_TIMEOUT_TO_CNT(timeout);
 
 	*sig = set_val;
 
-	while (*sig != exp_val && loop_cnt) {
-		k_msleep(WAIT_SIG_SLEEP_TIME);
+	atomic_set(&work_quit, 0);
+
+	while (loop_cnt && *sig != exp_val) {
+		if (atomic_get(&work_quit)) {
+			return WORK_RET_QUIT;
+		}
+
+		k_msleep(WAIT_SIG_SLEEP_TIME_MS);
+
 		loop_cnt--;
 	}
 
-	return (*sig == exp_val);
+	return ((*sig == exp_val) ? WORK_RET_OK : WORK_RET_TIMEOUT);
 }
+
+static inline void pwrctrl_forcedown_post(void)
+{
+	if (in_force_down) {
+		gpio_write_pin(PM_PWRBTN, 1);
+		in_force_down = 0;
+	}
+}
+
 
 static void pwrctrl_do_force_down()
 {
 	uint8_t pwr_state = pwrseq_system_state();
-	bool ret;
+	int ret;
 
 	if (pwr_state != SYSTEM_S5_STATE && pwr_state != SYSTEM_S4_STATE) {
 		LOG_INF(">> Do Force Down");
@@ -343,16 +372,28 @@ static void pwrctrl_do_force_down()
 		/* first try normal shutdown */
 		pwrctrl_do_shutdown();
 
-		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, 6000);
-		if (!ret) {
+		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, HOST_SHUTDOWN_WAIT_TIME_MS);
+		if (ret == WORK_RET_QUIT) {
+			LOG_INF(">> NormalWait quit");
+			return;
+		}
+
+		if (ret == WORK_RET_TIMEOUT) {
 			LOG_INF(">> Normal down failed, try Force Down");
 
 			gpio_write_pin(PM_PWRBTN, 0);
 
-			ret = wait_sig_value(&in_force_down, 1, 0, 7200);
-			if (!ret) {
-				LOG_INF(">> Wait Sig 1 FAIL");
-				gpio_write_pin(PM_PWRBTN, 1);
+			ret = wait_sig_value(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS);
+			if (ret == WORK_RET_QUIT) {
+				LOG_INF(">> ForceWait quit");
+				pwrctrl_forcedown_post();
+				return;
+			}
+
+			if (ret == WORK_RET_TIMEOUT) {
+				LOG_ERR(">> Do Force Down Failed");
+				pwrctrl_forcedown_post();
+				return;
 			}
 		}
 
@@ -372,18 +413,6 @@ static void pwrctrl_do_hard_reset()
 	gpio_write_pin(SOC_RSTBTN_N, 1);
 
 	LOG_INF(">> Do Hard Reset end");
-}
-
-static void pwrctrl_forcedown_post(void)
-{
-	if (in_force_down) {
-		gpio_write_pin(PM_PWRBTN, 1);
-		in_force_down = 0;
-
-		/* The system is already in the process of powering down,
-		   disable SCI */
-		g_acpi_state_flags.sci_enabled = 0;
-	}
 }
 
 static void pwrctrl_worker(struct k_work *work)
@@ -416,7 +445,7 @@ static int do_power_ctrl(uint8_t* req)
 
 	uint32_t status = k_work_busy_get(&pwrctrl_work_data.work_item);
 	if (status & K_WORK_RUNNING) {
-		LOG_WRN("PwrCtrl Work is still running");
+		LOG_WRN("PwrCtrl worker is busy");
 		return -1;
 	}
 
@@ -694,6 +723,16 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 				host_event_put(HOST_EVENT_REBOOT);
 				boot_cycle_count++;
 			}
+		}
+		else {
+			/*
+			 * Some systems take a long time to shut down,
+			 * causing the process to enter a forced shutdown procedure.
+			 * The power button needs to be released(cancel the forcedown) to
+			 * prevent the host from restarting.
+			 */
+			LOG_WRN(">> Normal shutdown occurs in ForceDown!");
+			pwrctrl_forcedown_post();
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_HOST_RST_WARN:
