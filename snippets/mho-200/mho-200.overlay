@@ -167,7 +167,8 @@
 				      <&mfd9_temp_1>,
 				      <&mfd10_temp_1>,
 				      <&mfd8_temp_amb>,
-				      <&mfd8_temp_hot>;
+				      <&mfd8_temp_hot>,
+				      <&switch_maestro_temp>;
 
 		sw-amb-temp-sensors = <&switch_temp0>, <&switch_temp1>;
 

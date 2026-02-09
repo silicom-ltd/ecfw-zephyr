@@ -574,6 +574,12 @@
 		reg = <0x49>;
 	};
 
+	switch_maestro_temp: cpld@40 {
+		compatible = "maestro-switch-temp";
+		status = "okay";
+		reg = <0x40>;
+	};
+
 };
 
 &i2c_smb_4 {
