@@ -17,36 +17,42 @@
 
 #include "lom_mgmt_i2c.h"
 
-#ifndef _DBG_I2C_DAT_
-#define LOG_DBG_I2C_DAT(...) (void)0
-#else
-#define LOG_DBG_I2C_DAT(...) LOG_DBG(__VA_ARGS__)
-#endif
-
-#ifndef _DBG_STA_
-#define LOG_DBG_STA(...) (void)0
-#else
-#define LOG_DBG_STA(...) LOG_DBG(__VA_ARGS__)
-#endif
-
 LOG_MODULE_REGISTER(lom_mgmt_i2c, CONFIG_LOM_MGMT_I2C_LOG_LEVEL);
+
+//#define DEBUG_TEST
+
+#if (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+#if defined(_DBG_I2C_DAT)
+#define LOG_DBG_I2C(...) LOG_INF(__VA_ARGS__)
+#else
+#define LOG_DBG_I2C(...) (void)0
+#endif
+
+#if defined(_DBG_STA)
+#define LOG_DBG_STA(...) LOG_INF(__VA_ARGS__)
+#else
+#define LOG_DBG_STA(...) (void)0
+#endif
+
+#if defined(_DBG_APP)
+#define LOG_DBG_APP(...) LOG_INF(__VA_ARGS__)
+#else
+#define LOG_DBG_APP(...) (void)0
+#endif
+#else
+#define LOG_DBG_I2C(...) (void)0
+#define LOG_DBG_STA(...) (void)0
+#define LOG_DBG_APP(...) (void)0
+#endif
+
+#define I2C_BLK_SZ 32
 
 #define I2C_REQ_ADDR 0xFE
 #define I2C_FNI_ADDR 0xEF
 
-#define COMM_RES_STAT 1
-#define COMM_RES_DATA 2
-
-static char * err_string[] = {
-	"INV",
-	"No Process",
-	"Ready",
-	"Retry",
-	"OK",
-	"Invalid request payload size",
-	"Invalid request func",
-	"Invalid request csum",
-};
+#define COMM_RES_FREE_ZONE 0
+#define COMM_RES_PROC_STAT 1
+#define COMM_RES_DATA_BASE 2
 
 #define POWER_CTRL_REBOOT 1
 
@@ -61,18 +67,13 @@ static char * err_string[] = {
 #define ACCESS_WR 1
 #define ACCESS_RD 0
 
-#define PROC_STA_RDY 1
-
-static char * ctx_sta_string[] = {
-	"INIT",
-	"NOPC",
-	"RADY",
-	"RREQ",
-	"PROC",
-	"SRES",
-	"RFNI",
-};
-
+/*
+ * STA_RECV_REQ -> STA_WAIT_PROC, STA_RECV_FINI:
+ *   completed in one i2c block write/read, so the Linux kernel on the LOM
+ *   can ensures that these processes are not interrupted.
+ *
+ * STA_SEND_RES might contains multiple i2c block reads, this might be interrupted.
+ */
 enum ctx_sta_stages {
 	STA_INIT = 0,
 	STA_NO_PROC,
@@ -83,25 +84,33 @@ enum ctx_sta_stages {
 	STA_RECV_FINI,
 };
 
+#if (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+#if defined(_DBG_STA) || defined(_DBG_APP) || defined(_DBG_I2C_DAT)
+/*
+ * ctx_sta_stages's short name, used for debug
+ */
+static char * ctx_sta_string[] = {
+	"INIT",
+	"NOPC",
+	"RADY",
+	"RREQ",
+	"PROC",
+	"SRES",
+	"RFNI",
+};
+#endif
+#endif
+
 struct lom_mgmt_res_hdr {
 	uint8_t  code;
 	uint16_t meta;
 } __attribute__((__packed__));
 
-struct lom_mgmt_res_proc {
-	uint16_t size;
-	struct {
-		uint8_t  code;
-		uint16_t meta;
-	} __attribute__((__packed__));
-};
-
-
 struct lom_mgmt_i2c_context {
 	bool first_write;
 
 	uint8_t state;
-	uint8_t state_last; /* only be used in write(recv request) work flow */
+	uint8_t state_last; /* used in state_restore() */
 
 	uint8_t first_data_access; /* control executing of prepare_data_access() */
 
@@ -110,23 +119,23 @@ struct lom_mgmt_i2c_context {
 	/*
 	 * Request's meta data
 	 */
-	uint16_t req_idx;
+	uint16_t req_idx;       /* index for lom_mgmt_req.buf */
 	uint8_t  req_func_last; /* used for func FINI */
 
 	/*
 	 * Response's meta data
 	 */
-	uint16_t res_idx;
-	uint16_t res_idx_last;
+	uint16_t res_idx;       /* index for lom_mgmt_res.buf */
 
 	/*
 	 * App's data
 	 */
 	struct lom_mgmt_i2c_callbacks *cb;
 
-	uint8_t proc_state;
+	uint8_t rdy_sigs;
 
-	struct lom_mgmt_res_proc res_proc; /* used in STA_WAIT_PROC */
+	uint8_t res_ready; /* set by EC-LOM PROC */
+
 	struct lom_mgmt_req req;
 	struct lom_mgmt_res res;
 };
@@ -153,16 +162,21 @@ static void set_ctx_response_meta(struct lom_mgmt_i2c_context* ctx,
 	uint8_t code, uint16_t dat_size, uint8_t flag, uint8_t state);
 
 static inline int set_response_info(struct lom_mgmt_res* res,
-	uint8_t code, uint16_t dat_size, uint8_t flag)
+	uint8_t code, uint16_t dlen_or_sys_error, uint8_t flag)
 {
-	if (dat_size > RES_DLEN_MAX) {
-		return -1;
+	uint16_t dlen = 0;
+
+	if (code == EC_RET_OK) {
+		if (dlen_or_sys_error > RES_DLEN_MAX) {
+			LOG_ERR("data size exceeds the limit %d", RES_DLEN_MAX);
+			return -1;
+		}
+		dlen = dlen_or_sys_error;
 	}
 
 	res->code = code;
-	res->meta = htons((dat_size & 0xFFF) | ((uint16_t)(flag & 0xF) << 12));
-
-	res->size = dat_size + RES_HEAD_LEN;
+	res->meta = htons((dlen_or_sys_error & 0xFFF) | ((uint16_t)(flag & 0xF) << 12));
+	res->size = dlen + RES_HEAD_LEN;
 
 	return 0;
 }
@@ -171,41 +185,46 @@ int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_cal
 {
 	struct lom_mgmt_i2c_context *ctx = LOM_MGMT_CTX_FROM_DEV(dev);
 
-	LOG_INF("LOM_MGMT_PROC Registered");
-	LOG_DBG_STA("(S) [%s] -> [%s]", ctx_sta_string[ctx->state], ctx_sta_string[STA_READY]);
-
 	ctx->cb = cb;
-	if (!ctx->cb) {
+	if (ctx->cb == NULL) {
 		LOG_ERR("LOM_MGMT_PROC callback is NULL");
 		return -1;
 	}
+
+	LOG_INF("LOM_MGMT_PROC Registered");
 
 	set_ctx_response_meta(ctx, EC_RET_READY, 0, 0, STA_READY);
 
 	return 0;
 }
 
-int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code, uint16_t dat_size, uint8_t flag)
+int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t mask, uint8_t avail)
+{
+	struct lom_mgmt_i2c_context *ctx = LOM_MGMT_CTX_FROM_DEV(dev);
+
+	ctx->rdy_sigs = (ctx->rdy_sigs & ~mask) | (avail & mask);
+
+	return 0;
+}
+
+int lom_mgmt_i2c_response_ready(const struct device *dev,
+	uint8_t code, uint16_t dlen_or_sys_error, uint8_t flag)
 {
 	struct lom_mgmt_i2c_context *ctx = LOM_MGMT_CTX_FROM_DEV(dev);
 
 	if (ctx->state != STA_WAIT_PROC) {
-		LOG_DBG_STA("(S) !ERR!: [%s]", ctx_sta_string[ctx->state]);
-		return 0;
+		LOG_ERR("F(%d) Res Ready: Error State %d!!", ctx->req_func_last, ctx->state);
+		return -1;
 	}
 
-	//set_response_info((struct lom_mgmt_res *)&(ctx->res_proc), code, dat_size, flag);
+	set_ctx_response_meta(ctx, code, dlen_or_sys_error, flag, STA_SEND_RES);
 
-	set_ctx_response_meta(ctx, code, dat_size, flag, STA_SEND_RES);
-	//set_response_info(&ctx->res, code, dat_size, flag);
-	ctx->proc_state = PROC_STA_RDY;
-	//ctx->state = STA_SEND_RES;
+	ctx->res_ready = 1;
 
-	LOG_DBG_STA("(S) F(%d) Response Ready(sz:%d)", ctx->req_func_last, ctx->res.size);
-	//LOG_INF("(S) F(%d) Response Ready %d", ctx->req_func_last, ctx->res.size);
-
-	LOG_DBG_STA("(S) [%s] -> [%s]",
-		ctx_sta_string[STA_WAIT_PROC], ctx_sta_string[ctx->state]);
+	LOG_DBG_APP("F(%d) Res Ready: code:%d, meta(n):0x%04x,(h)(F:0x%x,L/E:%d), size:%d",
+		ctx->req_func_last, ctx->res.code,
+		ctx->res.meta, RES_META_FLAG_NTOH(ctx->res.meta), RES_META_DLEN_NTOH(ctx->res.meta),
+		ctx->res.size);
 
 	return 0;
 }
@@ -228,10 +247,26 @@ static inline void ctx_meta_data_reset(struct lom_mgmt_i2c_context *ctx, int met
 	}
 }
 
-static void state_recover(struct lom_mgmt_i2c_context * ctx)
+/*
+ * Unexpected write operations to FINI_ADDR may corrupt
+ * operations requiring multiple read operations, necessitating state recovery.
+ */
+static inline void state_update(struct lom_mgmt_i2c_context * ctx, uint8_t new_state)
 {
-	LOG_DBG_STA("(S) Recover: [%s] -> [%s]",
+	ctx->state_last = ctx->state;
+	ctx->state = new_state;
+}
+
+static inline void state_restore(struct lom_mgmt_i2c_context * ctx)
+{
+	LOG_DBG_STA("(S) Restore: [%s] -> [%s]",
 		ctx_sta_string[ctx->state], ctx_sta_string[ctx->state_last]);
+
+	/* this should'nt happen */
+	if (ctx->state_last != STA_SEND_RES && ctx->state_last != STA_WAIT_PROC &&
+		ctx->state_last != STA_READY) {
+		LOG_WRN("STA error %d", ctx->state_last);
+	}
 
 	ctx->state = ctx->state_last;
 }
@@ -242,14 +277,14 @@ static int lom_mgmt_tgt_wr_req(struct i2c_target_config *config)
 
 	ctx->first_write = true;
 
-	LOG_DBG_I2C_DAT("first_write=%d", ctx->first_write);
+	LOG_DBG_I2C("first_write=%d", ctx->first_write);
 
 	return 0;
 }
 
 static inline int need_timestamp(uint16_t res_meta)
 {
-	return (ntohs(res_meta) >> 12) & RES_META_F_TIMESTAMP
+	return RES_META_FLAG_NTOH(res_meta) & RES_META_F_TIMESTAMP
 }
 
 static inline void set_timestamp(uint8_t *buf)
@@ -262,73 +297,82 @@ static inline void set_timestamp(uint8_t *buf)
 	buf[3] = (ts >>  0) & 0xFF;
 }
 
-static int prepare_data_access(struct lom_mgmt_i2c_context *ctx, bool is_write)
+static int prepare_data_access(struct lom_mgmt_i2c_context *ctx, int mode)
 {
 	if (ctx->first_data_access == 0)
 		return 0;
 
 	ctx->first_data_access = 0;
 
-	if (ctx->access_addr == 0)
-		goto error_quit;
-
-	/* Data Write */
-	if (is_write) {
+	/* LOM want to write */
+	if (mode == ACCESS_WR) {
 		if (ctx->access_addr == I2C_REQ_ADDR) {
 			if (ctx->state == STA_READY) {
-				ctx->state_last = ctx->state;
-				ctx->state = STA_RECV_REQ;
+				state_update(ctx, STA_RECV_REQ);
+
 				LOG_DBG_STA("(S) [Wr] [%s] -> [%s]",
 					ctx_sta_string[ctx->state_last], ctx_sta_string[ctx->state]);
 				return 0;
 			}
 		}
 		else if (ctx->access_addr == I2C_FNI_ADDR) {
-			/* prepare for recv FINI command */
-			ctx_meta_data_reset(ctx, COM_META_REQ);
-			ctx->state_last = ctx->state;
-			ctx->state = STA_RECV_FINI;
-			LOG_DBG_STA("(S) [Wr] [%s] -> [%s]",
-				ctx_sta_string[ctx->state_last], ctx_sta_string[ctx->state]);
+			if (ctx->state > STA_NO_PROC) {
+				/* prepare for recv FINI command */
+				ctx_meta_data_reset(ctx, COM_META_REQ);
+				state_update(ctx, STA_RECV_FINI);
 
-			return 0;
+				LOG_DBG_STA("(S) [Wr] [%s] -> [%s]",
+					ctx_sta_string[ctx->state_last], ctx_sta_string[ctx->state]);
+
+				return 0;
+			}
 		}
 	}
-	/* Data Read */
+	/* LOM want to read */
 	else {
-		if (ctx->access_addr == COMM_RES_STAT) {
+		if (ctx->access_addr == COMM_RES_FREE_ZONE) {
+			/* only returns rdy_sigs, now */
+			return 0;
+		}
+		else if (ctx->access_addr == COMM_RES_PROC_STAT) {
 			ctx->res_idx = 0;
 		}
 		else {
+#ifndef DEBUG_TEST
+			/* Minimize the impact of unintended read operations on the system */
 			if (ctx->state != STA_SEND_RES) {
 				goto error_quit;
 			}
+#endif
 
-			uint16_t idx = RES_HEAD_LEN + (ctx->access_addr - 2) * 32;
-			if (idx >= RES_BUFF_SIZE || idx >= ctx->res.size) {
-				LOG_DBG("read req exceeds the limit");
+			uint16_t idx = RES_HEAD_LEN + (ctx->access_addr - 2) * I2C_BLK_SZ;
+#ifndef DEBUG_TEST
+			/* Unexpected access from LOM, such as i2cdump, will trigger this checking. */
+			if (idx >= ctx->res.size) {
 				goto error_quit;
 			}
+#endif
 
 			ctx->res_idx = idx;
 
-			if (ctx->proc_state == PROC_STA_RDY) {
+			if (ctx->res_ready) {
 				if (need_timestamp(ctx->res.meta)) {
 					set_timestamp(ctx->res.data);
 				}
 
-				ctx->proc_state = 0;
+				ctx->res_ready = 0;
 			}
 		}
 
-		LOG_DBG_STA("(S) Move to RES[%d/%d]", ctx->res_idx, ctx->res.size-1);
+		LOG_DBG_STA("(S) [Rd] RES[%d/%d]", ctx->res_idx, ctx->res.size-1);
 
 		return 0;
 	}
 
 error_quit:
-	LOG_DBG_STA("(S) !ERR!: STA[%s], %s @ COMM[0x%02x]",
-		ctx_sta_string[ctx->state], is_write ? "Wr" : "Rd", ctx->access_addr);
+	LOG_DBG_STA("(S) Error: STA[%s], %s @ COMM[0x%02x]",
+		ctx_sta_string[ctx->state], mode == ACCESS_WR ? "Wr" : "Rd",
+		ctx->access_addr);
 
 	ctx->access_addr = 0;
 
@@ -349,9 +393,11 @@ static int lom_mgmt_tgt_wr_rcv(struct i2c_target_config *config, uint8_t val)
 
 		ctx->first_data_access = 1;
 
-		LOG_DBG_STA("(+) New Access @ COMM[0x%02x]", ctx->access_addr);
+#if (defined(_DBG_STA) || defined(_DBG_I2C_DAT)) && (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+		LOG_INF("(+) New Access @ COMM[0x%02x]", ctx->access_addr);
+#endif
 	}
-	else {  /* this should be the request's data */
+	else { /* this might be the request message */
 		if (prepare_data_access(ctx, ACCESS_WR) < 0) {
 			return 0;
 		}
@@ -362,7 +408,7 @@ static int lom_mgmt_tgt_wr_rcv(struct i2c_target_config *config, uint8_t val)
 
 		ctx->req.buf[ctx->req_idx] = val;
 
-		LOG_DBG_I2C_DAT("COMM[0x%02x] REQ[%d] <= 0x%02x", ctx->access_addr, ctx->req_idx, val);
+		LOG_DBG_I2C("COMM[0x%02x] REQ[%d] <= 0x%02x", ctx->access_addr, ctx->req_idx, val);
 
 		ctx->req_idx = (ctx->req_idx + 1) % REQ_BUFF_SIZE;
 	}
@@ -377,9 +423,12 @@ static int lom_mgmt_tgt_stop(struct i2c_target_config *config)
 {
 	struct lom_mgmt_i2c_context * ctx = LOM_MGMT_CTX_FROM_CFG(config);
 
-	LOG_DBG_I2C_DAT("target stop");
+#if (defined(_DBG_STA) || defined(_DBG_I2C_DAT)) && (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+	LOG_INF("Stop: COMM[0x%02x], REQ[idx %d, size %d], STA[%s]",
+		ctx->access_addr, ctx->req_idx, ctx->req.size, ctx_sta_string[ctx->state]);
+#endif
 
-	if (ctx->access_addr) {
+	if (ctx->state == STA_RECV_REQ || ctx->state == STA_RECV_FINI) {
 		ctx->req.size = ctx->req_idx;
 		lom_mgmt_tgt_deliver_request(ctx);
 	}
@@ -392,20 +441,31 @@ static int lom_mgmt_tgt_stop(struct i2c_target_config *config)
 }
 
 /*
- * i2c_smbus_read_quick() will reach here directly
+ * i2c_smbus_read_byte() will reach here directly
  */
 static int lom_mgmt_tgt_rd_req(struct i2c_target_config *config, uint8_t *val)
 {
 	struct lom_mgmt_i2c_context * ctx = LOM_MGMT_CTX_FROM_CFG(config);
 
-	if (prepare_data_access(ctx, ACCESS_RD) < 0)
+	if (prepare_data_access(ctx, ACCESS_RD) < 0) {
 		return 0;
+	}
 
-	assert(ctx->res.size && ctx->res_idx != ctx->res.size);
+	if (ctx->access_addr == 0) {
+		*val = ctx->rdy_sigs;
+	}
+	else {
+		__ASSERT_NO_MSG(ctx->res.size && ctx->res_idx < ctx->res.size);
 
-	*val = ctx->res.buf[ctx->res_idx];
+		*val = ctx->res.buf[ctx->res_idx];
 
-	LOG_DBG_I2C_DAT("COMM[0x%02x] RES[%d] => 0x%02x", ctx->access_addr, ctx->res_idx, *val);
+#ifdef DEBUG_TEST
+		if (ctx->res_idx >= 7 && (*val != (ctx->res_idx - 3) % 256))
+			LOG_DBG(">> OOPS 0");
+#endif
+	}
+
+	LOG_DBG_I2C("COMM[0x%02x] RES[%d] => 0x%02x", ctx->access_addr, ctx->res_idx, *val);
 	//LOG_WRN("COMM[0x%02x] RES[%d] => 0x%02x", ctx->access_addr, ctx->res_idx, *val);
 
 	return 0;
@@ -419,34 +479,36 @@ static int lom_mgmt_tgt_rd_rcv(struct i2c_target_config *config, uint8_t *val)
 	struct lom_mgmt_i2c_context *ctx = LOM_MGMT_CTX_FROM_CFG(config);
 
 	if (ctx->access_addr == 0) {
-		LOG_DBG("IGN read @ COMM[0]");
 		return 0;
 	}
 
-	if (ctx->res.size == 0) {
-		LOG_ERR("read done, exceeds the limit %d", ctx->res.size);
-		return 0;
-	}
+	__ASSERT_NO_MSG(ctx->res.size && ctx->res_idx < ctx->res.size);
 
 	ctx->res_idx = (ctx->res_idx + 1) % ctx->res.size;
 
 	*val = ctx->res.buf[ctx->res_idx];
 
-	LOG_DBG_I2C_DAT("COMM[0x%02x] RES[%d] => 0x%02x", ctx->access_addr, ctx->res_idx, *val);
+#ifdef DEBUG_TEST
+	if (ctx->res_idx >= 7 && (*val != (ctx->res_idx - 3) % 256))
+		LOG_DBG(">> OOPS 1");
+#endif
+
+	LOG_DBG_I2C("COMM[0x%02x] RES[%d] => 0x%02x", ctx->access_addr, ctx->res_idx, *val);
 	//LOG_WRN("COMM[0x%02x] RES[%d] => 0x%02x", ctx->access_addr, ctx->res_idx, *val);
 
 	return 0;
 }
 
 static void set_ctx_response_meta(struct lom_mgmt_i2c_context* ctx,
-	uint8_t code, uint16_t dat_size, uint8_t flag, uint8_t state)
+	uint8_t code, uint16_t dlen_or_sys_error, uint8_t flag, uint8_t state)
 {
-	set_response_info(&ctx->res, code, dat_size, flag);
+	if (set_response_info(&ctx->res, code, dlen_or_sys_error, flag) < 0) {
+		return;
+	}
 
 	LOG_DBG_STA("(S) [%s] -> [%s]", ctx_sta_string[ctx->state], ctx_sta_string[state]);
 
 	ctx->state = state;
-	ctx->res_idx = 0;
 }
 
 static bool check_csum(struct lom_mgmt_i2c_context *ctx)
@@ -463,7 +525,7 @@ static bool check_csum(struct lom_mgmt_i2c_context *ctx)
 	}
 
 	if (csum != csum_org) {
-		LOG_DBG("invalid csum 0x%02x, should be 0x%02x", csum_org, csum);
+		//LOG_DBG_APP("invalid csum 0x%02x, should be 0x%02x", csum_org, csum);
 		return false;
 	}
 
@@ -472,27 +534,28 @@ static bool check_csum(struct lom_mgmt_i2c_context *ctx)
 
 static void lom_mgmt_tgt_do_fini(struct lom_mgmt_i2c_context *ctx)
 {
-	LOG_INF("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]", ctx->req_func_last,
+	LOG_DBG_APP("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]", ctx->req_func_last,
 		ctx_sta_string[ctx->state_last], ctx->res_idx, ctx->res.size-1);
+
+	ctx->cb->send_cancel();
 
 	ctx_meta_data_reset(ctx, COM_META_ALL);
 
 	set_ctx_response_meta(ctx, EC_RET_READY, 0, 0, STA_READY);
 
 	ctx->req_func_last = 0;
-
-	LOG_DBG("LOM MGMT RST!");
 }
 
 
 /*
- *  ALERT: this will delay the I2C bus.
+ *  ALERT: this will delay the I2C bus, make the LOM side timeout.
  */
 static void lom_mgmt_tgt_do_testl2(struct lom_mgmt_i2c_context *ctx)
 {
+#if 0
 	uint16_t tst_size = ((uint16_t)ctx->req.data[0] << 8) | ctx->req.data[1]; /* test size */
 
-	LOG_DBG("test_l2 size %d\n", tst_size);
+	LOG_DBG_APP("test_l2 size %d\n", tst_size);
 
 	if (tst_size > (RES_DLEN_MAX)) {
 		LOG_ERR("request size exceeds the limit: %d", RES_DLEN_MAX);
@@ -505,48 +568,51 @@ static void lom_mgmt_tgt_do_testl2(struct lom_mgmt_i2c_context *ctx)
 		set_ctx_response_meta(ctx, EC_RET_OK, tst_size, 0, STA_SEND_RES);
 	}
 
-	ctx->proc_state = 1;
+	ctx->res_ready = 1;
+#else
+	set_ctx_response_meta(ctx, EC_RET_ERR_NOT_IMPL, 0, 0, STA_SEND_RES);
+#endif
 }
 
 static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 {
-	LOG_DBG(">> Input(size %d): seed 0x%02x, func %d, dlen %d", ctx->req.size,
-		ctx->req.seed, ctx->req.func, ctx->req.dlen);
+	LOG_DBG_APP("Request: size %d, func %d, dlen %d, csum 0x%02x",
+		ctx->req.size, ctx->req.func, ctx->req.dlen, ctx->req.csum);
 
 	/*
-	  the data passes all the followed sanity checking, we think this is a request
-	*/
+	 * Only valid requests will have an impact on the system
+	 */
 	if (ctx->req.size < REQ_HEAD_LEN || ctx->req.dlen > REQ_DLEN_MAX ||
 		(ctx->req.dlen != ctx->req.size - REQ_HEAD_LEN)) {
-		LOG_ERR("%s: %u", err_string[EC_RET_ERR_INV_SIZE], ctx->req.size);
+		LOG_DBG_APP("Invalid request size: %u", ctx->req.size);
 		goto error_quit;
 	}
 
 	if (check_csum(ctx) == false) {
-		LOG_ERR("%s", err_string[EC_RET_ERR_INV_CSUM]);
+		LOG_DBG_APP("Invalid request csum");
 		goto error_quit;
 	}
 
-#if 0
-	if (ctx->req.func > FUNC_LAST || ctx->req.func < FUNC_FIRST) {
-		LOG_ERR("%s: %d", err_string[EC_RET_ERR_INV_FUNC], ctx->req.func);
+	if (ctx->req.func < FUNC_FIRST || ctx->req.func > FUNC_LAST)
+	{
+		LOG_DBG_APP("Invalid func %u", ctx->req.func);
 		goto error_quit;
 	}
 
-	if (ctx->req.seed == 0) {
-		LOG_ERR("%s", err_string[EC_RET_ERR_INV_SEED]);
+	if ((ctx->state == STA_RECV_FINI && ctx->req.func != FUNC_FINI) ||
+		(ctx->state == STA_RECV_REQ && ctx->req.func == FUNC_FINI))
+	{
+		LOG_DBG_APP("Un-expected func %d", ctx->req.func);
 		goto error_quit;
 	}
-#endif
 
 	if (ctx->req.func == FUNC_FINI) {
 		lom_mgmt_tgt_do_fini(ctx);
 		return;
 	}
 
-	ctx->res_idx = 0;
 	ctx->req_func_last = ctx->req.func;
-	ctx->proc_state = 0;
+	ctx->res_ready = 0;
 
 	if (ctx->req.func == FUNC_TEST_L2) {
 		lom_mgmt_tgt_do_testl2(ctx);
@@ -556,8 +622,9 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 	}
 #endif
 	else {
-		if (ctx->cb == NULL) {
+		if (ctx->cb == NULL) { /* this shouldn't happen */
 			set_ctx_response_meta(ctx, EC_RET_NO_PROC, 0, 0, STA_SEND_RES);
+			LOG_WRN("State corrupted");
 			return;
 		}
 
@@ -565,14 +632,14 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 
 		ctx->cb->send_request(&ctx->req, &ctx->res);
 
-		LOG_DBG(">> Send request to app");
+		LOG_DBG_APP("Send F<%d> to app", ctx->req.func);
 	}
 
 	return;
 
 error_quit:
-	LOG_HEXDUMP_ERR(ctx->req.buf, REQ_HEAD_LEN, "ReqHdr");
-	state_recover(ctx);
+	//LOG_HEXDUMP_DBG(ctx->req.buf, REQ_HEAD_LEN, "ReqHdr");
+	state_restore(ctx);
 	return;
 }
 
@@ -619,6 +686,9 @@ static int i2c_lom_mgmt_target_init(const struct device *dev)
 
 	data->config.address = cfg->bus.addr;
 	data->config.callbacks = &lom_mgmt_callbacks;
+
+	//data->ctx.rdy_sigs = 0;
+	//data->ctx.access_addr = 0;
 
 	set_ctx_response_meta(&data->ctx, EC_RET_NO_PROC, 0, 0, STA_NO_PROC);
 
