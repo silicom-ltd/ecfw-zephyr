@@ -201,10 +201,12 @@ target_sources_ifdef(CONFIG_LOM_MGMT_PROC app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_mgmt_proc.c
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/host_event.c
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/postcode.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_mgmt_proc.h
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/host_event.h
-    )
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/postcode.h
+)
 
 target_sources_ifdef(CONFIG_SW_POWER_SIGNAL app
     PRIVATE
