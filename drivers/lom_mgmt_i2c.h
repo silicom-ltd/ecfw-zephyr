@@ -59,16 +59,10 @@ struct lom_mgmt_i2c_callbacks {
 int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code,
 	uint16_t dlen_or_sys_error, uint8_t flag);
 int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_callbacks *cb);
-int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t mask, uint8_t avail);
+int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t bit, uint8_t val);
 
-#define AVAIL_RES_BIT_POSTCODE 7
-#define AVAIL_RES_BIT_EVENT    6
-
-#define AVAIL_RES_MASK_POSTCODE (1 << AVAIL_RES_BIT_POSTCODE)
-#define AVAIL_RES_MASK_EVENT    (1 << AVAIL_RES_BIT_EVENT)
-
-#define AVAIL_RES_BIT_VAL_POSTCODE(val) (((val) & 0x1) << AVAIL_RES_BIT_POSTCODE)
-#define AVAIL_RES_BIT_VAL_EVENT(val) (((val) & 0x1) << AVAIL_RES_BIT_EVENT)
+#define AVAIL_RES_BIT_POSTCODE     7
+#define AVAIL_RES_BIT_EVENT        6
 
 enum lom_mgmt_msg_func {
 	FUNC_FIRST                = 1,
@@ -81,12 +75,11 @@ enum lom_mgmt_msg_func {
 	FUNC_GET_FAULT_CODE       , /*07*/
 	FUNC_GET_EVENTS           , /*08*/
 	FUNC_GET_POSTCODE         , /*09*/
-	FUNC_GET_BIOS_VER         , /*10*/
 
-	FUNC_TEST_L2              , /*11*/
-	FUNC_TEST_L3              , /*12*/
+	FUNC_TEST_L2              ,
+	FUNC_TEST_L3              ,
 #ifdef LOM_MGMT_DBG
-	FUNC_DEBUG                , /*13*/
+	FUNC_DEBUG                ,
 	FUNC_LAST                 = FUNC_DEBUG,
 #else
 	FUNC_LAST                 = FUNC_TEST_L3,

@@ -198,11 +198,11 @@ int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_cal
 	return 0;
 }
 
-int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t mask, uint8_t avail)
+int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t bit, uint8_t val)
 {
 	struct lom_mgmt_i2c_context *ctx = LOM_MGMT_CTX_FROM_DEV(dev);
 
-	ctx->rdy_sigs = (ctx->rdy_sigs & ~mask) | (avail & mask);
+	ctx->rdy_sigs = (ctx->rdy_sigs & ~(1 << bit)) | ((val & 0x1) << bit);
 
 	return 0;
 }
@@ -682,7 +682,7 @@ static int i2c_lom_mgmt_target_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	LOG_INF("init at addr 0x%02x", cfg->bus.addr);
+	LOG_INF("LOM_MGMT I2C target at addr 0x%02x", cfg->bus.addr);
 
 	data->config.address = cfg->bus.addr;
 	data->config.callbacks = &lom_mgmt_callbacks;

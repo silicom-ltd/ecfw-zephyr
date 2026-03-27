@@ -219,17 +219,15 @@ static struct lom_mgmt_i2c_callbacks callbacks = {
 
 void avail_res_postcode_set(int val)
 {
-	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev,
-		AVAIL_RES_MASK_POSTCODE, AVAIL_RES_BIT_VAL_POSTCODE(val));
+	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, AVAIL_RES_BIT_POSTCODE, val);
 }
 
 void avail_res_event_set(int val)
 {
-	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev,
-		AVAIL_RES_MASK_EVENT, AVAIL_RES_BIT_VAL_EVENT(val));
+	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, AVAIL_RES_BIT_EVENT, val);
 }
 
-static void lom_mgmt_dyn_sensor_table_init(void)
+static void lom_mgmt_sw_sensor_table_init(void)
 {
 	int start_idx;
 	int used_max_sens_id = 0;
@@ -651,7 +649,8 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 	struct func_ret_info fri = { .code = EC_RET_OK, .data_size = 0, .flag = 0 };
 
 	switch (task->req->func) {
-	case FUNC_GET_BIOS_VER:
+	case FUNC_GET_ID:
+		fri.code = EC_RET_ERR_NOT_IMPL;
 		break;
 	case FUNC_POWER_CTRL:
 		do_power_ctrl(req_data, &fri);
@@ -664,6 +663,9 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		break;
 	case FUNC_GET_FRU:
 		do_get_fru(res_data, &fri);
+		break;
+	case FUNC_GET_FAULT_CODE:
+		fri.code = EC_RET_ERR_NOT_IMPL;
 		break;
 	case FUNC_GET_EVENTS:
 		do_get_events(res_data, &fri);
@@ -681,7 +683,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		break;
 	default:
 		fri.code = EC_RET_ERR_INV_FUNC;
-		LOG_ERR("Unknown func %d, code %d", task->req->func, fri.code);
+		LOG_ERR("Unknown func %d", task->req->func);
 	}
 
 	lom_mgmt_i2c_response_ready(lom_mgmt_dev, fri.code, fri.data_size, fri.flag);
@@ -937,9 +939,8 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 	k_work_init(&pwrctrl_work_data.work_item, pwrctrl_worker);
 
-	lom_mgmt_dyn_sensor_table_init();
+	lom_mgmt_sw_sensor_table_init();
 
-	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, 0xFF, 0);
 	lom_mgmt_i2c_set_callbacks(lom_mgmt_dev, &callbacks);
 
 	while (true) {
