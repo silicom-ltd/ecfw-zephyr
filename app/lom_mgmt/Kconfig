@@ -30,7 +30,7 @@ config POSTCODE_MONITOR
 
 config HOST_POSTCODE_ENTRY_MAX
 	int "Maxmium log entries for host postcode"
-	depends on LOM_MGMT_PROC
+	depends on POSTCODE_MONITOR
 	default 1024
 	help
 	  Set limits of entries for host postcode log.

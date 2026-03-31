@@ -14,7 +14,9 @@
 #include "board_config.h"
 #include "smchost.h"
 #include "hwmon.h"
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 #include "hwmon_cp.h"
+#endif
 
 #include "pwrplane.h"
 #include "pwrbtnmgmt.h"
@@ -28,20 +30,6 @@
 #include "postcode.h"
 
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
-
-#if (CONFIG_LOM_MGMT_PROC_LOG_LEVEL >= LOG_LEVEL_DBG)
-#if defined(_DBG_APP)
-#define LOG_DBG_APP(...) LOG_INF(__VA_ARGS__)
-#else
-#define LOG_DBG_APP(...) (void)0
-#endif
-#endif
-
-#if (CONFIG_SW_SENSOR_LOG_LEVEL >= LOG_LEVEL_DBG)
-#define LOM_MGMT_DBG_SENS(...) LOG_INF(__VA_ARGS)
-#else
-#define LOM_MGMT_DBG_SENS(...) (void)0
-#endif
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
@@ -85,11 +73,11 @@ struct hwmon_sram_entry_desc {
 #define LOM_SENSOR_MAX 256
 #define DYN_SENSOR_HWMON_IDX_BASE 43
 
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 /*
   The new added sensors always be stored in contiguous memory locations and at the end,
   so the sensor_id could be calculated by sequence
 */
-
 static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
 	/* hwmon_sdata[16]: 0x100 */
 	{  8/*0x100*/, hwmon_in,    6 }, /* P12V0A        */ /* 12V */
@@ -130,6 +118,35 @@ static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
 
 	{ 0xFFFF, 0, 0 },
 };
+#else
+static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
+	/* hwmon_sdata[16]: 0x100 */
+	{  8/*0x100*/, hwmon_in,    6 }, /* P12V0A        */
+	{  9/*0x120*/, hwmon_in,    7 }, /* P5V0A         */
+	{ 10/*0x140*/, hwmon_in,    8 }, /* P3V3_ALW_ON   */
+	{ 11/*0x160*/, hwmon_in,    9 }, /* P1V8_ALW_ON   */
+	{ 12/*0x180*/, hwmon_temp,  1 }, /* AmbientTemp   */
+	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* VR_Temp       */
+	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR_Temp      */
+	{ 17/*0x220*/, hwmon_in,   10 }, /* P1V8A         */
+	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU_Temp      */
+	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX     */
+	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2     */
+	{ 21/*0x2a0*/, hwmon_in,   13 }, /* P0V95S        */
+	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM    */
+
+	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* PWR_MON       */
+
+	/* hwmon_peci:      0x300 */
+	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU_PECI_Temp */
+
+	/* hwmon_fdata[4]:  0x320 */
+	{ 25/*0x320*/, hwmon_fan,  15 }, /* Fan1_Speed    */
+	{ 26/*0x340*/, hwmon_fan,  16 }, /* Fan2_Speed    */
+
+	{ 0xFFFF, 0, 0 },
+};
+#endif
 
 struct sensor_record {
 	uint8_t  info;
@@ -217,16 +234,12 @@ static struct lom_mgmt_i2c_callbacks callbacks = {
 	lom_mgmt_i2c_cancel,
 };
 
-void avail_res_postcode_set(int val)
+void avail_resource_set(int bit, int val)
 {
-	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, AVAIL_RES_BIT_POSTCODE, val);
+	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, bit, val);
 }
 
-void avail_res_event_set(int val)
-{
-	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, AVAIL_RES_BIT_EVENT, val);
-}
-
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 static void lom_mgmt_sw_sensor_table_init(void)
 {
 	int start_idx;
@@ -249,7 +262,7 @@ static void lom_mgmt_sw_sensor_table_init(void)
 		hwmon_entries[start_idx + i].sens_type = hwmon_temp;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
 
-		LOM_MGMT_DBG_SENS("<TEMP> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
+		LOG_DBG_SENS("<TEMP> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
 			hwmon_entries[start_idx + i].entry_idx,
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
@@ -261,7 +274,7 @@ static void lom_mgmt_sw_sensor_table_init(void)
 		hwmon_entries[start_idx + i].sens_type = hwmon_in;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
 
-		LOM_MGMT_DBG_SENS("<VOLT> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
+		LOG_DBG_SENS("<VOLT> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
 			hwmon_entries[start_idx + i].entry_idx,
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
@@ -273,7 +286,7 @@ static void lom_mgmt_sw_sensor_table_init(void)
 		hwmon_entries[start_idx + i].sens_type = hwmon_curr;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
 
-		LOM_MGMT_DBG_SENS("<CURR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
+		LOG_DBG_SENS("<CURR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
 			hwmon_entries[start_idx + i].entry_idx,
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
@@ -285,7 +298,7 @@ static void lom_mgmt_sw_sensor_table_init(void)
 		hwmon_entries[start_idx + i].sens_type = hwmon_power;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
 
-		LOM_MGMT_DBG_SENS("<POWR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
+		LOG_DBG_SENS("<POWR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
 			hwmon_entries[start_idx + i].entry_idx,
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
@@ -294,10 +307,11 @@ static void lom_mgmt_sw_sensor_table_init(void)
 
 	hwmon_entries[start_idx].entry_idx = 0xFFFF;
 
-	LOM_MGMT_DBG_SENS("<LAST> SENS[%02d]: { -1, %d, %3d }", start_idx,
+	LOG_DBG_SENS("<LAST> SENS[%02d]: { -1, %d, %3d }", start_idx,
 		hwmon_entries[start_idx].sens_type,
 		hwmon_entries[start_idx].sens_id);
 }
+#endif
 
 static inline void fill_one_sensor(struct sensor_record *srd,
 	const struct hwmon_sram_entry_desc * ent)
@@ -305,10 +319,10 @@ static inline void fill_one_sensor(struct sensor_record *srd,
 	uint16_t *sram = (uint16_t *)hwmon_data;
 	uint16_t offset = (ent->entry_idx * 32) / 2; /* offset in two byte unit */
 
-	uint8_t mul = (uint8_t)(sram[offset + 7] & SENS_INFO_MUL_MASK); /* mul */
+	uint8_t mul = (uint8_t)(sram[offset + 7] & SENS_INFO_MUL_MASK);
 
 	if (ent->sens_type == hwmon_fan) {
-		srd->info = (SENS_DTYPE_INTEG << SENS_INFO_TYP_BIT) | mul;
+		srd->info = (SENS_DTYPE_INTEG << SENS_INFO_TYP_BIT) | 0; /* fan no multiplier */
 	}
 	else {
 		srd->info = (SENS_DTYPE_FLOAT << SENS_INFO_TYP_BIT) | mul;
@@ -334,7 +348,7 @@ static int do_get_sensors(uint8_t *res_data, struct func_ret_info* fri)
 
 		fill_one_sensor(srd, &hwmon_entries[i]);
 
-		LOM_MGMT_DBG_SENS(">> SENS@hwmon[%03d] 0x%02x %3d 0x%04x", hwmon_entries[i].entry_idx,
+		LOG_DBG_SENS("SENS@hwmon[%03d] 0x%02x %3d 0x%04x", hwmon_entries[i].entry_idx,
 			srd->info, srd->sens_id, ntohs(srd->value));
 
 		data_off += SENSOR_RECORD_SIZE;
@@ -939,7 +953,9 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 	k_work_init(&pwrctrl_work_data.work_item, pwrctrl_worker);
 
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	lom_mgmt_sw_sensor_table_init();
+#endif
 
 	lom_mgmt_i2c_set_callbacks(lom_mgmt_dev, &callbacks);
 

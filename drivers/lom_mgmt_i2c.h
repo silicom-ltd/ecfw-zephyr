@@ -61,8 +61,8 @@ int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code,
 int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_callbacks *cb);
 int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t bit, uint8_t val);
 
-#define AVAIL_RES_BIT_POSTCODE     7
-#define AVAIL_RES_BIT_EVENT        6
+#define AVAIL_RES_POSTCODE     7
+#define AVAIL_RES_EVENT        6
 
 enum lom_mgmt_msg_func {
 	FUNC_FIRST                = 1,
@@ -106,9 +106,5 @@ enum lom_mgmt_i2c_stat {
 	EC_RET_ERR_IN_PROCESS,
 	EC_RET_ERR_FAIL,
 };
-
-//#define _DBG_I2C_DAT
-//#define _DBG_STA
-#define _DBG_APP
 
 #endif /* __DRIVERS_I2C_TARGET_LOM_MGMT_H__ */

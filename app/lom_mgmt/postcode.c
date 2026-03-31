@@ -240,7 +240,7 @@ int postcode_add(uint16_t code, uint16_t bootcycle_cnt)
 
 	pb->count++;
 
-	avail_res_postcode_set(1);
+	avail_resource_set(AVAIL_RES_POSTCODE, 1);
 
 	return 0;
 }
@@ -341,7 +341,7 @@ int postcode_get(uint8_t *buf, uint16_t buf_size, uint16_t *ret_size)
 	*ret_size = off;
 
 	if (!postcode_count()) {
-		avail_res_postcode_set(0);
+		avail_resource_set(AVAIL_RES_POSTCODE, 0);
 	}
 
 	return 0;
@@ -400,7 +400,7 @@ int postcode_get(uint8_t *buf, uint16_t buf_size, uint16_t *ret_size)
 	*ret_size = off;
 
 	if (!postcode_count()) {
-		avail_res_postcode_set(0);
+		avail_resource_set(AVAIL_RES_POSTCODE, 0);
 	}
 
 	return 0;

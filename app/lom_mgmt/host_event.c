@@ -57,7 +57,7 @@ int host_event_put(uint8_t event)
 	LOG_DBG_EVENT("Add Event %d, ALL %d", e.event,
 		ring_buf_size_get(&host_event_ring_buf)/HOST_EVENT_ENT_SZ);
 
-	avail_res_event_set(1);
+	avail_resource_set(AVAIL_RES_EVENT, 1);
 
 	return 0;
 }
@@ -89,7 +89,7 @@ int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 	*ret_size = off;
 
 	if (!host_event_count()) {
-		avail_res_event_set(0);
+		avail_resource_set(AVAIL_RES_EVENT, 0);
 	}
 
 	return 0;

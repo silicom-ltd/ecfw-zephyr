@@ -21,6 +21,13 @@ LOG_MODULE_REGISTER(lom_mgmt_i2c, CONFIG_LOM_MGMT_I2C_LOG_LEVEL);
 
 //#define DEBUG_TEST
 
+/*
+ * log switches
+ */
+//#define _DBG_I2C_DAT
+//#define _DBG_STA
+//#define _DBG_APP
+
 #if (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
 #if defined(_DBG_I2C_DAT)
 #define LOG_DBG_I2C(...) LOG_INF(__VA_ARGS__)
