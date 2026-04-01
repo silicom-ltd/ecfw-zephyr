@@ -15,6 +15,9 @@
 #if CONFIG_RESET_BUTTON
 #include "rstbutton.h"
 #endif
+#ifdef CONFIG_LOCATION_BUTTON
+#include "location_button.h"
+#endif
 #if CONFIG_SW_POWER_SIGNAL
 #include "sw_power.h"
 #endif
@@ -81,6 +84,9 @@ static struct btn_info btn_lst[] = {
 	{FAN2_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan2Sense"},
 	{FAN3_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan3Sense"},
 	{FAN4_SENSE, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Fan4Sense"},
+#ifdef CONFIG_LOCATION_BUTTON
+	{PUSHBUT_UID, false, GPIO_DEBOUNCE_CNT, NULL, 0, {{0}, NULL, 0}, "Pushbtn_uid"},
+#endif
 };
 #endif
 
@@ -271,6 +277,10 @@ void periph_thread(void *p1, void *p2, void *p3)
 
 #ifdef CONFIG_RESET_BUTTON
 	rstbutton_init();
+#endif
+
+#ifdef CONFIG_LOCATION_BUTTON
+	location_button_init();
 #endif
 
 #ifdef CONFIG_FAN_SENSE

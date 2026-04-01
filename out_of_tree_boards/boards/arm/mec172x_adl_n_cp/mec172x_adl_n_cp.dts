@@ -43,6 +43,7 @@
 		gpioled1 = &amber_bot;
 		gpioled2 = &pwr_led_green;
 		gpioled3 = &front_location;
+		gpioled4 = &failed_led;
 	};
 
 	gpio_keys {
@@ -141,13 +142,13 @@
 			gpios = <&gpio_100_136 25 GPIO_ACTIVE_LOW>;
 		};
 	};
-//	alert: led_9 {
-//		compatible = "gpio-leds";
-//		/* GPIO 174 */
-//		led9: alert {
-//			gpios = <&gpio_140_176 28 GPIO_ACTIVE_LOW>;
-//		};
-//	};
+	failed_led: failed_led {
+		compatible = "gpio-leds";
+		/* GPIO 174 */
+		failed {
+			gpios = <&gpio_140_176 28 GPIO_ACTIVE_LOW>;
+		};
+	};
 
 	voltage0: voltage12v {
 		compatible = "voltage-divider";

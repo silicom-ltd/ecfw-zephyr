@@ -807,7 +807,7 @@ int board_init(void)
 
 	char read_data[256];
 
-	weektmr->BGPO_PWR &= ~0x1FU;
+	weektmr->BGPO_PWR &= ~0x3FU;
 
 	ret = pinctrl_apply_state(zephyr_user, PINCTRL_STATE_DEFAULT);
 

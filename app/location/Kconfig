@@ -1,0 +1,21 @@
+# Kconfig - Config options for EC Maestro location button
+#
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config LOCATION_BUTTON
+	bool "Enable Location Button function"
+	default y
+	help
+	  Indicate if Location button functionality is enabled.
+
+config LOCATION_BUTTON_LOG_LEVEL
+	int "Location button log level"
+	depends on LOG
+	depends on LOCATION_BUTTON
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for location button.
