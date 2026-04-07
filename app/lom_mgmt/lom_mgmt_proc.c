@@ -33,26 +33,15 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
-#define HOST_SHUTDOWN_WAIT_TIME_MS  30000
-#define HOST_FORCEDOWN_WAIT_TIME_MS 7200
 
-#define WAIT_SIG_SLEEP_TIME_MS 10
-#define MS_TIMEOUT_TO_CNT(t)						\
-	((t) / WAIT_SIG_SLEEP_TIME_MS + (((t) % WAIT_SIG_SLEEP_TIME_MS) ? 1 : 0))
-
-#define WORK_RET_OK      0
-#define WORK_RET_TIMEOUT 1
-#define WORK_RET_QUIT    2
-
+#ifdef CONFIG_LOM_MGMT_FUNC_FRU
+static const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
 
 #define FRU_HDR_SIZE 11
 static uint8_t fru_hdr_title[] = "TlvInfo";
 
 #define FRU_READ_MAX 64 /* Read FRU should not occupy cpu for long time */
-
-static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
-
-static const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
+#endif
 
 extern struct hwmon_sram *hwmon_data;
 
@@ -186,6 +175,16 @@ struct func_ret_info
 	} while (0)
 
 
+
+#if defined(CONFIG_LOM_MGMT_FUNC_POWER_CTRL) || defined(CONFIG_LOM_MGMT_FUNC_HOST_EVENT) || \
+	defined(CONFIG_LOM_MGMT_FUNC_POSTCODE)
+static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
+
+static int slp_sig_PLTRST;
+static int in_force_down;
+#endif
+
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 struct pwrctrl_work_data
 {
 	struct k_work work_item;
@@ -193,10 +192,20 @@ struct pwrctrl_work_data
 	int     sec;
 };
 
+#define HOST_SHUTDOWN_WAIT_TIME_MS  30000
+#define HOST_FORCEDOWN_WAIT_TIME_MS 7200
+
+#define WAIT_SIG_SLEEP_TIME_MS 10
+#define MS_TIMEOUT_TO_CNT(t)						\
+	((t) / WAIT_SIG_SLEEP_TIME_MS + (((t) % WAIT_SIG_SLEEP_TIME_MS) ? 1 : 0))
+
+#define WORK_RET_OK      0
+#define WORK_RET_TIMEOUT 1
+#define WORK_RET_QUIT    2
+
 static struct pwrctrl_work_data pwrctrl_work_data;
 
-static volatile int slp_sig_PLTRST;
-static volatile int in_force_down;
+#endif
 
 static uint8_t acpi_state[] = {
 	6, /* Hard Off */
@@ -361,6 +370,7 @@ static int do_get_sensors(uint8_t *res_data, struct func_ret_info* fri)
 
 static int do_get_events(uint8_t *res_data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
 	uint8_t * data = &res_data[TIMESTAMP_SZ]; /* reserve for timestamp */
 
 	int ret = host_event_get(data, RES_DLEN_MAX - TIMESTAMP_SZ, &fri->data_size);
@@ -374,13 +384,15 @@ static int do_get_events(uint8_t *res_data, struct func_ret_info* fri)
 		fri->data_size += TIMESTAMP_SZ; /* reserve 4bytes for timestamp */
 		fri->flag = RES_META_F_TIMESTAMP;
 	}
-
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
 	return 0;
 }
 
-#ifdef CONFIG_POSTCODE_MONITOR
 static int do_get_postcode(uint8_t *res_data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 	uint8_t *data = &res_data[TIMESTAMP_SZ]; /* reserve 4bytes for timestamp */
 
 	int ret = postcode_get(data, RES_DLEN_MAX - TIMESTAMP_SZ, &fri->data_size);
@@ -394,13 +406,16 @@ static int do_get_postcode(uint8_t *res_data, struct func_ret_info* fri)
 		fri->data_size += TIMESTAMP_SZ;
 		fri->flag = RES_META_F_TIMESTAMP;
 	}
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
 
 	return 0;
 }
-#endif
 
 static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_FRU
 	off_t offset = 0;
 	int ret;
 
@@ -444,10 +459,14 @@ static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 	}
 
 	fri->data_size = FRU_HDR_SIZE + fru_dat_len;
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
 
 	return 0;
 }
 
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 static void pwrctrl_do_up()
 {
 	uint8_t pwr_state = pwrseq_system_state();
@@ -598,9 +617,11 @@ static void pwrctrl_worker(struct k_work *work)
 		return;
 	}
 }
+#endif
 
 static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 	pwrctrl_work_data.act = req[0];
 	pwrctrl_work_data.sec = req[1] * 10;
 
@@ -612,6 +633,9 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 	}
 
 	k_work_submit(&pwrctrl_work_data.work_item);
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
 
 	return 0;
 }
@@ -685,11 +709,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_events(res_data, &fri);
 		break;
 	case FUNC_GET_POSTCODE:
-#ifdef CONFIG_POSTCODE_MONITOR
 		do_get_postcode(res_data, &fri);
-#else
-		fri.code = EC_RET_ERR_NOT_IMPL;
-#endif
 		//LOG_HEXDUMP_ERR(res_data, fri.data_size, "postcode DUMP");
 		break;
 	case FUNC_TEST_L3:
@@ -724,7 +744,12 @@ static void wait_hwdata_ready(uint32_t normal_period)
 	}
 }
 
-#ifdef _DBG_EVENT
+#if defined(CONFIG_LOM_MGMT_FUNC_POWER_CTRL) || defined(CONFIG_LOM_MGMT_FUNC_HOST_EVENT) || \
+	defined(CONFIG_LOM_MGMT_FUNC_POSTCODE)
+
+static uint16_t boot_cycle_count = 0;
+
+#if defined(_DBG_EVENT) && (CONFIG_LOM_MGMT_PROC_LOG_LEVEL >= LOG_LEVEL_DBG)
 struct vwi_signal_info {
 	char *name;
 };
@@ -777,7 +802,6 @@ static struct vwi_signal_info vwi_managed_sigs[] =
 };
 #endif
 
-static uint16_t boot_cycle_count = 0;
 
 /*
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 1 : System Power UP
@@ -805,7 +829,9 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 	switch (event.evt_details) {
 	case ESPI_VWIRE_SIGNAL_SLP_WLAN:
 		if (event.evt_data == 0) {
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 			pwrctrl_forcedown_post();
+#endif
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_SLP_S5:
@@ -848,7 +874,9 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 			 */
 			if (in_force_down) {
 				LOG_WRN(">> Normal shutdown occurs in ForceDown!");
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 				pwrctrl_forcedown_post();
+#endif
 			}
 		}
 		break;
@@ -924,8 +952,9 @@ void init_gpio_event_monitor(void)
 
 	return;
 }
+#endif
 
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 static void postcode_disp_event_handler(uint16_t code)
 {
 	postcode_add(code, boot_cycle_count);
@@ -943,15 +972,21 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 {
 	uint32_t normal_period = *(uint32_t *)p1;
 
+#if defined(CONFIG_LOM_MGMT_FUNC_POWER_CTRL) || defined(CONFIG_LOM_MGMT_FUNC_HOST_EVENT) || \
+	defined(CONFIG_LOM_MGMT_FUNC_POSTCODE)
 	init_espi_event_monitor();
 	init_gpio_event_monitor();
-#ifdef CONFIG_POSTCODE_MONITOR
+#endif
+
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 	init_postcode_disp_event_monitor();
 #endif
 
 	wait_hwdata_ready(normal_period);
 
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 	k_work_init(&pwrctrl_work_data.work_item, pwrctrl_worker);
+#endif
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	lom_mgmt_sw_sensor_table_init();

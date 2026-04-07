@@ -65,6 +65,7 @@ int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t bit, uint8_t va
 #define AVAIL_RES_EVENT        6
 
 enum lom_mgmt_msg_func {
+	FUNC_INV                  = 0,
 	FUNC_FIRST                = 1,
 	FUNC_GET_ID               = FUNC_FIRST,
 	FUNC_FINI                 , /*02*/
@@ -78,12 +79,8 @@ enum lom_mgmt_msg_func {
 
 	FUNC_TEST_L2              ,
 	FUNC_TEST_L3              ,
-#ifdef LOM_MGMT_DBG
-	FUNC_DEBUG                ,
-	FUNC_LAST                 = FUNC_DEBUG,
-#else
-	FUNC_LAST                 = FUNC_TEST_L3,
-#endif
+	FUNC_LAST = FUNC_TEST_L3  ,
+	FUNC_COUNT,
 };
 
 enum lom_mgmt_power_ctrl_act {

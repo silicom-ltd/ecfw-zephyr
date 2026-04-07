@@ -13,6 +13,13 @@ config LOM_MGMT_PROC_LOG_LEVEL
 	help
 	  Set log level for LOM management handler module.
 
+config LOM_MGMT_FUNC_HOST_EVENT
+	bool "Host events monitoring support"
+	depends on LOM_MGMT_PROC
+	default y
+	help
+	  Enable this option to monitor host events, such as reboot, down.
+
 config HOST_EVENT_ENTRY_MAX
 	int "Maxmium log entries for host event"
 	depends on LOM_MGMT_PROC
@@ -20,17 +27,33 @@ config HOST_EVENT_ENTRY_MAX
 	help
 	  Set limits of ring buffer for host event log.
 
-config POSTCODE_MONITOR
-	bool "Monitor host's postcodes"
-	depends on LOM_MGMT_PROC
-	depends on POSTCODE_MANAGEMENT
+config LOM_MGMT_FUNC_POSTCODE
+	bool "BIOS POST code monitoring support"
+	depends on LOM_MGMT_PROC && POSTCODE_MANAGEMENT
 	default n
 	help
-	  Monitor host's postcode.
+	  Enable this option to monitor the BIOS Power-On Self-Test (POST)
+	  codes from the host system.
 
 config HOST_POSTCODE_ENTRY_MAX
 	int "Maxmium log entries for host postcode"
-	depends on POSTCODE_MONITOR
+	depends on LOM_MGMT_FUNC_POSTCODE
 	default 1024
 	help
 	  Set limits of entries for host postcode log.
+
+config LOM_MGMT_FUNC_POWER_CTRL
+	bool "Power control support"
+	depends on LOM_MGMT_PROC
+	default n
+	help
+	  Enable support for host power control functions (e.g., power on,
+	  power off, and reset) via the EC.
+
+config LOM_MGMT_FUNC_FRU
+	bool "FRU data retrieval support"
+	depends on LOM_MGMT_PROC
+	default n
+	help
+	  Enable support for reading Field Replaceable Unit (FRU) information
+	  and providing it to the LOM.

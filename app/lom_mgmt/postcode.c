@@ -1,4 +1,4 @@
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>

@@ -163,10 +163,38 @@ struct i2c_lom_mgmt_target_config {
 #define LOM_MGMT_CTX_FROM_DEV(dev)				\
 	&(((struct i2c_lom_mgmt_target_data *)dev->data)->ctx)
 
+static int lom_mgmt_func_cap[FUNC_COUNT] = {
+	[FUNC_FINI] = 1,
+
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+	[FUNC_POWER_CTRL] = 1,
+#endif
+
+	[FUNC_GET_ACPI_POWER_STATE] = 1,
+	[FUNC_GET_SENSORS] = 1,
+
+#ifdef CONFIG_LOM_MGMT_FUNC_FRU
+	[FUNC_GET_FRU] = 1,
+#endif
+#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
+	[FUNC_GET_EVENTS] = 1,
+#endif
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
+	[FUNC_GET_POSTCODE] = 1,
+#endif
+
+	[FUNC_TEST_L3] = 1,
+};
+
 static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx);
 
 static void set_ctx_response_meta(struct lom_mgmt_i2c_context* ctx,
 	uint8_t code, uint16_t dat_size, uint8_t flag, uint8_t state);
+
+static int lom_mgmt_func_is_supported(int func)
+{
+	return lom_mgmt_func_cap[func];
+}
 
 static inline int set_response_info(struct lom_mgmt_res* res,
 	uint8_t code, uint16_t dlen_or_sys_error, uint8_t flag)
@@ -559,7 +587,6 @@ static void lom_mgmt_tgt_do_fini(struct lom_mgmt_i2c_context *ctx)
  */
 static void lom_mgmt_tgt_do_testl2(struct lom_mgmt_i2c_context *ctx)
 {
-#if 0
 	uint16_t tst_size = ((uint16_t)ctx->req.data[0] << 8) | ctx->req.data[1]; /* test size */
 
 	LOG_DBG_APP("test_l2 size %d\n", tst_size);
@@ -576,9 +603,6 @@ static void lom_mgmt_tgt_do_testl2(struct lom_mgmt_i2c_context *ctx)
 	}
 
 	ctx->res_ready = 1;
-#else
-	set_ctx_response_meta(ctx, EC_RET_ERR_NOT_IMPL, 0, 0, STA_SEND_RES);
-#endif
 }
 
 static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
@@ -621,13 +645,14 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 	ctx->req_func_last = ctx->req.func;
 	ctx->res_ready = 0;
 
+	if (lom_mgmt_func_is_supported(ctx->req.func) == 0) {
+		set_ctx_response_meta(ctx, EC_RET_ERR_NOT_IMPL, 0, 0, STA_SEND_RES);
+		return;
+	}
+
 	if (ctx->req.func == FUNC_TEST_L2) {
 		lom_mgmt_tgt_do_testl2(ctx);
 	}
-#ifdef LOM_MGMT_DBG
-	else if (ctx->req.func == FUNC_DEBUG) {
-	}
-#endif
 	else {
 		if (ctx->cb == NULL) { /* this shouldn't happen */
 			set_ctx_response_meta(ctx, EC_RET_NO_PROC, 0, 0, STA_SEND_RES);

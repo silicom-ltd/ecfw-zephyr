@@ -22,6 +22,7 @@ RING_BUF_DECLARE(host_event_ring_buf,
 
 int host_event_put(uint8_t event)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
 	struct host_event_record_ent e, dummy;
 	int ret;
 
@@ -58,12 +59,14 @@ int host_event_put(uint8_t event)
 		ring_buf_size_get(&host_event_ring_buf)/HOST_EVENT_ENT_SZ);
 
 	avail_resource_set(AVAIL_RES_EVENT, 1);
+#endif
 
 	return 0;
 }
 
 int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
 	int ret;
 	int off = 0;
 	int event_size = ring_buf_size_get(&host_event_ring_buf);
@@ -91,6 +94,7 @@ int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 	if (!host_event_count()) {
 		avail_resource_set(AVAIL_RES_EVENT, 0);
 	}
+#endif
 
 	return 0;
 }
