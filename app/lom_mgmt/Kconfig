@@ -1,6 +1,7 @@
 
 config LOM_MGMT_PROC
 	bool "Enable LOM_MGMT Processing"
+	depends on I2C_TARGET_LOM_MGMT
 	help
 	  Enable LOM_MGMT process module
 
@@ -16,6 +17,7 @@ config LOM_MGMT_PROC_LOG_LEVEL
 config LOM_MGMT_FUNC_HOST_EVENT
 	bool "Host events monitoring support"
 	depends on LOM_MGMT_PROC
+	select RING_BUFFER
 	default y
 	help
 	  Enable this option to monitor host events, such as reboot, down.
@@ -30,6 +32,7 @@ config HOST_EVENT_ENTRY_MAX
 config LOM_MGMT_FUNC_POSTCODE
 	bool "BIOS POST code monitoring support"
 	depends on LOM_MGMT_PROC && POSTCODE_MANAGEMENT
+	select RING_BUFFER
 	default n
 	help
 	  Enable this option to monitor the BIOS Power-On Self-Test (POST)
