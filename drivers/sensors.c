@@ -186,7 +186,7 @@ void voltage_monitor_update(void)
 
 #define DT_DRV_COMPAT current_sense_amplifier
 #define CURRENT_SENSOR(inst)	\
-       DEVICE_DT_GET(DT_NODELABEL(current##inst))
+       DEVICE_DT_GET(DT_NODELABEL(current##inst)),
 
 #define CURRENT_SENSE_DT(inst)			\
 	CURRENT_SENSE_AMPLIFIER_DT_SPEC_GET(DT_NODELABEL(current##inst)),
