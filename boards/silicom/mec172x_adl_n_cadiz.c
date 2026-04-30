@@ -55,8 +55,6 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ PS_ON_OUT,		GPIO_OUTPUT_LOW },
 	{ PM_USB3A_B_PWR_EN,	GPIO_OUTPUT_HIGH },
 	{ GPIO_UC_2,		GPIO_INPUT },
-	{ UNDEFINED_0,		GPIO_INPUT },
-	{ UNDEFINED_1,		GPIO_INPUT },
 
 	{ UNDEFINED_2,		GPIO_INPUT },
 	{ UNDEFINED_3,		GPIO_INPUT },
@@ -67,7 +65,6 @@ struct gpio_ec_config mecc172x_cfg[] = {
 
 	{ EXPA_SLOT_SBY_PWREN,	GPIO_OUTPUT_HIGH },
 	{ CATERR_EC_N,		GPIO_INPUT },
-	{ H_PECI,		GPIO_INPUT },
 	{ SYS_PWROK,		GPIO_OUTPUT_LOW },
 
 	{ SCM_PRSNT_N,		GPIO_INPUT },
@@ -75,7 +72,6 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ ALL_SYS_PWRGD,	GPIO_OPEN_DRAIN | GPIO_OUTPUT_HIGH },
 
 	{ REDUNDANT_MAINS_N,	GPIO_INPUT },
-	{ ESPI_RESET_MAF,	GPIO_INPUT },
 
 	{ SEC_OVERRIDE_1V8,	GPIO_OUTPUT_LOW },
 	{ PM_PWRBTN,		GPIO_OUTPUT_HIGH },
@@ -146,6 +142,7 @@ struct gpio_ec_config mecc172x_cfg_res[] =  {
 };
 
 struct gpio_ec_config mecc172x_cfg_host[] =  {
+	{ GPIO_UC_0, GPIO_INPUT },
 };
 
 int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);

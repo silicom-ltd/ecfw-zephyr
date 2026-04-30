@@ -35,8 +35,6 @@ extern uint8_t platformskutype;
 #define PS_ON_OUT			EC_GPIO_023 // XXX (PS_ON_UC)
 #define PM_USB3A_B_PWR_EN		EC_GPIO_024 // XXX (EC_FLH_MUX_SEL)
 #define GPIO_UC_2			EC_GPIO_025
-#define UNDEFINED_0			EC_GPIO_026 // TBD FAN SLAVE ?
-#define UNDEFINED_1			EC_GPIO_027 // TBD FAN SLAVE ?
 
 #define UNDEFINED_2			EC_GPIO_030 // TBD FAN SLAVE ?
 #define UNDEFINED_3 			EC_GPIO_031 // TBD FAN SLAVE ?

@@ -20,19 +20,26 @@
 		zephyr,sram = &sram0;
 		zephyr,flash = &flash0;
 		zephyr,console = &uart1;
+		zephyr,shell-uart = &uart1;
 	};
 
 	aliases {
 		i2c0 = &i2c_smb_0;
 		i2c-0 = &i2c_smb_0;
 		i2c3 = &i2c_smb_1;
-		peci-0 = &peci0;
+		peci = &peci0;
 		led-1 = &pwmmcled0;
 		eeprom0 = &eeprom;
 		fan0 = &rpmfan0;
 		fan1 = &rpmfan1;
 		tach0 = &rpmfantach0;
 		tach1 = &rpmfantach1;
+	};
+
+	cputemp: cpu-temp {
+		compatible = "x86-peci-temp";
+		peci-dev = <&peci0>;
+		status = "disabled";
 	};
 
 	gpio_keys {
@@ -44,6 +51,13 @@
 			label = "ESPI_RST_MAF";
 		};
 	};
+        blinkled0: gpio-led0 {
+                compatible = "gpio-leds";
+                gpio_led0: led-0 {
+                        /* GPIO 157 */
+                        gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
+                };
+        };
 
 	pwm_mc_leds: pwm_mc_leds {
 		compatible = "pwm-leds-multicolor";
@@ -187,72 +201,107 @@
 					page = <0>;
 					mode = "FAN_AUTO_PWM";
 					ppr = <2>;
+					fan-speeds = <35 35 35 45 60 75 90 100>;
+					fan-temps =  <10 20 32 35 38 40 43 45>;
 					locked-rotor-en = <0>;
-					fan-speeds = <20 30 40 50 60 70 80 100>;
-					fan-temps = <10 20 30 40 45 50 55 60>;
+					initial-setting = <25>;
 				};
 				max31785_fan1: fan1 {
 					page = <1>;
 					mode = "FAN_AUTO_PWM";
 					ppr = <2>;
+					fan-speeds = <35 35 35 45 60 75 90 100>;
+					fan-temps =  <10 20 32 35 38 40 43 45>;
 					locked-rotor-en = <0>;
-					fan-speeds = <20 30 40 50 60 70 80 100>;
-					fan-temps = <10 20 30 40 45 50 55 60>;
+					initial-setting = <25>;
 				};
 				max31785_fan2: fan2 {
 					page = <2>;
 					mode = "FAN_AUTO_PWM";
 					ppr = <2>;
+					fan-speeds = <35 35 35 45 60 75 90 100>;
+					fan-temps =  <10 20 32 35 38 40 43 45>;
 					locked-rotor-en = <0>;
-					fan-speeds = <20 30 40 50 60 70 80 100>;
-					fan-temps = <10 20 30 40 45 50 55 60>;
+					initial-setting = <25>;
 				};
 				max31785_fan3: fan3 {
 					page = <3>;
-					mode = "FAN_MANUAL_PWM";
+					mode = "FAN_AUTO_PWM";
 					ppr = <2>;
+					fan-speeds = <35 35 35 45 60 75 90 100>;
+					fan-temps =  <10 20 32 35 38 40 43 45>;
 					locked-rotor-en = <0>;
-					initial-setting = <20>;
+					initial-setting = <10>;
 				};
 				max31785_fan4: fan4 {
 					page = <4>;
-					mode = "FAN_MANUAL_PWM";
+					mode = "FAN_AUTO_PWM";
 					ppr = <2>;
+					fan-speeds = <35 35 35 45 60 75 90 100>;
+					fan-temps =  <10 20 32 35 38 40 43 45>;
 					locked-rotor-en = <0>;
-					initial-setting = <20>;
+					initial-setting = <10>;
 				};
 				max31785_fan5: fan5 {
 					page = <5>;
-					mode = "FAN_MANUAL_PWM";
+					mode = "FAN_AUTO_PWM";
 					ppr = <2>;
+					fan-speeds = <35 35 35 45 60 75 90 100>;
+					fan-temps =  <10 20 32 35 38 40 43 45>;
 					locked-rotor-en = <0>;
-					initial-setting = <30>;
+					initial-setting = <10>;
 				};
 			};
 			sensors {
 				compatible = "maxim,max31785-dts";
 
 				max31785_dts0: dts0 {
-					fans = <&max31785_fan1>;
+					fans = <&max31785_fan0 &max31785_fan1 &max31785_fan2
+						&max31785_fan3 &max31785_fan4 &max31785_fan5>;
 				};
 				max31785_dts1: dts1 {
 				};
 				max31785_dts2: dts2 {
 				};
 				max31785_dts3: dts3 {
-					fans = <&max31785_fan0>;
 				};
 				max31785_dts4: dts4 {
-					fans = <&max31785_fan2>;
 				};
 				max31785_dts5: dts5 {
+				};
+				max31785_die: die {
+				};
+				max31785_i2c0: i2c0 {
+				};
+				max31785_i2c1: i2c1 {
 				};
 			};
 		};
 	};
 
+	smbus2: smbus2 {
+		compatible = "microchip,xec-smbus";
+		i2c = <&i2c_smb_0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mp2964: mp2964@20 {
+			status = "disabled";
+			compatible = "mps,mp2964";
+			reg = <0x20>;
+
+			mp2964_vout_0: vccin {
+				compatible = "mps,mp2964-vout";
+				page = <0>;
+			};
+			mp2964_vout_1: vccgt {
+				compatible = "mps,mp2964-vout";
+				page = <1>;
+			};
+		};
+	};
+
 	zephyr,user {
-//		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
 		pinctrl-names = "default";
 	};
@@ -274,13 +323,6 @@
 	compatible = "microchip,xec-bbled";
 	status = "okay";
 	pinctrl-0 = <&led0_gpio156>;
-	pinctrl-names = "default";
-};
-
-&bbled1 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led1_gpio157>;
 	pinctrl-names = "default";
 };
 
@@ -357,6 +399,15 @@
 	};
 };
 
+&i2c03_sda_gpio007 {
+	drive-open-drain;
+	output-high;
+};
+&i2c03_scl_gpio010 {
+	drive-open-drain;
+	output-high;
+};
+
 &i2c_smb_4 {
 	status = "okay";
 	port_sel = <12>;
@@ -364,6 +415,21 @@
 	pinctrl-0 = <&i2c12_sda_gpio026 &i2c12_scl_gpio027>;
 	pinctrl-names = "default";
 
+	lm75: lm75@4b {
+		compatible = "zephyr,i2c-target-lm75";
+		reg = <0x4B>;
+		target-sensor = <&cputemp>;
+		status = "disabled";
+	};
+};
+
+&i2c12_sda_gpio026 {
+	drive-open-drain;
+	output-high;
+};
+&i2c12_scl_gpio027 {
+	drive-open-drain;
+	output-high;
 };
 
 &i2c_smb_3 {
@@ -382,7 +448,6 @@
 		timeout = <25>;
 		pagesize = <16>;
 	};
-
 };
 
 &i2c_smb_2 {
@@ -552,29 +617,11 @@
 
 };
 
-//&pwm0 {
-//	status = "okay";
-//	pinctrl-0 = <&pwm0_gpio053>;
-//	pinctrl-names = "default";
-//};
-//
 &pwm1 {
 	status = "okay";
 	pinctrl-0 = <&pwm1_gpio054>;
 	pinctrl-names = "default";
 };
-//
-//&tach0 {
-//	status = "okay";
-//	pinctrl-0 = <&tach0_gpio050>;
-//	pinctrl-names = "default";
-//};
-//
-//&tach1 {
-//	status = "okay";
-//	pinctrl-0 = <&tach1_gpio051>;
-//	pinctrl-names = "default";
-//};
 
 &pwm2 {
 	status = "okay";
@@ -687,7 +734,7 @@
 
 &peci0 {
 	status = "okay";
-	pinctrl-0 = <&peci_dat_gpio042>;
+	pinctrl-0 = < &peci_dat_gpio042 &vref_vtt_gpio044 >;
 	pinctrl-names = "default";
 };
 
