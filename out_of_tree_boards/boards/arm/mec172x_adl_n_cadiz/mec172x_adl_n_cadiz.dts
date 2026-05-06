@@ -292,10 +292,12 @@
 
 			mp2964_vout_0: vccin {
 				compatible = "mps,mp2964-vout";
+				status = "disabled";
 				page = <0>;
 			};
 			mp2964_vout_1: vccgt {
 				compatible = "mps,mp2964-vout";
+				status = "disabled";
 				page = <1>;
 			};
 		};
@@ -441,7 +443,7 @@
 
 	fru: dev@56 {
 		compatible = "atmel,at24";
-		status = "okay";
+		status = "disabled";
 		reg = <0x56>;
 		size = <512>;
 		address-width = <8>;
