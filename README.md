@@ -5,3 +5,5 @@ The project is provided under the Apache 2.0 license (as found in the LICENSE fi
 Intel EC FW framework reference code is intended for prototyping and evaluation.
 
 Visit documentation for getting started guide https://intel.github.io/ecfw-zephyr/index.html
+
+# CODEOWNERS test PR — verifying reviewer auto-request (safe to revert)
