@@ -29,11 +29,12 @@
 		i2c3 = &i2c_smb_1;
 		peci = &peci0;
 		led-1 = &pwmmcled0;
+		gpioled0 = &gpioled0;
+		gpioled1 = &gpioled1;
+		gpioled2 = &gpioled2;
+		gpioled3 = &gpioled3;
+		gpioled4 = &gpioled4;
 		eeprom0 = &eeprom;
-		fan0 = &rpmfan0;
-		fan1 = &rpmfan1;
-		tach0 = &rpmfantach0;
-		tach1 = &rpmfantach1;
 	};
 
 	cputemp: cpu-temp {
@@ -51,13 +52,49 @@
 			label = "ESPI_RST_MAF";
 		};
 	};
-        blinkled0: gpio-led0 {
-                compatible = "gpio-leds";
-                gpio_led0: led-0 {
-                        /* GPIO 157 */
-                        gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
-                };
-        };
+  
+	/* top left */
+	gpioled0: gpioled0 {
+			compatible = "gpio-leds";
+			gpio_led0: led-0 {
+					/* GPIO 156 */
+					gpios = <&gpio_140_176 14 GPIO_ACTIVE_HIGH>;
+			};
+	};
+	/* bottom left */
+	gpioled1: gpioled1 {
+			compatible = "gpio-leds";
+			gpio_led1: led-1 {
+					/* GPIO 153 */
+					gpios = <&gpio_140_176 11 GPIO_ACTIVE_HIGH>;
+			};
+	};
+	/* top right */
+	gpioled2: gpioled2 {
+			compatible = "gpio-leds";
+			gpio_led2: led-2 {
+					/* GPIO 157 */
+					gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
+			};
+	};
+	/* bottom right - amber */
+	gpioled3: gpioled3 {
+			compatible = "gpio-leds";
+			gpio_led3: led-3 {
+					/* GPIO 035 */
+					gpios = <&gpio_000_036 29 GPIO_ACTIVE_HIGH>;
+			};
+	};
+
+	/* bottom right - blue */
+	gpioled4: gpioled4 {
+			compatible = "gpio-leds";
+			gpio_led4: led-4 {
+					/* GPIO 053 */
+					gpios = <&gpio_040_076 11 GPIO_ACTIVE_LOW>;
+			};
+	};
+
 
 	pwm_mc_leds: pwm_mc_leds {
 		compatible = "pwm-leds-multicolor";
@@ -320,26 +357,6 @@
 		gpios = <19 GPIO_ACTIVE_HIGH>;
 		output-high;
 	};
-};
-&bbled0 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led0_gpio156>;
-	pinctrl-names = "default";
-};
-
-&bbled2 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led2_gpio153>;
-	pinctrl-names = "default";
-};
-
-&bbled3 {
-	compatible = "microchip,xec-bbled";
-	status = "okay";
-	pinctrl-0 = <&led3_gpio035>;
-	pinctrl-names = "default";
 };
 
 &cpu0 {
@@ -619,12 +636,6 @@
 
 };
 
-&pwm1 {
-	status = "okay";
-	pinctrl-0 = <&pwm1_gpio054>;
-	pinctrl-names = "default";
-};
-
 &pwm2 {
 	status = "okay";
 	pinctrl-0 = <&pwm2_alt_gpio045>;
@@ -738,59 +749,6 @@
 	status = "okay";
 	pinctrl-0 = < &peci_dat_gpio042 &vref_vtt_gpio044 >;
 	pinctrl-names = "default";
-};
-
-&rpmfan0 {
-	compatible = "microchip,xec-rpm2pwm";
-	status = "okay";
-	pinctrl-0 = <&gpwm0_gpio053 &gtach0_gpio050>;
-	pinctrl-names = "default";
-	spinup_time = "RPM2PWM_SPINUP_2S";
-	spinup_level = "RPM2PWM_SPINUP_LVL_50";
-	update = "RPM2PWM_UPDATE_1600MS";
-	spinup_nokick;
-	enable_ramp_control;
-	manual_mode;
-	#pwm-cells = <3>;
-
-	rpmfantach0: rpmfan_tach0 {
-		compatible = "microchip,xec-rpm2pwm-tach";
-		status = "okay";
-	};
-
-	fan {
-		fan0: fan {
-			pwms = <&rpmfan0 0 PWM_MSEC(30) 0>;
-			edges = <5>;
-		};
-	};
-};
-
-&rpmfan1 {
-	compatible = "microchip,xec-rpm2pwm";
-	status = "okay";
-	pinctrl-0 = <&gpwm1_gpio054 &gtach1_gpio051>;
-	pinctrl-names = "default";
-	spinup_time = "RPM2PWM_SPINUP_2S";
-	spinup_level = "RPM2PWM_SPINUP_LVL_50";
-	update = "RPM2PWM_UPDATE_1600MS";
-	spinup_nokick;
-	enable_ramp_control;
-	manual_mode;
-
-	#pwm-cells = <3>;
-
-	rpmfantach1: rpmfan_tach1 {
-		compatible = "microchip,xec-rpm2pwm-tach";
-		status = "okay";
-	};
-
-	fan {
-		fan1: fan {
-			pwms = <&rpmfan1 0 PWM_MSEC(30) 0>;
-			edges = <5>;
-		};
-	};
 };
 
 &pinctrl {
