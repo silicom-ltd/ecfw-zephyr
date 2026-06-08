@@ -453,11 +453,18 @@
 };
 
 &i2c_smb_2 {
-	status = "disabled";
-	port_sel = <11>;
+	status = "okay";
+	port_sel = <5>;
 
-	pinctrl-0 = <&i2c11_sda_alt_gpio005 &i2c11_scl_alt_gpio006>;
+	//pinctrl-0 = <&i2c11_sda_alt_gpio005 &i2c11_scl_alt_gpio006>;
+	pinctrl-0 = <&i2c05_sda_gpio141 &i2c05_scl_gpio142>;
 	pinctrl-names = "default";
+
+	lom_mgmt: lom_mgmt@30 {
+		compatible = "i2c-target-lom-mgmt";
+		status = "okay";
+		reg = <0x30>;
+	};
 };
 
 &i2c03_sda_gpio007 {
