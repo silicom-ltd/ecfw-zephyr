@@ -37,16 +37,4 @@ void avail_resource_set(int bit, int val);
 #define LOG_DBG_SENS(...) (void)0
 #endif
 
-#ifndef CONFIG_BOARD_MEC172X_ADL_N_CP
-enum sensor_types {
-	hwmon_temp,
-	hwmon_in,
-	hwmon_curr,
-	hwmon_power,
-	hwmon_energy,
-	hwmon_fan,
-	hwmon_pwm,
-};
-#endif
-
 #endif /* __LOM_MGMT_PROC_INC_H__ */
