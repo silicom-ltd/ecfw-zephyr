@@ -83,6 +83,11 @@ static bool pwrseq_failure;
 static enum system_power_state current_state;
 static enum system_power_state next_state;
 
+#define SLP_SIG_S3 0x1
+#define SLP_SIG_S4 0x2
+#define SLP_SIG_S5 0x4
+static int asserted_slp_sigs;
+
 /* Handle S5 entry/exit and G3 exit */
 static void power_off(void);
 static int power_on(void);
@@ -139,27 +144,50 @@ static void pwrseq_slp_handler(uint32_t signal, uint32_t status)
 			next_state = SYSTEM_S0_STATE;
 			break;
 		default:
-			LOG_WRN("SLP_SX=1 while at %x", current_state);
+			LOG_WRN("<UP> SLP_SX[%d] while at %x", signal, current_state);
 			break;
 		}
-	} else  {
+	} else {
 		/* SLPx assertion indicates a specific power system state */
-		switch (current_state) {
-		case SYSTEM_S0_STATE:
-			if (signal == ESPI_VWIRE_SIGNAL_SLP_S3) {
+		if (current_state >= SYSTEM_S0_STATE && current_state <= SYSTEM_S5_STATE) {
+			switch (signal) {
+			case ESPI_VWIRE_SIGNAL_SLP_S3:
 				LOG_DBG("SLP S3 asserted");
-				next_state = SYSTEM_S3_STATE;
-			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S4) {
+				if (current_state > SYSTEM_S3_STATE) {
+					LOG_WRN("<DN> SLP_SX[%d] rewind: curr %d",
+						signal, current_state);
+				}
+				asserted_slp_sigs |= SLP_SIG_S3;
+				break;
+			case ESPI_VWIRE_SIGNAL_SLP_S4:
 				LOG_DBG("SLP S4 asserted");
-		//		if (next_state != SYSTEM_S5_STATE) 
-					next_state = SYSTEM_S4_STATE;
-			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S5) {
+				if (current_state > SYSTEM_S4_STATE) {
+					LOG_WRN("<DN> SLP_SX[%d] rewind: curr %d",
+						signal, current_state);
+				}
+				asserted_slp_sigs |= SLP_SIG_S4;
+				break;
+			case ESPI_VWIRE_SIGNAL_SLP_S5:
 				LOG_DBG("SLP S5 asserted");
+				asserted_slp_sigs |= SLP_SIG_S5;
+				break;
+			default:
+				LOG_ERR("Unexpected signal %d", signal);
+				return;
+			}
+
+			/* Got SLP_SX, host already leaved from S0 state, disable SCI */
+			if (asserted_slp_sigs) {
+				g_acpi_state_flags.sci_enabled = 0;
+			}
+
+			/* Update state, when have received all three SLP_SX signals */
+			if (asserted_slp_sigs == (SLP_SIG_S3 | SLP_SIG_S4 | SLP_SIG_S5)) {
 				next_state = SYSTEM_S5_STATE;
 			}
-			break;
-		default:
-			LOG_WRN("SLP_SX=1 while at %x", current_state);
+		}
+		else {
+			LOG_WRN("<DN> SLP_SX[%d] while at %x", signal, current_state);
 		}
 	}
 }
@@ -563,8 +591,9 @@ static void pwrseq_update(void)
 	}
 
 	if (valid_sx_transition) {
-		LOG_INF("System transition %d->%d", current_state, next_state);
+		LOG_WRN("System transition %d->%d", current_state, next_state);
 		current_state = next_state;
+		asserted_slp_sigs = 0;
 	} else {
 		LOG_ERR("Unsupported next state: %d", next_state);
 		/* Do not transition to invalid state,
@@ -933,4 +962,3 @@ static int resume(void)
 	board_resume();
 	return ret;
 }
-
