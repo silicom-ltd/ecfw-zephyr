@@ -53,53 +53,54 @@
 		};
 	};
   
-	/* top left */
+
+	/* Front panel GPIO LEDs — each position shares a light pipe with a PWM RGB LED */
+
+	/* Amber: pwr, top-left (GPIO156) */
 	gpioled0: gpioled0 {
-			compatible = "gpio-leds";
-			gpio_led0: led-0 {
-					/* GPIO 156 */
-					gpios = <&gpio_140_176 14 GPIO_ACTIVE_HIGH>;
-			};
+		compatible = "gpio-leds";
+		gpio_led0: led-0 {
+			gpios = <&gpio_140_176 14 GPIO_ACTIVE_HIGH>;
+		};
 	};
-	/* bottom left */
+
+	/* Amber: 'A', bottom-left (GPIO153) */
 	gpioled1: gpioled1 {
-			compatible = "gpio-leds";
-			gpio_led1: led-1 {
-					/* GPIO 153 */
-					gpios = <&gpio_140_176 11 GPIO_ACTIVE_HIGH>;
-			};
+		compatible = "gpio-leds";
+		gpio_led1: led-1 {
+			gpios = <&gpio_140_176 11 GPIO_ACTIVE_HIGH>;
+		};
 	};
-	/* top right */
+
+	/* Amber: 'B', top-right (GPIO157) */
 	gpioled2: gpioled2 {
-			compatible = "gpio-leds";
-			gpio_led2: led-2 {
-					/* GPIO 157 */
-					gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
-			};
+		compatible = "gpio-leds";
+		gpio_led2: led-2 {
+			gpios = <&gpio_140_176 15 GPIO_ACTIVE_HIGH>;
+		};
 	};
-	/* bottom right - amber */
+
+	/* Amber: mgmt, bottom-right (GPIO035) */
 	gpioled3: gpioled3 {
-			compatible = "gpio-leds";
-			gpio_led3: led-3 {
-					/* GPIO 035 */
-					gpios = <&gpio_000_036 29 GPIO_ACTIVE_HIGH>;
-			};
+		compatible = "gpio-leds";
+		gpio_led3: led-3 {
+			gpios = <&gpio_000_036 29 GPIO_ACTIVE_HIGH>;
+		};
 	};
 
-	/* bottom right - blue */
+	/* Blue: mgmt, bottom-right (GPIO053) — active-low; no full RGB PWM available */
 	gpioled4: gpioled4 {
-			compatible = "gpio-leds";
-			gpio_led4: led-4 {
-					/* GPIO 053 */
-					gpios = <&gpio_040_076 11 GPIO_ACTIVE_LOW>;
-			};
+		compatible = "gpio-leds";
+		gpio_led4: led-4 {
+			gpios = <&gpio_040_076 11 GPIO_ACTIVE_LOW>;
+		};
 	};
 
-
+	/* RGB LEDs */
 	pwm_mc_leds: pwm_mc_leds {
 		compatible = "pwm-leds-multicolor";
 
-		/* top left */
+		/* RGB: pwr, top-left */
 		pwmmcled0: topleft {
 			pwms = <&pwm4 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 			       <&pwm5 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
@@ -109,7 +110,7 @@
 					<LED_COLOR_ID_GREEN>,
 					<LED_COLOR_ID_BLUE>;
 		};
-		/* bottom left */
+		/* RGB: 'A', bottom-left */
 		pwmmcled1: bottomleft {
 			pwms = <&pwm2 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 		       	       <&pwm9  0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
@@ -119,7 +120,7 @@
 					<LED_COLOR_ID_GREEN>,
 					<LED_COLOR_ID_BLUE>;
 		};
-		/* top right */
+		/* RGB: 'B', top-right */
 		pwmmcled2: topright {
 			pwms = <&pwm10 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
 			       <&pwm7 0 PWM_MSEC(5) PWM_POLARITY_INVERTED>,
