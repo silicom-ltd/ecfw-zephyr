@@ -35,7 +35,7 @@ struct lom_mgmt_req {
 	};
 };
 
-#define RES_META_F_TIMESTAMP 0x08;
+#define RES_META_F_TIMESTAMP 0x08
 
 #define RES_META_DLEN_NTOH(meta) (ntohs(meta) & 0xFFF)
 #define RES_META_FLAG_NTOH(meta) (ntohs(meta) >> 12)

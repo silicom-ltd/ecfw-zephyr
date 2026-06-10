@@ -305,7 +305,7 @@ static int lom_mgmt_tgt_wr_req(struct i2c_target_config *config)
 
 static inline int need_timestamp(uint16_t res_meta)
 {
-	return RES_META_FLAG_NTOH(res_meta) & RES_META_F_TIMESTAMP
+	return RES_META_FLAG_NTOH(res_meta) & RES_META_F_TIMESTAMP;
 }
 
 static inline void set_timestamp(uint8_t *buf)
