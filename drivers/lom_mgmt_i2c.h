@@ -11,14 +11,18 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/net/net_ip.h>
 
-#define REQ_DLEN_MAX 64
+#define REQ_DLEN_MAX 28
 #define RES_DLEN_MAX 2048
 
 #define REQ_HEAD_LEN 4
 #define RES_HEAD_LEN 3
 
-#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN)
+#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN) /* Cannot exceed 32 bytes */
 #define RES_BUFF_SIZE (RES_DLEN_MAX + RES_HEAD_LEN)
+
+#if REQ_BUFF_SIZE > 32
+#error "Request buffer size cannot exceed 32 bytes"
+#endif
 
 struct lom_mgmt_req {
 	uint16_t size;
