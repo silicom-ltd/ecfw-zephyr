@@ -979,6 +979,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		}
 		break;
 	default:
+		break;
 	}
 }
 
