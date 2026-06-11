@@ -427,11 +427,10 @@ static int lom_mgmt_tgt_wr_rcv(struct i2c_target_config *config, uint8_t val)
 			return 0;
 		}
 
-		ctx->req.buf[ctx->req_idx] = val;
-
-		LOG_DBG_I2C("COMM[0x%02x] REQ[%d] <= 0x%02x", ctx->access_addr, ctx->req_idx, val);
-
-		ctx->req_idx = (ctx->req_idx + 1) % REQ_BUFF_SIZE;
+		if (ctx->req_idx < REQ_BUFF_SIZE) {
+			LOG_DBG_I2C("COMM[0x%02x] REQ[%d] <= 0x%02x", ctx->access_addr, ctx->req_idx, val);
+			ctx->req.buf[ctx->req_idx++] = val;
+		}
 	}
 
 	return 0;
