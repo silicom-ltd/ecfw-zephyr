@@ -962,8 +962,8 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 			if (in_force_down) {
 				LOG_WRN(">> Normal shutdown occurs in ForceDown!");
 				pwrctrl_forcedown_post();
-#endif
 			}
+#endif
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_HOST_RST_WARN:
