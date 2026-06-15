@@ -238,7 +238,7 @@ struct pwrctrl_work_data
 
 #define WAIT_SIG_SLEEP_TIME_MS 10
 #define MS_TIMEOUT_TO_CNT(t)						\
-	((t) / WAIT_SIG_SLEEP_TIME_MS + (((t) % WAIT_SIG_SLEEP_TIME_MS) ? 1 : 0))
+	(((t) + WAIT_SIG_SLEEP_TIME_MS - 1) / WAIT_SIG_SLEEP_TIME_MS)
 
 #define WORK_RET_OK      0
 #define WORK_RET_TIMEOUT 1
@@ -587,7 +587,7 @@ static void pwrctrl_do_shutdown(void)
 
 
 static int wait_sig_value(volatile int *sig,
-	int set_val, int exp_val, uint16_t timeout)
+	int set_val, int exp_val, uint32_t timeout)
 {
 	uint16_t loop_cnt = MS_TIMEOUT_TO_CNT(timeout);
 
