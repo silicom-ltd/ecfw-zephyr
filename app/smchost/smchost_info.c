@@ -170,7 +170,7 @@ static void get_sys_ids(void)
     len = recv_from_host(ids);
     if (len > 0)
     {
-        set_sys_ids((const uint8_t *)&ids[0], len);
+        set_sys_ids(ids, len);
     }
     else
     {

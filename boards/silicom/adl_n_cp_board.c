@@ -55,12 +55,5 @@ struct sbl_version *get_sbl_version(void)
 
 void set_sys_ids(const uint8_t *pdata, uint8_t len)
 {
-    uint8_t i = 0;
-    uint8_t *ptr = (uint8_t *)&g_sys_ids;
-
-    while (i != len && i < 10)
-    {
-        ptr[i] = pdata[i];
-        i++;
-    }
+    memcpy(&g_sys_ids, pdata, len);
 }
