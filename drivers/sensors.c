@@ -33,6 +33,8 @@ static const struct device *ntc_thermal_sensors[] = {
 	DT_INST_FOREACH_STATUS_OKAY(THERMAL_SENSOR)
 };
 
+static void maestro_ddr5_vtt_sodimm(struct sensor_value *volts);
+
 int thermal_sensors_init()
 {
 	int i;
@@ -80,11 +82,11 @@ void thermal_sensors_update(void)
 
 		err = sensor_sample_fetch_chan(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP);
 		if (err) {
-			LOG_WRN("ADC Sensor reading failed %d, %s\n", i, ntc_thermal_sensors[i]->name);
+			LOG_WRN("ADC (%02u) thermistor reading failed %s\n", adc_dt->channel_cfg.channel_id, ntc_thermal_sensors[i]->name);
 			continue;
 		}
 		sensor_channel_get(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP, &temp);
-		LOG_INF("Sensor %d thermistor read: %d.%03dC", i, temp.val1, temp.val2);
+		LOG_INF("ADC (%02u) thermistor read: %d.%03dC", adc_dt->channel_cfg.channel_id, temp.val1, temp.val2);
 
 		old_multiplier = sdata->multiplier;
 		multiplier = 0;
@@ -155,7 +157,6 @@ int voltage_monitor_init(void)
 	return 0;
 }
 
-
 void voltage_monitor_update(void)
 {
 	int i, num_sensors = ARRAY_SIZE(voltage_sensors);
@@ -182,11 +183,31 @@ void voltage_monitor_update(void)
 
 		err = sensor_sample_fetch_chan(voltage_sensors[i], SENSOR_CHAN_VOLTAGE);
 		if (err) {
-			LOG_WRN("ADC voltage reading failed %d, %s\n", i, voltage_sensors[i]->name);
+			LOG_WRN("ADC (%02u) voltage reading failed, %s\n", voltage->port.channel_id, voltage_sensors[i]->name);
 			continue;
 		}
 		sensor_channel_get(voltage_sensors[i], SENSOR_CHAN_VOLTAGE, &volts);
-		LOG_INF("ADC %d voltage read: %d.%03d V", i, volts.val1, volts.val2);
+
+        /**
+            Maestro DDR4 and DDR5 boards have VTT_SODIMM voltage i.e
+            being read by ADC channel(14), Since DDR4 board has no
+            voltage divider on VTT_SODIMM, the devicetree has full-ohms
+            and output-ohms are set to 1; on the other hand, DDR5 board
+            has a voltage divider on VTT_SODIMM with series resistors,
+            the function maestro_ddr5_vtt_sodimm() will have the full-ohms
+            and output-ohms values according to DDR5 schematics rather
+            than in the device-tree, because of this, both DDR4 and DDR5
+            will have a run-time support for the VTT_SODIMM reading.
+        **/
+        if (voltage->port.channel_id == MAESTRO_VTT_SODIMM_ADC_CHNL)
+        {
+            if (get_bom_id() == MAESTRO_DDR5_BOM_ID)
+            {
+                maestro_ddr5_vtt_sodimm (&volts);
+            }
+        }
+
+		LOG_INF("ADC (%02u) voltage read: %d.%06d V", voltage->port.channel_id, volts.val1, volts.val2);
 
 		//sdata->mon_in = (volts.val1 << 16) | (volts.val2 / 16);
 		sdata->mon_in = (volts.val1 * 1000) + (volts.val2 / 1000);
@@ -244,11 +265,11 @@ void current_sense_update(void)
 
 		err = sensor_sample_fetch_chan(current_sensors[i], SENSOR_CHAN_CURRENT);
 		if (err) {
-			LOG_WRN("ADC current reading failed %d, %s\n", i, current_sensors[i]->name);
+			LOG_WRN("ADC (%02u) current reading failed, %s\n", current->port.channel_id, current_sensors[i]->name);
 			continue;
 		}
 		sensor_channel_get(current_sensors[i], SENSOR_CHAN_CURRENT, &amps);
-		LOG_INF("ADC %d current read: %d.%d mA", i, amps.val1, amps.val2);
+		LOG_INF("ADC (%02u) current read: %d.%03d mA", current->port.channel_id, amps.val1, amps.val2);
 
 		old_multiplier = sdata->multiplier;
 		multiplier = 0;
@@ -318,6 +339,26 @@ void sensors_update()
 	voltage_monitor_update();
 	thermal_sensors_update();
 	current_sense_update();
-
 }
+
+/**
+    This function converts the volt to milivolt,
+    then apply the voltage divider formula to get
+    the input voltage and converts back to volt.
+**/
+static void maestro_ddr5_vtt_sodimm (struct sensor_value *volts)
+{
+    // R1 resistor -> 1K
+    // R2 resistor -> 1K
+    //uint16_t output_ohms = 10000;
+    //uint16_t full_ohms = 10000+10000;
+
+    uint32_t v_mv = (volts->val1 * 1000) + (volts->val2 / 1000);
+    //v_mv = (v_mv * full_ohms) / output_ohms;
+    v_mv = v_mv * 2;
+
+    volts->val1 = v_mv / 1000;
+    volts->val2 = (v_mv * 1000) % 1000000;
+}
+
 #undef DT_DRV_COMPAT
