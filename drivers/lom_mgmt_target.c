@@ -554,8 +554,9 @@ static bool check_csum(struct lom_mgmt_i2c_context *ctx)
 
 static void lom_mgmt_tgt_do_fini(struct lom_mgmt_i2c_context *ctx)
 {
-	LOG_DBG_APP("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]", ctx->req_func_last,
-		ctx_sta_string[ctx->state_last], ctx->res_idx, ctx->res.size-1);
+	LOG_DBG_APP("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]<%02x %02x %02x>", ctx->req_func_last,
+		ctx_sta_string[ctx->state_last], ctx->res_idx, ctx->res.size-1,
+		ctx->res.buf[0], ctx->res.buf[1], ctx->res.buf[2]);
 
 	ctx->cb->send_cancel();
 
@@ -600,7 +601,7 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 	 */
 	if (ctx->req.size < REQ_HEAD_LEN || ctx->req.dlen > REQ_DLEN_MAX ||
 		(ctx->req.dlen != ctx->req.size - REQ_HEAD_LEN)) {
-		LOG_DBG_APP("Invalid request size: %u", ctx->req.size);
+		LOG_DBG_APP("Invalid request size: total %u, dlen %u", ctx->req.size, ctx->req.dlen);
 		goto error_quit;
 	}
 
@@ -609,15 +610,13 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 		goto error_quit;
 	}
 
-	if (ctx->req.func < FUNC_FIRST || ctx->req.func > FUNC_LAST)
-	{
+	if (ctx->req.func < FUNC_FIRST || ctx->req.func > FUNC_LAST) {
 		LOG_DBG_APP("Invalid func %u", ctx->req.func);
 		goto error_quit;
 	}
 
 	if ((ctx->state == STA_RECV_FINI && ctx->req.func != FUNC_FINI) ||
-		(ctx->state == STA_RECV_REQ && ctx->req.func == FUNC_FINI))
-	{
+		(ctx->state == STA_RECV_REQ && ctx->req.func == FUNC_FINI)) {
 		LOG_DBG_APP("Un-expected func %d", ctx->req.func);
 		goto error_quit;
 	}
