@@ -81,6 +81,14 @@ void smchost_thread(void *p1, void *p2, void *p3);
  */
 void send_to_host(uint8_t *pdata, uint8_t len);
 
+/**
+ * @brief Receive data from SMC host.
+ *
+ * @param pdata pointer to buffer holding the data.
+ * return       length of bytes to be received.
+ */
+uint8_t recv_from_host(uint8_t *pdata);
+
 #ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 /**
  * @brief Indicate smchost task there is an event that requires to be processed.

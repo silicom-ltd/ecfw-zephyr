@@ -462,6 +462,25 @@ void send_to_host(uint8_t *pdata, uint8_t Len)
 	host_res_idx = 0;
 }
 
+/**
+ * @brief Receive data from the host.
+ *
+ * @param  ptr pointer to the data.
+ * return      length of data bytes.
+ */
+uint8_t recv_from_host(uint8_t *pdata)
+{
+    uint8_t i;
+    uint8_t len = host_req_len;
+
+    for (i = 0; i < len; i++) {
+        // host_req[0] has a command byte
+        pdata[i] = host_req[i+1];
+        LOG_DBG("Rcvd data: %02X", pdata[i]);
+    }
+    return len;
+}
+
 static void service_system_acpi_cmds(void)
 {
 	if (!g_acpi_state_flags.acpi_mode) {
@@ -625,6 +644,9 @@ static uint8_t smchost_req_length(uint8_t command)
 	case SMCHOST_WRITE_ACPI_SPACE:
 		return 2;
 
+    case SMCHOST_GET_SYS_IDS:
+        return 7;
+
 	default:
 		return 0;
 	}
@@ -646,6 +668,7 @@ static void smchost_cmd_handler(uint8_t command)
 	case SMCHOST_READ_PLAT_SIGNATURE:
 	case SMCHOST_HID_BTN_SCI_CONTROL:
 	case SMCHOST_HID_RST_BTN_SCI_CONTROL:
+    case SMCHOST_GET_SYS_IDS:
 		smchost_cmd_info_handler(command);
 		break;
 	case SMCHOST_PLN_CONFIG:
