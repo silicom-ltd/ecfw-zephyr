@@ -147,4 +147,42 @@ extern uint8_t platformskutype;
  */
 #define USB_PD_VERSION 0x0200
 
+/* MAESTRO DDR4 and DDR5 bom ids, board id */
+#define MAESTRO_DDR4_BOM_ID             0x04
+#define MAESTRO_DDR5_BOM_ID             0x05
+#define MAESTRO_BOARD_ID                0x15
+#define MAESTRO_VTT_SODIMM_ADC_CHNL     14
+
+// struct sbl version for LOM
+struct sbl_version {
+    uint8_t major_version;
+    uint8_t minor_version;
+    uint8_t build_number_high;
+    uint8_t build_number_low;
+    uint8_t flags;
+            //flags:    [3:0]reserved, [4]image_arch,
+            //          [5]bld_debug,  [6]fsp_debug,
+            //          [7]dirty
+};
+
+/**
+    struct sys_ids holds all the members of struct sbl_version
+    e.g major, minor, bld_number_high and bld_number_low, flags,
+    and additionally board_id and bom_id
+**/
+struct sys_ids {
+    struct sbl_version sbl;
+    uint8_t board_id;
+    uint8_t bom_id;
+};
+
+/**
+    functions to set and get sbl version,
+    board_id and bom_id
+**/
+void set_sys_ids (const uint8_t *pdata, uint8_t len);
+uint8_t get_bom_id (void);
+uint8_t get_board_id (void);
+struct sbl_version *get_sbl_version(void);
+
 #endif /* __AZBEACH_MEC172X_H__ */
