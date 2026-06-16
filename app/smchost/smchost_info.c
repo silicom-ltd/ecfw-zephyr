@@ -162,6 +162,22 @@ static void read_revision(void)
 	send_to_host((uint8_t *)&version, 2);
 }
 
+static void get_sys_ids(void)
+{
+    uint8_t len = 0;
+    uint8_t ids[SMCHOST_MAX_BUF_SIZE] = {0};
+
+    len = recv_from_host(ids);
+    if (len > 0)
+    {
+        set_sys_ids(ids, len);
+    }
+    else
+    {
+        LOG_DBG("%s, failed length(%u)", __func__, len);
+    }
+}
+
 static void read_platform_signature(void)
 {
 	uint8_t value[8];
@@ -199,6 +215,10 @@ void smchost_cmd_info_handler(uint8_t command)
 		LOG_INF("RST_BTN_SCI_CONTROL received");
 		rstbtn_sci_cntrl();
 		break;
+    case SMCHOST_GET_SYS_IDS:
+        LOG_DBG("%s, SMCHOST_GET_SYS_IDS", __func__);
+        get_sys_ids();
+        break;
 	default:
 		LOG_WRN("%s: command 0x%X without handler", __func__, command);
 		break;

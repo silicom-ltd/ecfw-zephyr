@@ -81,6 +81,7 @@
 #define SMCHOST_DNX_TRIGGER		0xF6
 #define SMCHOST_DNX_SET_STRAP		0xF7
 #endif
+#define SMCHOST_GET_SYS_IDS         0x4D
 
 #endif /* __SMCHOST_COMMANDS_H__ */
 
