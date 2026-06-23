@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef __DRIVERS_I2C_TARGET_LOM_MGMT_H__
 #define __DRIVERS_I2C_TARGET_LOM_MGMT_H__
 
@@ -5,14 +11,18 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/net/net_ip.h>
 
-#define REQ_DLEN_MAX 64
+#define REQ_DLEN_MAX 28
 #define RES_DLEN_MAX 2048
 
 #define REQ_HEAD_LEN 4
 #define RES_HEAD_LEN 3
 
-#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN)
+#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN) /* Cannot exceed 32 bytes */
 #define RES_BUFF_SIZE (RES_DLEN_MAX + RES_HEAD_LEN)
+
+#if REQ_BUFF_SIZE > 32
+#error "Request buffer size cannot exceed 32 bytes"
+#endif
 
 struct lom_mgmt_req {
 	uint16_t size;
@@ -29,7 +39,7 @@ struct lom_mgmt_req {
 	};
 };
 
-#define RES_META_F_TIMESTAMP 0x08;
+#define RES_META_F_TIMESTAMP 0x08
 
 #define RES_META_DLEN_NTOH(meta) (ntohs(meta) & 0xFFF)
 #define RES_META_FLAG_NTOH(meta) (ntohs(meta) >> 12)

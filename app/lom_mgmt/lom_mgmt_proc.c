@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Intel Corporation.
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -33,9 +33,22 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
-
 #ifdef CONFIG_LOM_MGMT_FUNC_FRU
-static const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
+struct fru_dev_info {
+	const struct device * dev;
+	int                   size;
+};
+
+#define HOST_FRU_INIT(node_id, prop, idx)				\
+	{								\
+		.dev = DEVICE_DT_GET_OR_NULL(DT_PHANDLE_BY_IDX(node_id, prop, idx)), \
+		.size = DT_PROP(DT_PHANDLE_BY_IDX(node_id, prop, idx), size), \
+	},
+
+static struct fru_dev_info fru_devs[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), host_frus, HOST_FRU_INIT)
+};
+
 
 #define FRU_HDR_SIZE 11
 static uint8_t fru_hdr_title[] = "TlvInfo";
@@ -48,48 +61,81 @@ extern struct hwmon_sram *hwmon_data;
 #define SENS_DTYPE_INTEG 0
 #define SENS_DTYPE_FLOAT 1
 
+#define HWMON_SDATA_MUL_OFF 7
+
 struct hwmon_sram_entry_desc {
 	uint16_t          entry_idx;
 	enum sensor_types sens_type;
 	uint8_t           sens_id;
 };
 
+#ifdef CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE
+struct sensor_record {
+	uint8_t  info; /* b[7:6]:type, b[5:0]: multiplier */
+	uint8_t  sens_id;
+	uint16_t value;
+} __attribute__((__packed__));
+
 #define SENS_INFO_MUL_BIT 0
 #define SENS_INFO_TYP_BIT 6 /* data type(2bits): 0: integer, 1: float */
 
 #define SENS_INFO_MUL_MASK 0x3F
 
+#define SRD_SENS_ID(srd) (srd->sens_id)
+
+#define SET_SRD_SENS_ID(srd, val)		\
+	do {					\
+		srd->sens_id = val;		\
+	} while (0)
+#else
+struct sensor_record {
+	uint8_t info; /* b[7]:type, b[6]:multiplier, b[5:0]: sensor id */
+	uint16_t value;
+} __attribute__((__packed__));
+
+#define SENS_INFO_MUL_BIT 6
+#define SENS_INFO_TYP_BIT 7 /* data type(1bits): 0: integer, 1: float */
+
+#define SENS_INFO_MUL_MASK 0x1
+
+#define SRD_SENS_ID(srd) (srd->info & 0x3F)
+
+#define SET_SRD_SENS_ID(srd, val)		\
+	do {					\
+		srd->info |= val;		\
+	} while (0)
+#endif
+
+#define SENSOR_RECORD_SIZE (sizeof(struct sensor_record))
+
 #define LOM_SENSOR_MAX 256
-#define DYN_SENSOR_HWMON_IDX_BASE 43
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+
+#define DYN_SENSOR_HWMON_IDX_BASE 43
+
 /*
   The new added sensors always be stored in contiguous memory locations and at the end,
   so the sensor_id could be calculated by sequence
 */
 static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
 	/* hwmon_sdata[16]: 0x100 */
-	{  8/*0x100*/, hwmon_in,    6 }, /* P12V0A        */ /* 12V */
-	{  9/*0x120*/, hwmon_in,    7 }, /* P5V0A         */ /* 5V */
-	{ 10/*0x140*/, hwmon_in,    8 }, /* P3V3_ALW_ON   */ /* 3.3V Always On */
-	{ 11/*0x160*/, hwmon_in,    9 }, /* P1V8_ALW_ON   */ /* 1.8V Always On */
-	{ 12/*0x180*/, hwmon_temp,  1 }, /* AmbientTemp   */ /* Ambient */
-	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* VR_Temp       */ /* Core VR */
-	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR_Temp      */ /* DDR */
-	{ 17/*0x220*/, hwmon_in,   10 }, /* P1V8A         */ /* 1.8V */
-	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU_Temp      */ /* CPU */
-	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX     */ /* VCCIN_AUX */
-	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2     */ /* 1.2V_VDD2 */
-	//{ 21/*0x2a0*/, hwmon_in,   SENS_DTYPE_FLOAT, 13 }, /* P0V95S        -*/
-	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM    */ /* VTT_SODIMM */
-	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* PWR_MON       */ /* Board Power */
+	{  8/*0x100*/, hwmon_in,    6 }, /* 12V */
+	{  9/*0x120*/, hwmon_in,    7 }, /* 5V */
+	{ 10/*0x140*/, hwmon_in,    8 }, /* 3.3V Always On */
+	{ 11/*0x160*/, hwmon_in,    9 }, /* 1.8V Always On */
+	{ 12/*0x180*/, hwmon_temp,  1 }, /* Ambient */
+	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* Core VR */
+	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR */
+	{ 17/*0x220*/, hwmon_in,   10 }, /* 1.8V */
+	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU */
+	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX */
+	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2 */
+	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM */
+	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* Board Power */
 
 	/* hwmon_peci:      0x300 */
-	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU_PECI_Temp */ /* CPU PECI */
-
-	/* hwmon_fdata[4]:  0x320 */
-	//{ 25/*0x320*/, hwmon_fan, 15 }, /* Fan1_Speed    */
-	//{ 26/*0x340*/, hwmon_fan, 16 }, /* Fan2_Speed    */
+	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU PECI */
 
 	/*
 	 * !! new sens_id should start from 18 !!
@@ -137,14 +183,6 @@ static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
 };
 #endif
 
-struct sensor_record {
-	uint8_t  info;
-	uint8_t  sens_id;
-	uint16_t value;
-} __attribute__((__packed__));
-
-#define SENSOR_RECORD_SIZE (sizeof(struct sensor_record))
-
 
 static const struct device *lom_mgmt_dev = DEVICE_DT_GET(DT_NODELABEL(lom_mgmt));
 
@@ -168,7 +206,8 @@ struct func_ret_info
 	uint8_t flag; /* currently, only support timestamp flag */
 };
 
-#define SET_FAIL_CODE(pfri, err_code, sys_error)	\
+/* sys_error is negative or zero */
+#define SET_RET_CODE(pfri, err_code, sys_error)		\
 	do {						\
 		(pfri)->code = err_code;		\
 		(pfri)->fail_code = -sys_error;		\
@@ -180,11 +219,13 @@ struct func_ret_info
 	defined(CONFIG_LOM_MGMT_FUNC_POSTCODE)
 static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 
-static int slp_sig_PLTRST;
-static int in_force_down;
 #endif
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+
+static int slp_sig_PLTRST;
+static int in_force_down;
+
 struct pwrctrl_work_data
 {
 	struct k_work work_item;
@@ -192,12 +233,12 @@ struct pwrctrl_work_data
 	int     sec;
 };
 
-#define HOST_SHUTDOWN_WAIT_TIME_MS  30000
+#define HOST_NORMALDOWN_WAIT_TIME_MS CONFIG_HOST_GRACEFUL_SHUTDOWN_WAIT_TIME
 #define HOST_FORCEDOWN_WAIT_TIME_MS 7200
 
 #define WAIT_SIG_SLEEP_TIME_MS 10
 #define MS_TIMEOUT_TO_CNT(t)						\
-	((t) / WAIT_SIG_SLEEP_TIME_MS + (((t) % WAIT_SIG_SLEEP_TIME_MS) ? 1 : 0))
+	(((t) + WAIT_SIG_SLEEP_TIME_MS - 1) / WAIT_SIG_SLEEP_TIME_MS)
 
 #define WORK_RET_OK      0
 #define WORK_RET_TIMEOUT 1
@@ -205,6 +246,10 @@ struct pwrctrl_work_data
 
 static struct pwrctrl_work_data pwrctrl_work_data;
 
+#endif
+
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
+static uint16_t boot_cycle_count = 0;
 #endif
 
 static uint8_t acpi_state[] = {
@@ -326,18 +371,20 @@ static inline void fill_one_sensor(struct sensor_record *srd,
 	const struct hwmon_sram_entry_desc * ent)
 {
 	uint16_t *sram = (uint16_t *)hwmon_data;
-	uint16_t offset = (ent->entry_idx * 32) / 2; /* offset in two byte unit */
+	uint16_t offset = (ent->entry_idx * 32) / 2; /* offset in 2bytes unit */
 
-	uint8_t mul = (uint8_t)(sram[offset + 7] & SENS_INFO_MUL_MASK);
+	uint8_t mul = (uint8_t)(sram[offset + HWMON_SDATA_MUL_OFF] & SENS_INFO_MUL_MASK);
 
+	srd->info = 0;
 	if (ent->sens_type == hwmon_fan) {
 		srd->info = (SENS_DTYPE_INTEG << SENS_INFO_TYP_BIT) | 0; /* fan no multiplier */
 	}
 	else {
-		srd->info = (SENS_DTYPE_FLOAT << SENS_INFO_TYP_BIT) | mul;
+		srd->info = (SENS_DTYPE_FLOAT << SENS_INFO_TYP_BIT) | (mul << SENS_INFO_MUL_BIT);
 	}
 
-	srd->sens_id = ent->sens_id;
+	SET_SRD_SENS_ID(srd, ent->sens_id);
+
 	srd->value = htons(sram[offset]);
 }
 
@@ -349,7 +396,7 @@ static int do_get_sensors(uint8_t *res_data, struct func_ret_info* fri)
 	for (int i = 0; hwmon_entries[i].entry_idx != 0xFFFF; i++) {
 		if (data_off + SENSOR_RECORD_SIZE > RES_DLEN_MAX) {
 			LOG_ERR("payload size exceeds the limit: %d", RES_DLEN_MAX);
-			SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, -ENOSPC);
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENOSPC);
 			return -1;
 		}
 
@@ -358,7 +405,7 @@ static int do_get_sensors(uint8_t *res_data, struct func_ret_info* fri)
 		fill_one_sensor(srd, &hwmon_entries[i]);
 
 		LOG_DBG_SENS("SENS@hwmon[%03d] 0x%02x %3d 0x%04x", hwmon_entries[i].entry_idx,
-			srd->info, srd->sens_id, ntohs(srd->value));
+			srd->info, SRD_SENS_ID(srd), ntohs(srd->value));
 
 		data_off += SENSOR_RECORD_SIZE;
 	}
@@ -376,7 +423,7 @@ static int do_get_events(uint8_t *res_data, struct func_ret_info* fri)
 	int ret = host_event_get(data, RES_DLEN_MAX - TIMESTAMP_SZ, &fri->data_size);
 	if (ret < 0) {
 		LOG_ERR("Get events failed, ret %d", ret);
-		SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, ret);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
 		return -1;
 	}
 
@@ -398,7 +445,7 @@ static int do_get_postcode(uint8_t *res_data, struct func_ret_info* fri)
 	int ret = postcode_get(data, RES_DLEN_MAX - TIMESTAMP_SZ, &fri->data_size);
 	if (ret < 0) {
 		LOG_ERR("Get postcode failed, ret %d", ret);
-		SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, ret);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
 		return -1;
 	}
 
@@ -418,41 +465,69 @@ static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 #ifdef CONFIG_LOM_MGMT_FUNC_FRU
 	off_t offset = 0;
 	int ret;
+	int dev_id = 0;
+	struct fru_dev_info *fru;
+	int fru_size = 0;
 
-	ret = eeprom_read(fru, offset, &data[offset], FRU_HDR_SIZE);
+	for (int i = 0; i < ARRAY_SIZE(fru_devs); i++) {
+		struct fru_dev_info *fru = &fru_devs[i];
+		if (!device_is_ready(fru->dev)) {
+			LOG_ERR("Fru device is not ready");
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
+			return -1;
+		}
+		fru_size += fru->size;
+	}
+
+	if (fru_size == 0) {
+		LOG_ERR("no FRU(s) on host");
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
+		return 0;
+	}
+
+	fru = &fru_devs[dev_id];
+
+	ret = eeprom_read(fru->dev, offset, &data[offset], FRU_HDR_SIZE);
 	if (ret < 0) {
 		LOG_ERR("read FRU header failed, ret %d", ret);
-		SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, ret);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
 		return -1;
 	}
 	offset += FRU_HDR_SIZE;
 
 	if (memcmp(data, fru_hdr_title, 8)) {
 		LOG_ERR("Unsupport FRU format");
-		SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, 0);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENXIO);
 		return -1;
 	}
 
 	uint16_t fru_dat_len = data[9] << 8 | data[10];
 
-	LOG_DBG_APP("Fru data size 0x%04x", fru_dat_len);
+	LOG_DBG_APP("Fru data size %u (all size %u)", fru_dat_len, fru_dat_len + FRU_HDR_SIZE);
 
-	if (FRU_HDR_SIZE + fru_dat_len > RES_DLEN_MAX) {
+	if (FRU_HDR_SIZE + fru_dat_len > RES_DLEN_MAX || FRU_HDR_SIZE + fru_dat_len > fru_size) {
 		LOG_ERR("Too large FRU %d", FRU_HDR_SIZE + fru_dat_len);
-		SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, -ENOSPC);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENOSPC);
 		return -1;
 	}
 
 	size_t read_size = 0;
+	uint16_t readn = offset;
 	for (uint16_t remains = fru_dat_len; remains > 0; remains -= read_size) {
-		read_size = remains > FRU_READ_MAX ? FRU_READ_MAX : remains;
-		ret = eeprom_read(fru, offset, &data[offset], read_size);
+		read_size = MIN(remains > FRU_READ_MAX ? FRU_READ_MAX : remains, fru->size - offset);
+		ret = eeprom_read(fru->dev, offset, &data[readn], read_size);
 		if (ret < 0) {
 			LOG_ERR("read FRU data at %ld failed, ret %d", offset, ret);
-			SET_FAIL_CODE(fri, EC_RET_ERR_FAIL, ret);
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
 			return -1;
 		}
+
+		readn += read_size;
 		offset += read_size;
+		if (offset == fru->size) {
+			fru = &fru_devs[++dev_id];
+			offset = 0;
+		}
 
 		if (remains - read_size)
 			k_yield();
@@ -467,7 +542,7 @@ static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 }
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-static void pwrctrl_do_up()
+static void pwrctrl_do_up(void)
 {
 	uint8_t pwr_state = pwrseq_system_state();
 
@@ -492,27 +567,27 @@ static void pwrctrl_do_up()
 	}
 }
 
-static void pwrctrl_do_shutdown()
+static void pwrctrl_do_shutdown(void)
 {
 	uint8_t pwr_state = pwrseq_system_state();
 
 	if (pwr_state == SYSTEM_S0_STATE) {
-		LOG_DBG_APP(">> Do Down");
+		LOG_DBG_APP(">> Do Normal Down");
 
 		gpio_write_pin(PM_PWRBTN, 0);
 		k_msleep(150);
 		gpio_write_pin(PM_PWRBTN, 1);
 
-		LOG_DBG_APP(">> Do Down end");
+		LOG_DBG_APP(">> Do Normal Down end");
 	}
 	else {
-		LOG_DBG_APP(">> Skip Down");
+		LOG_DBG_APP(">> Skip Normal Down");
 	}
 }
 
 
 static int wait_sig_value(volatile int *sig,
-	int set_val, int exp_val, uint16_t timeout)
+	int set_val, int exp_val, uint32_t timeout)
 {
 	uint16_t loop_cnt = MS_TIMEOUT_TO_CNT(timeout);
 
@@ -534,7 +609,7 @@ static inline void pwrctrl_forcedown_post(void)
 	}
 }
 
-static void pwrctrl_do_force_down()
+static void pwrctrl_do_force_down(void)
 {
 	uint8_t pwr_state = pwrseq_system_state();
 	int ret;
@@ -542,23 +617,25 @@ static void pwrctrl_do_force_down()
 	if (pwr_state == SYSTEM_S0_STATE) {
 		LOG_DBG_APP(">> Do Force Down");
 
-		/* first try normal shutdown */
+		/* first try graceful shutdown */
+#ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
 		pwrctrl_do_shutdown();
 
-		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, HOST_SHUTDOWN_WAIT_TIME_MS);
+		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
 		if (ret == WORK_RET_QUIT) {
-			LOG_DBG_APP(">> NormalWait quit");
+			LOG_DBG_APP(">> Normal Down wait quit");
 			return;
 		}
 
 		if (ret == WORK_RET_TIMEOUT) {
-			LOG_DBG_APP(">> Normal down failed, try Force Down");
+			LOG_DBG_APP(">> Normal Down failed, try Force Down");
+#endif
 
 			gpio_write_pin(PM_PWRBTN, 0);
 
 			ret = wait_sig_value(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS);
 			if (ret == WORK_RET_QUIT) {
-				LOG_DBG_APP(">> ForceWait quit");
+				LOG_DBG_APP(">> Force Down Wait quit");
 				pwrctrl_forcedown_post();
 				return;
 			}
@@ -568,7 +645,9 @@ static void pwrctrl_do_force_down()
 				pwrctrl_forcedown_post();
 				return;
 			}
+#ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
 		}
+#endif
 
 		LOG_DBG_APP(">> Do Force Down end");
 	}
@@ -577,7 +656,7 @@ static void pwrctrl_do_force_down()
 	}
 }
 
-static void pwrctrl_do_hard_reset()
+static void pwrctrl_do_hard_reset(void)
 {
 	uint8_t pwr_state = pwrseq_system_state();
 
@@ -628,7 +707,7 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 	uint32_t status = k_work_busy_get(&pwrctrl_work_data.work_item);
 	if (status & K_WORK_RUNNING) {
 		LOG_DBG_APP("PwrCtrl worker is busy");
-		SET_FAIL_CODE(fri, EC_RET_ERR_IN_PROCESS, 0);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EBUSY);
 		return -1;
 	}
 
@@ -647,7 +726,7 @@ static int do_test_l3(uint8_t* req, uint8_t*res, struct func_ret_info* fri)
 	LOG_DBG_APP("TestL3 size %d", test_dlen);
 
 	if (test_dlen < 4 || test_dlen > RES_DLEN_MAX) {
-		SET_FAIL_CODE(fri, EC_RET_ERR_INV_SIZE, 0);
+		SET_RET_CODE(fri, EC_RET_ERR_INV_SIZE, 0);
 		LOG_ERR("Invalid test size %d, shoule between 4 and %d", test_dlen, RES_DLEN_MAX);
 		return -1;
 	}
@@ -747,9 +826,7 @@ static void wait_hwdata_ready(uint32_t normal_period)
 #if defined(CONFIG_LOM_MGMT_FUNC_POWER_CTRL) || defined(CONFIG_LOM_MGMT_FUNC_HOST_EVENT) || \
 	defined(CONFIG_LOM_MGMT_FUNC_POSTCODE)
 
-static uint16_t boot_cycle_count = 0;
-
-#if defined(_DBG_EVENT) && (CONFIG_LOM_MGMT_PROC_LOG_LEVEL >= LOG_LEVEL_DBG)
+#ifdef CONFIG_LOM_MGMT_PROC_DBG_EVENT
 struct vwi_signal_info {
 	char *name;
 };
@@ -811,6 +888,7 @@ static struct vwi_signal_info vwi_managed_sigs[] =
  * In DN process, the PLTRST = 0, is the first signal
  * In UP process, the PLTRST = 1, is the last signal
  *
+ * (host_event, power control, postcode all require this function)
  */
 static void espi_vwire_monitor(const struct device *dev, struct espi_callback *cb,
 	struct espi_event event)
@@ -847,22 +925,30 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 			if (pwr_sta == SYSTEM_G3_STATE) {
 				LOG_DBG_EVENT(">> [HOST Power Up]");
 				host_event_put(HOST_EVENT_POWER_UP);
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
+#endif
 			}
 			else if (pwr_sta == SYSTEM_S4_STATE || pwr_sta == SYSTEM_S5_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Up]");
 				host_event_put(HOST_EVENT_SOFT_UP);
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
+#endif
 			}
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_PLTRST:
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 		slp_sig_PLTRST = event.evt_data;
+#endif
 		if (event.evt_data) {
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [Host Reboot]");
 				host_event_put(HOST_EVENT_REBOOT);
+#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
+#endif
 			}
 		}
 		else {
@@ -872,12 +958,12 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 			 * The power button needs to be released(cancel the forcedown) to
 			 * prevent the host from restarting.
 			 */
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 			if (in_force_down) {
 				LOG_WRN(">> Normal shutdown occurs in ForceDown!");
-#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 				pwrctrl_forcedown_post();
-#endif
 			}
+#endif
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_HOST_RST_WARN:
@@ -893,6 +979,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		}
 		break;
 	default:
+		break;
 	}
 }
 
@@ -990,6 +1077,10 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	lom_mgmt_sw_sensor_table_init();
+#endif
+
+#ifdef CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE
+	LOG_INF("Use wide data-type layout for high-range sensor data.");
 #endif
 
 	lom_mgmt_i2c_set_callbacks(lom_mgmt_dev, &callbacks);

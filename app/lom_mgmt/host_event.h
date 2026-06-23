@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2019 Intel Corporation
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #ifndef __HOST_EVENT_H__
 #define __HOST_EVENT_H__
+
+#include <stdint.h>
 
 enum host_event_type {
 	HOST_EVENT_POWER_UP = 1,
@@ -24,6 +26,6 @@ enum host_event_type {
 
 int host_event_put(uint8_t event);
 int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size);
-int host_event_count();
+int host_event_count(void);
 
 #endif /* __HOST_EVENT_H__ */

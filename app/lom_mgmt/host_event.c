@@ -1,3 +1,10 @@
+/*
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
 
 #include <zephyr/kernel.h>
 #include <zephyr/arch/cpu.h>
@@ -8,7 +15,7 @@
 #include "lom_mgmt_proc_inc.h"
 #include "host_event.h"
 
-LOG_MODULE_REGISTER(host_event, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
+LOG_MODULE_DECLARE(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 struct host_event_record_ent {
 	uint8_t  event;
@@ -22,7 +29,6 @@ RING_BUF_DECLARE(host_event_ring_buf,
 
 int host_event_put(uint8_t event)
 {
-#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
 	struct host_event_record_ent e, dummy;
 	int ret;
 
@@ -59,14 +65,12 @@ int host_event_put(uint8_t event)
 		ring_buf_size_get(&host_event_ring_buf)/HOST_EVENT_ENT_SZ);
 
 	avail_resource_set(AVAIL_RES_EVENT, 1);
-#endif
 
 	return 0;
 }
 
 int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 {
-#ifdef CONFIG_LOM_MGMT_FUNC_HOST_EVENT
 	int ret;
 	int off = 0;
 	int event_size = ring_buf_size_get(&host_event_ring_buf);
@@ -94,7 +98,6 @@ int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 	if (!host_event_count()) {
 		avail_resource_set(AVAIL_RES_EVENT, 0);
 	}
-#endif
 
 	return 0;
 }
@@ -103,3 +106,22 @@ int host_event_count()
 {
 	return ring_buf_size_get(&host_event_ring_buf)/HOST_EVENT_ENT_SZ;
 }
+#else
+
+#include "host_event.h"
+
+int host_event_put(uint8_t event)
+{
+	return 0;
+}
+
+int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
+{
+	return 0;
+}
+
+int host_event_count(void)
+{
+	return 0;
+}
+#endif
