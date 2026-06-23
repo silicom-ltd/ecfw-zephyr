@@ -189,7 +189,7 @@ config LOM_MGMT_I2C_LOG_LEVEL
 
 config LOM_MGMT_I2C_DBG_APP
 	bool "LOM-MGMT Protocol(I2C part) application layer debugging"
-	depends on LOG && LOM_MGMT_PROC
+	depends on LOG && I2C_TARGET_LOM_MGMT
 	depends on LOM_MGMT_I2C_LOG_LEVEL >= 4
 	default n
 	help
@@ -197,7 +197,7 @@ config LOM_MGMT_I2C_DBG_APP
 
 config LOM_MGMT_I2C_DBG_STA
 	bool "LOM-MGMT Protocol(I2C part) state machine debugging"
-	depends on LOG && LOM_MGMT_PROC
+	depends on LOG && I2C_TARGET_LOM_MGMT
 	depends on LOM_MGMT_I2C_LOG_LEVEL >= 4
 	default n
 	help
@@ -205,7 +205,7 @@ config LOM_MGMT_I2C_DBG_STA
 
 config LOM_MGMT_I2C_DBG_I2C
 	bool "LOM-MGMT Protocol(I2C part) I2C data debugging"
-	depends on LOG && LOM_MGMT_PROC
+	depends on LOG && I2C_TARGET_LOM_MGMT
 	depends on LOM_MGMT_I2C_LOG_LEVEL >= 4
 	default n
 	help
