@@ -87,9 +87,7 @@ enum lom_mgmt_msg_func {
 	FUNC_GET_EVENTS           , /*08*/
 	FUNC_GET_POSTCODE         , /*09*/
 
-	FUNC_TEST_L2              ,
 	FUNC_TEST_L3              ,
-	FUNC_LAST = FUNC_TEST_L3  ,
 	FUNC_COUNT,
 };
 
