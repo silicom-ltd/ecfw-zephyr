@@ -24,6 +24,7 @@ static struct sys_ids g_sys_ids;
 
 /* LOM IPv4 address (network order). All-0xFF = not yet reported by the LOM. */
 static uint8_t g_lom_ip[LOM_IP_ADDR_LEN] = { 0xFF, 0xFF, 0xFF, 0xFF };
+K_MUTEX_DEFINE(lom_ip_mutex);
 
 uint16_t get_platform_id(void)
 {
@@ -64,28 +65,24 @@ void set_sys_ids(const uint8_t *pdata, uint8_t len)
 /*
  * Store the LOM IPv4 address reported over the (separately handled) LOM
  * management link. Writer runs in the lom_mgmt thread context while the
- * reader runs in the smchost thread, so guard the copy against tearing.
+ * reader runs in the smchost thread, so guard the copy with a mutex.
  */
 void set_lom_ip(const uint8_t *addr, uint8_t len)
 {
-    unsigned int key;
-
     if (len < LOM_IP_ADDR_LEN) {
         LOG_WRN("%s: short LOM IP length %u", __func__, len);
         return;
     }
 
-    key = irq_lock();
+    k_mutex_lock(&lom_ip_mutex, K_FOREVER);
     memcpy(g_lom_ip, addr, LOM_IP_ADDR_LEN);
-    irq_unlock(key);
+    k_mutex_unlock(&lom_ip_mutex);
 }
 
 /* Copy the 4 IPv4 octets to out[]; all-0xFF if the LOM has not reported one. */
 void get_lom_ip_addr(uint8_t *out)
 {
-    unsigned int key;
-
-    key = irq_lock();
+    k_mutex_lock(&lom_ip_mutex, K_FOREVER);
     memcpy(out, g_lom_ip, LOM_IP_ADDR_LEN);
-    irq_unlock(key);
+    k_mutex_unlock(&lom_ip_mutex);
 }
