@@ -178,6 +178,14 @@ static void get_sys_ids(void)
     }
 }
 
+static void get_lom_ip(void)
+{
+    uint8_t ip[LOM_IP_ADDR_LEN];
+
+    get_lom_ip_addr(ip);
+    send_to_host(ip, sizeof(ip));
+}
+
 static void read_platform_signature(void)
 {
 	uint8_t value[8];
@@ -218,6 +226,10 @@ void smchost_cmd_info_handler(uint8_t command)
     case SMCHOST_GET_SYS_IDS:
         LOG_DBG("%s, SMCHOST_GET_SYS_IDS", __func__);
         get_sys_ids();
+        break;
+    case SMCHOST_GET_LOM_IP:
+        LOG_DBG("%s, SMCHOST_GET_LOM_IP", __func__);
+        get_lom_ip();
         break;
 	default:
 		LOG_WRN("%s: command 0x%X without handler", __func__, command);

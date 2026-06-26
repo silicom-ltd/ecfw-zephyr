@@ -173,4 +173,15 @@ uint8_t get_bom_id (void);
 uint8_t get_board_id (void);
 struct sbl_version *get_sbl_version(void);
 
+/**
+    LOM IPv4 address, reported to the host on request.
+    Stored in network byte order (octet[0] = most significant).
+    Populated by the LOM management transport; defaults to the all-0xFF
+    sentinel (255.255.255.255) until the LOM reports an address.
+**/
+#define LOM_IP_ADDR_LEN 4
+
+void set_lom_ip (const uint8_t *addr, uint8_t len);
+void get_lom_ip_addr (uint8_t *out);
+
 #endif /* __AZBEACH_MEC172X_H__ */
