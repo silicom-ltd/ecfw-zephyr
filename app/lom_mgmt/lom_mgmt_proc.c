@@ -719,6 +719,7 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 	return 0;
 }
 
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 static int do_test_l3(uint8_t* req, uint8_t*res, struct func_ret_info* fri)
 {
 	int test_dlen = ((uint16_t)req[0] << 8) | req[1]; /* test_dlen include the timestamp */
@@ -741,6 +742,7 @@ static int do_test_l3(uint8_t* req, uint8_t*res, struct func_ret_info* fri)
 
 	return 0;
 }
+#endif
 
 static int do_get_acpi(uint8_t* data, struct func_ret_info* fri)
 {
@@ -791,9 +793,11 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_postcode(res_data, &fri);
 		//LOG_HEXDUMP_ERR(res_data, fri.data_size, "postcode DUMP");
 		break;
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	case FUNC_TEST_L3:
 		do_test_l3(req_data, res_data, &fri);
 		break;
+#endif
 	default:
 		fri.code = EC_RET_ERR_INV_FUNC;
 		LOG_ERR("Unknown func %d", task->req->func);

@@ -169,7 +169,9 @@ static int lom_mgmt_func_cap[FUNC_COUNT] = {
 	[FUNC_GET_POSTCODE] = 1,
 #endif
 
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	[FUNC_TEST_L3] = 1,
+#endif
 };
 
 static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx);
