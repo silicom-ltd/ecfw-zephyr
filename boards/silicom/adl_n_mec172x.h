@@ -174,14 +174,33 @@ uint8_t get_board_id (void);
 struct sbl_version *get_sbl_version(void);
 
 /**
-    LOM IPv4 address, reported to the host on request.
-    Stored in network byte order (octet[0] = most significant).
-    Populated by the LOM management transport; defaults to the all-0xFF
-    sentinel (255.255.255.255) until the LOM reports an address.
-**/
-#define LOM_IP_ADDR_LEN 4
+    LOM IP address (IPv4 or IPv6), reported to the host on request.
+    The address octets are stored in network byte order (octet[0] = most
+    significant). Populated by the (separately handled) LOM management
+    transport; defaults to the "not reported" sentinel until the LOM
+    reports an address.
 
-void set_lom_ip (const uint8_t *addr, uint8_t len);
-void get_lom_ip_addr (uint8_t *out);
+    The address is reported to the host as a self-describing, variable
+    length response:
+
+        byte 0   : family  - LOM_IP_FAMILY_V4 / _V6 / _NONE
+        byte 1   : prefix  - subnet mask as a CIDR bit count
+                             (0-32 for IPv4, 0-128 for IPv6)
+        byte 2.. : address - octets in network order, LOM_IPV4_ADDR_LEN
+                             (4) or LOM_IPV6_ADDR_LEN (16) bytes; absent
+                             when family is LOM_IP_FAMILY_NONE
+**/
+#define LOM_IP_FAMILY_NONE 0xFF
+#define LOM_IP_FAMILY_V4   0x04
+#define LOM_IP_FAMILY_V6   0x06
+
+#define LOM_IPV4_ADDR_LEN  4
+#define LOM_IPV6_ADDR_LEN  16
+
+/* Largest response: family(1) + prefix(1) + IPv6 address(16). */
+#define LOM_IP_RESP_MAX    (2 + LOM_IPV6_ADDR_LEN)
+
+void set_lom_ip (uint8_t family, uint8_t prefix, const uint8_t *addr, uint8_t len);
+uint8_t get_lom_ip_resp (uint8_t *out);
 
 #endif /* __AZBEACH_MEC172X_H__ */

@@ -22,8 +22,14 @@ LOG_MODULE_REGISTER(board, CONFIG_BOARD_LOG_LEVEL);
 static uint16_t plat_data = 0x2300;
 static struct sys_ids g_sys_ids;
 
-/* LOM IPv4 address (network order). All-0xFF = not yet reported by the LOM. */
-static uint8_t g_lom_ip[LOM_IP_ADDR_LEN] = { 0xFF, 0xFF, 0xFF, 0xFF };
+/* LOM IP address (network order). family == LOM_IP_FAMILY_NONE means the
+ * LOM has not reported an address yet.
+ */
+static struct {
+	uint8_t family;                   /* LOM_IP_FAMILY_V4 / _V6 / _NONE */
+	uint8_t prefix;                   /* CIDR netmask bits */
+	uint8_t addr[LOM_IPV6_ADDR_LEN];  /* octets, network order */
+} g_lom_ip = { .family = LOM_IP_FAMILY_NONE };
 K_MUTEX_DEFINE(lom_ip_mutex);
 
 uint16_t get_platform_id(void)
@@ -63,26 +69,75 @@ void set_sys_ids(const uint8_t *pdata, uint8_t len)
 }
 
 /*
- * Store the LOM IPv4 address reported over the (separately handled) LOM
+ * Store the LOM IP address reported over the (separately handled) LOM
  * management link. Writer runs in the lom_mgmt thread context while the
  * reader runs in the smchost thread, so guard the copy with a mutex.
+ *
+ * family selects IPv4 (4 octets) or IPv6 (16 octets); len must match the
+ * family. addr holds the octets in network order (addr[0] = most
+ * significant). prefix is the subnet mask as a CIDR bit count.
  */
-void set_lom_ip(const uint8_t *addr, uint8_t len)
+void set_lom_ip(uint8_t family, uint8_t prefix, const uint8_t *addr, uint8_t len)
 {
-    if (len < LOM_IP_ADDR_LEN) {
-        LOG_WRN("%s: short LOM IP length %u", __func__, len);
+    uint8_t expected;
+
+    switch (family) {
+    case LOM_IP_FAMILY_V4:
+        expected = LOM_IPV4_ADDR_LEN;
+        break;
+    case LOM_IP_FAMILY_V6:
+        expected = LOM_IPV6_ADDR_LEN;
+        break;
+    default:
+        LOG_WRN("%s: bad LOM IP family 0x%02X", __func__, family);
+        return;
+    }
+
+    if (len != expected) {
+        LOG_WRN("%s: LOM IP len %u != %u for family 0x%02X",
+                __func__, len, expected, family);
         return;
     }
 
     k_mutex_lock(&lom_ip_mutex, K_FOREVER);
-    memcpy(g_lom_ip, addr, LOM_IP_ADDR_LEN);
+    g_lom_ip.family = family;
+    g_lom_ip.prefix = prefix;
+    memset(g_lom_ip.addr, 0, sizeof(g_lom_ip.addr));
+    memcpy(g_lom_ip.addr, addr, len);
     k_mutex_unlock(&lom_ip_mutex);
 }
 
-/* Copy the 4 IPv4 octets to out[]; all-0xFF if the LOM has not reported one. */
-void get_lom_ip_addr(uint8_t *out)
+/*
+ * Build the host response into out[] (must be >= LOM_IP_RESP_MAX bytes):
+ * [family][prefix][address octets]. Returns the number of bytes written.
+ * When no address has been reported, only family + prefix are written
+ * (family == LOM_IP_FAMILY_NONE).
+ */
+uint8_t get_lom_ip_resp(uint8_t *out)
 {
+    uint8_t len = 0;
+    uint8_t addr_len;
+
     k_mutex_lock(&lom_ip_mutex, K_FOREVER);
-    memcpy(out, g_lom_ip, LOM_IP_ADDR_LEN);
+
+    switch (g_lom_ip.family) {
+    case LOM_IP_FAMILY_V4:
+        addr_len = LOM_IPV4_ADDR_LEN;
+        break;
+    case LOM_IP_FAMILY_V6:
+        addr_len = LOM_IPV6_ADDR_LEN;
+        break;
+    default:
+        addr_len = 0;
+        break;
+    }
+
+    out[len++] = g_lom_ip.family;
+    out[len++] = g_lom_ip.prefix;
+    memcpy(&out[len], g_lom_ip.addr, addr_len);
+    len += addr_len;
+
     k_mutex_unlock(&lom_ip_mutex);
+
+    return len;
 }

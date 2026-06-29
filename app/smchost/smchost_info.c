@@ -180,10 +180,10 @@ static void get_sys_ids(void)
 
 static void get_lom_ip(void)
 {
-    uint8_t ip[LOM_IP_ADDR_LEN];
+    uint8_t resp[LOM_IP_RESP_MAX];
+    uint8_t len = get_lom_ip_resp(resp);
 
-    get_lom_ip_addr(ip);
-    send_to_host(ip, sizeof(ip));
+    send_to_host(resp, len);
 }
 
 static void read_platform_signature(void)
