@@ -133,8 +133,8 @@ int fan_update(void)
 
 	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++) {
 
-		LOG_DBG("fan index %d, name: %s",i, emc230x_fan_dev[i]->name);
 		ret = fan_get_speed(emc230x_fan_dev[i], &val);
+		LOG_DBG("fan index %d, name: %s, speed: %d",i, emc230x_fan_dev[i]->name, val.val1);
 
 		if (ret != 0)
 			return ret;
@@ -144,9 +144,10 @@ int fan_update(void)
 
 		fdata = &hwmon_data->emc230x_fan[i];
 		fdata->fan_rpm = val.val1;
-
+#if 0
 		if ((fdata->fan_target != 0) && (fdata->fan_target <= 100))
 			fan_set_duty_cycle(i, (uint8_t)fdata->fan_target);
+#endif
 	}
 
 	return 0;
