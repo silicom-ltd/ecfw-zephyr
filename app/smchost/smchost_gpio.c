@@ -5,6 +5,7 @@
  */
 
 #include <zephyr/logging/log.h>
+#include "acpi_region.h"
 #include "board.h"
 #include "board_config.h"
 #include "smchost_commands.h"

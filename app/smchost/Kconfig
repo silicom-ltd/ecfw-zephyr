@@ -42,4 +42,11 @@ config SMCHOST_LOG_LEVEL
 	help
 	  Set log level for board system management controller host module
 	  main interface.
+
+config SMCHOST_THERMAL
+	bool "Thermal info via SMC"
+	default false
+	help
+	  Select for older thermal management via EC interface vs HWMON
+
 endmenu

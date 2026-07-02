@@ -818,6 +818,7 @@ void smc_generate_wake(uint8_t wake_reason)
 	gpio_write_pin(WAKE_SCI, 0);
 }
 
+#ifdef CONFIG_SMCHOST_THERMAL
 void smc_update_thermal_sensor(enum acpi_thrm_sens_idx idx, int16_t temp)
 {
 	switch (idx) {
@@ -919,6 +920,7 @@ void smc_update_therm_trip_status(uint16_t status)
 		enqueue_sci(SCI_THERMTRIP);
 	}
 }
+#endif /* CONFIG_SMCHOST_THERMAL */
 
 bool smc_is_acpi_offset_write_permitted(uint8_t offset)
 {
