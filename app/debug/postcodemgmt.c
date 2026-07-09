@@ -34,7 +34,7 @@ static uint8_t led_cntr;
 /* Port80 display format */
 #define WORD_FROM_PORTS(p81, p80) ((p81 << 8) | p80)
 
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_POSTCODE_MONITOR_SUPPORT
 static postcode_disp_event_handler_t postcode_disp_event_handler;
 #endif
 
@@ -121,7 +121,7 @@ static void update_error_leds(void)
 }
 #endif
 
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_POSTCODE_MONITOR_SUPPORT
 int postcode_add_disp_event_handler(postcode_disp_event_handler_t handler)
 {
         __ASSERT(handler, "Handler shouldn't be NULL");
@@ -158,7 +158,7 @@ void postcode_thread(void *p1, void *p2, void *p3)
 			port80_display_on();
 			disp_word = WORD_FROM_PORTS(port81_code, port80_code);
 			port80_display_word(disp_word);
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_POSTCODE_MONITOR_SUPPORT
                         if (postcode_disp_event_handler) {
                                 postcode_disp_event_handler(disp_word);
                         }
@@ -176,7 +176,7 @@ void postcode_thread(void *p1, void *p2, void *p3)
 		else {
 			disp_word = WORD_FROM_PORTS(port81_code, port80_code);
 			port80_display_word(disp_word);
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_POSTCODE_MONITOR_SUPPORT
                         if (postcode_disp_event_handler) {
                                 postcode_disp_event_handler(disp_word);
                         }

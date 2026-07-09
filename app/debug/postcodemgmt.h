@@ -15,7 +15,7 @@
 #define POSTCODE_PORT80    0
 #define POSTCODE_PORT81    1
 
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_POSTCODE_MONITOR_SUPPORT
 typedef void (*postcode_disp_event_handler_t)(uint16_t code);
 #endif
 
@@ -38,7 +38,7 @@ void postcode_thread(void *p1, void *p2, void *p3);
 void update_error(uint8_t errcode);
 
 
-#ifdef CONFIG_POSTCODE_MONITOR
+#ifdef CONFIG_POSTCODE_MONITOR_SUPPORT
 /**
  * @brief Add a post-code display event handler
  *
