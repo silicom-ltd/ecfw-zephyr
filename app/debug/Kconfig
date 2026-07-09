@@ -12,6 +12,16 @@ config POSTCODE_MANAGEMENT
 	  Indicate if BIOS debug port 80 block is enabled and the values
 	  are intercepted and display in 7-segment display array.
 
+config POSTCODE_MONITOR_SUPPORT
+	bool "Enable postcode monitoring and handler registration framework"
+	depends on POSTCODE_MANAGEMENT
+	default n
+	help
+	  Say Y here to enable the postcode monitoring subsystem. This enables
+	  an internal notifier chain / callback framework allowing external
+	  modules (e.g., LOM-MGMT module) to register custom handlers to
+	  receive and display host postcodes in real-time.
+
 config POSTCODE_LOG_LEVEL
 	int "Debug Port80 log level"
 	depends on LOG
