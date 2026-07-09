@@ -24,6 +24,13 @@ config POWER_SEQUENCE_ERROR_LED
 	  Indicate if EC supports LED notifications for errors during power
 	  sequencing.
 
+config TRACK_ALL_ACPI_SLEEP_SIGNALS
+       bool "If tracking ACPI sleep signals when do power state changing"
+       default n
+       help
+         If enabled, only trigger power state transitions after receiving
+	 all S3, S4, and S5 signals.
+
 config EC_DELAYED_BOOT
 	int "Enable EC FW delayed boot"
 	default 0
