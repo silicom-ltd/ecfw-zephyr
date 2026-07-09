@@ -64,6 +64,20 @@ enum sensor_type {
 };
 #endif
 
+enum sensor_types {
+	hwmon_chip,
+	hwmon_temp,
+	hwmon_in,
+	hwmon_curr,
+	hwmon_power,
+	hwmon_energy,
+	hwmon_humidity,
+	hwmon_fan,
+	hwmon_pwm,
+	hwmon_intrusion,
+	hwmon_max,
+};
+
 struct hwmon_sdata {
 	uint16_t mon_in;	/* 0x0 */
 	uint16_t mon_max;	/* 0x2 */
@@ -107,7 +121,7 @@ struct hwmon_pdata {
 struct hwmon_sram {
 	uint8_t rsvd[0x100];
 	struct hwmon_sdata mon[16];
-	struct hwmon_peci peci;	
+	struct hwmon_peci peci;
 	struct hwmon_fdata fan[4];
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
 } __attribute__ ((packed, aligned(32)));
