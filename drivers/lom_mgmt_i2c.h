@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef __DRIVERS_I2C_TARGET_LOM_MGMT_H__
 #define __DRIVERS_I2C_TARGET_LOM_MGMT_H__
 
@@ -5,16 +11,18 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/net/net_ip.h>
 
-//#define LOM_MGMT_DBG
-
-#define REQ_DLEN_MAX 64
+#define REQ_DLEN_MAX 28
 #define RES_DLEN_MAX 2048
 
 #define REQ_HEAD_LEN 4
 #define RES_HEAD_LEN 3
 
-#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN)
+#define REQ_BUFF_SIZE (REQ_DLEN_MAX + REQ_HEAD_LEN) /* Cannot exceed 32 bytes */
 #define RES_BUFF_SIZE (RES_DLEN_MAX + RES_HEAD_LEN)
+
+#if REQ_BUFF_SIZE > 32
+#error "Request buffer size cannot exceed 32 bytes"
+#endif
 
 struct lom_mgmt_req {
 	uint16_t size;
@@ -31,28 +39,17 @@ struct lom_mgmt_req {
 	};
 };
 
-#define RES_META_F_TIMESTAMP 0x08;
+#define RES_META_F_TIMESTAMP 0x08
+
+#define RES_META_DLEN_NTOH(meta) (ntohs(meta) & 0xFFF)
+#define RES_META_FLAG_NTOH(meta) (ntohs(meta) >> 12)
 
 struct lom_mgmt_res {
 	uint16_t size;
 	union {
 		struct {
 			uint8_t  code;
-			union {
-				struct {
-#if __BYTE_ORDER == __ORDER_LITTLE_ENDIAN__
-					uint16_t dlen_or_error:12;
-					uint16_t rsvd:3;
-					uint16_t has_timestamp:1;
-#else
-					uint16_t has_timestamp:1;
-					uint16_t rsvd:3;
-					uint16_t dlen_or_error:12;
-#endif
-				};
-				uint16_t meta;
-			};
-
+			uint16_t meta;
 			uint8_t  data[];
 		} __attribute__((__packed__));
 
@@ -69,20 +66,18 @@ struct lom_mgmt_i2c_callbacks {
 	lom_mgmt_i2c_cb_cancel_t  send_cancel;
 };
 
-int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code, uint16_t dat_size, uint8_t flag);
+int lom_mgmt_i2c_response_ready(const struct device *dev, uint8_t code,
+	uint16_t dlen_or_sys_error, uint8_t flag);
 int lom_mgmt_i2c_set_callbacks(const struct device *dev, struct lom_mgmt_i2c_callbacks *cb);
-int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t mask, uint8_t avail);
+int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t bit, uint8_t val);
 
-#define AVAIL_RES_BIT_POSTCODE 7
-#define AVAIL_RES_BIT_EVENT    6
+#define AVAIL_RES_POSTCODE     7
+#define AVAIL_RES_EVENT        6
 
-#define AVAIL_RES_MASK_POSTCODE (1 << AVAIL_RES_BIT_POSTCODE)
-#define AVAIL_RES_MASK_EVENT    (1 << AVAIL_RES_BIT_EVENT)
-
-#define AVAIL_RES_BIT_VAL_POSTCODE(val) (((val) & 0x1) << AVAIL_RES_BIT_POSTCODE)
-#define AVAIL_RES_BIT_VAL_EVENT(val) (((val) & 0x1) << AVAIL_RES_BIT_EVENT)
+//#define LOM_MGMT_PROTO_STRESS_TESTING
 
 enum lom_mgmt_msg_func {
+	FUNC_INV                  = 0,
 	FUNC_FIRST                = 1,
 	FUNC_GET_ID               = FUNC_FIRST,
 	FUNC_FINI                 , /*02*/
@@ -93,21 +88,16 @@ enum lom_mgmt_msg_func {
 	FUNC_GET_FAULT_CODE       , /*07*/
 	FUNC_GET_EVENTS           , /*08*/
 	FUNC_GET_POSTCODE         , /*09*/
-	FUNC_GET_BIOS_VER         , /*10*/
 
-	FUNC_TEST_L2              , /*11*/
-	FUNC_TEST_L3              , /*12*/
-#ifdef LOM_MGMT_DBG
-	FUNC_DEBUG                , /*13*/
-	FUNC_LAST                 = FUNC_DEBUG,
-#else
-	FUNC_LAST                 = FUNC_TEST_L3,
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
+	FUNC_TEST_L3              ,
 #endif
+	FUNC_COUNT,
 };
 
 enum lom_mgmt_power_ctrl_act {
 	PWC_UP = 1,
-	PWC_SHUTDOWN ,
+	PWC_SHUTDOWN,
 	PWC_HARD_RESET,
 	PWC_FORCE_DOWN,
 };
@@ -125,7 +115,5 @@ enum lom_mgmt_i2c_stat {
 	EC_RET_ERR_IN_PROCESS,
 	EC_RET_ERR_FAIL,
 };
-
-
 
 #endif /* __DRIVERS_I2C_TARGET_LOM_MGMT_H__ */
