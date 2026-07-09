@@ -219,6 +219,7 @@
 //		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
 		pinctrl-names = "default";
+		host-frus = <&fru>;
 	};
 };
 
