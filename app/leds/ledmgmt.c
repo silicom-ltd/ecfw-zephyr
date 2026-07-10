@@ -42,9 +42,10 @@ static bool led_update;
 /*
  * Front-panel power LED selection.
  *
- * By default the top-left RGB LED (pwmmcled0, PWM4/5/6) is the power LED and
- * carries the breathing/solid amber power-state indication. The Netgate SKU
- * instead uses the bottom-left RGB LED (pwmmcled2, PWM2/9/3). Everything
+ * The front panel has three RGB LEDs stacked vertically (top, middle,
+ * bottom). By default the top RGB LED (pwmmcled0, PWM4/5/6) is the power LED
+ * and carries the breathing/solid amber power-state indication. The Netgate
+ * SKU instead uses the bottom RGB LED (pwmmcled2, PWM2/9/3). Everything
  * downstream drives whichever node landed in power_led.
  *
  * The SKU comes from the ONIE "TlvInfo" FRU. The FRU I2C bus is torn down at
@@ -52,8 +53,8 @@ static bool led_update;
  * here; the board caches the whole FRU during board_init() and we read that
  * cache through board_fru_data().
  *
- * NOTE: on this (adl_n) devicetree the physical positions map as
- *   pwmmcled0 -> top-left, pwmmcled1 -> top-right, pwmmcled2 -> bottom-left.
+ * NOTE: on this (adl_n) devicetree the vertical positions map as
+ *   pwmmcled0 -> top, pwmmcled1 -> middle, pwmmcled2 -> bottom.
  * The node<->position mapping should be confirmed against the Netgate/Ibiza
  * schematic. If pwmmcled2 is not the physical bottom LED, only this one line
  * (POWER_LED_NETGATE) needs to change.
