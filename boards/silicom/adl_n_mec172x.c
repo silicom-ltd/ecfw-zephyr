@@ -770,12 +770,24 @@ const uint8_t *board_fru_data(uint16_t *len)
 	return fru_cache_len ? fru_cache : NULL;
 }
 
-/* Read + validate the FRU into fru_cache. Call while the FRU bus is still up. */
+/*
+ * Read the whole FRU into fru_cache. Call while the FRU bus is still up.
+ *
+ * The FRU is a 512-byte EEPROM split across two I2C addresses: 0x56 holds
+ * bytes 0..255 and 0x57 holds bytes 256..511. The at2x driver pages
+ * automatically (offset >> address-width is added to the base I2C address), so
+ * reading offsets 0..511 through the `fru` node transparently spans 0x56+0x57.
+ *
+ * We read the FULL 512 bytes unconditionally rather than stopping at the ONIE
+ * header's TotalLength: the Silicom custom TLVs (sys manufacturer/SKU, 0x51+)
+ * can live in the second page, beyond what TotalLength covers. Consumers walk
+ * the whole cached image.
+ */
 static void cache_fru(void)
 {
 	static const uint8_t fru_hdr_title[] = "TlvInfo";
 	const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
-	uint16_t data_len, off;
+	uint16_t off;
 	int ret;
 
 	fru_cache_len = 0;
@@ -785,10 +797,18 @@ static void cache_fru(void)
 		return;
 	}
 
-	ret = eeprom_read(fru, 0, fru_cache, FRU_HDR_SIZE);
-	if (ret < 0) {
-		LOG_ERR("%s: FRU header read failed (%d)", __func__, ret);
-		return;
+	/* Read all 512 bytes (both 0x56 and 0x57 pages) in bus-friendly chunks. */
+	for (off = 0; off < FRU_CACHE_SIZE; ) {
+		uint16_t remains = FRU_CACHE_SIZE - off;
+		uint8_t chunk = remains > FRU_READ_MAX ? FRU_READ_MAX : remains;
+
+		ret = eeprom_read(fru, off, &fru_cache[off], chunk);
+		if (ret < 0) {
+			LOG_ERR("%s: FRU read failed at off %u (%d)", __func__,
+				off, ret);
+			return;
+		}
+		off += chunk;
 	}
 
 	if (memcmp(fru_cache, fru_hdr_title, 8)) {
@@ -796,28 +816,13 @@ static void cache_fru(void)
 		return;
 	}
 
-	data_len = (fru_cache[9] << 8) | fru_cache[10];
-	if ((uint32_t)FRU_HDR_SIZE + data_len > FRU_CACHE_SIZE) {
-		LOG_WRN("%s: FRU data (%u) exceeds cache; truncating", __func__,
-			data_len);
-		data_len = FRU_CACHE_SIZE - FRU_HDR_SIZE;
-	}
-
-	off = FRU_HDR_SIZE;
-	for (uint16_t remains = data_len; remains > 0; ) {
-		uint8_t chunk = remains > FRU_READ_MAX ? FRU_READ_MAX : remains;
-
-		ret = eeprom_read(fru, off, &fru_cache[off], chunk);
-		if (ret < 0) {
-			LOG_ERR("%s: FRU body read failed (%d)", __func__, ret);
-			return;
-		}
-		off += chunk;
-		remains -= chunk;
-	}
-
-	fru_cache_len = FRU_HDR_SIZE + data_len;
+	fru_cache_len = FRU_CACHE_SIZE;
 	LOG_INF("%s: cached %u FRU bytes", __func__, fru_cache_len);
+
+	/* TEMP DEBUG: dump the full combined image so we can confirm the TLV
+	 * layout and which field carries the Netgate SKU. Remove before merge.
+	 */
+	LOG_HEXDUMP_INF(fru_cache, FRU_CACHE_SIZE, "FRU raw (0x56+0x57)");
 }
 
 int board_init(void)
