@@ -21,6 +21,7 @@ LOG_MODULE_REGISTER(board, CONFIG_BOARD_LOG_LEVEL);
 
 static uint16_t plat_data = 0x2400;
 static struct sys_ids g_sys_ids;
+static K_MUTEX_DEFINE(g_sys_ids_mutex);
 
 uint16_t get_platform_id(void)
 {
@@ -29,15 +30,29 @@ uint16_t get_platform_id(void)
 
 uint8_t get_bom_id (void)
 {
-    return g_sys_ids.bom_id;
+    uint8_t bom_id = 0;
+    if (k_mutex_lock(&g_sys_ids_mutex, K_MSEC(500)) != 0) {
+        LOG_ERR("%s: mutex timeout", __func__);
+        return bom_id;
+    }
+    bom_id = g_sys_ids.bom_id;
+    k_mutex_unlock(&g_sys_ids_mutex);
+    return bom_id;
 }
 
 uint8_t get_board_id (void)
 {
-    return g_sys_ids.board_id;
+    uint8_t brd_id = 0;
+    if (k_mutex_lock(&g_sys_ids_mutex, K_MSEC(500)) != 0) {
+        LOG_ERR("%s: mutex timeout", __func__);
+        return brd_id;
+    }
+    brd_id = g_sys_ids.board_id;
+    k_mutex_unlock(&g_sys_ids_mutex);
+    return brd_id;
 }
 
-struct sbl_version *get_sbl_version(void)
+void get_sbl_version(struct sbl_version *sbl)
 {
     /*
       major_version;
@@ -50,10 +65,20 @@ struct sbl_version *get_sbl_version(void)
         //       [7]dirty
     */
 
-    return &g_sys_ids.sbl;
+    if (k_mutex_lock(&g_sys_ids_mutex, K_MSEC(500)) != 0) {
+        LOG_ERR("%s: mutex timeout", __func__);
+        return;
+    }
+    *sbl = g_sys_ids.sbl;
+    k_mutex_unlock(&g_sys_ids_mutex);
 }
 
 void set_sys_ids(const uint8_t *pdata, uint8_t len)
 {
+    if (k_mutex_lock(&g_sys_ids_mutex, K_MSEC(500)) != 0) {
+        LOG_ERR("%s: mutex timeout", __func__);
+        return;
+    }
     memcpy(&g_sys_ids, pdata, len);
+    k_mutex_unlock(&g_sys_ids_mutex);
 }
