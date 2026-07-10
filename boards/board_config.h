@@ -44,6 +44,20 @@ extern uint8_t boot_mode_maf;
 int board_init(void);
 
 /**
+ * @brief Get the cached ONIE "TlvInfo" FRU image.
+ *
+ * The FRU I2C bus is torn down at the end of board_init(), so the FRU can only
+ * be read during board_init(). Boards that need runtime FRU access cache the
+ * whole image there and expose it here; consumers (LED SKU select, LOM mgmt)
+ * read from the cache instead of the bus. The default (weak) implementation
+ * reports no FRU.
+ *
+ * @param len  Optional; set to the number of valid cached bytes (0 if none).
+ * @retval Pointer to the cached FRU bytes, or NULL if no FRU was cached.
+ */
+const uint8_t *board_fru_data(uint16_t *len);
+
+/**
  * @brief Perform platform configuration during suspend depending on the board.
  *
  * Note: Allows to optimize power consumption while the system is in S3/S4/S5.
