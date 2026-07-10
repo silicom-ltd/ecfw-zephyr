@@ -773,14 +773,16 @@ const uint8_t *board_fru_data(uint16_t *len)
 /*
  * Read the whole FRU into fru_cache. Call while the FRU bus is still up.
  *
- * The FRU is a 512-byte EEPROM split across two I2C addresses: 0x56 holds
- * bytes 0..255 and 0x57 holds bytes 256..511. The at2x driver pages
- * automatically (offset >> address-width is added to the base I2C address), so
- * reading offsets 0..511 through the `fru` node transparently spans 0x56+0x57.
+ * The FRU is a single 512-byte EEPROM at I2C address 0x56. It is word-addressed
+ * with an 8-bit offset, so the high (9th) address bit is carried in the I2C
+ * address LSB (block select): the lower 256 bytes are accessed at 0x56 and the
+ * upper 256 at 0x57. The at2x driver handles this from the one `fru` node with
+ * address-width = 8 -- it adds (offset >> 8) to the base I2C address -- so
+ * reading offsets 0..511 through the node spans the whole device.
  *
  * We read the FULL 512 bytes unconditionally rather than stopping at the ONIE
  * header's TotalLength: the Silicom custom TLVs (sys manufacturer/SKU, 0x51+)
- * can live in the second page, beyond what TotalLength covers. Consumers walk
+ * can live in the upper half, beyond what TotalLength covers. Consumers walk
  * the whole cached image.
  */
 static void cache_fru(void)
