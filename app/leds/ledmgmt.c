@@ -48,10 +48,9 @@ static bool led_update;
  * SKU instead uses the bottom RGB LED (pwmmcled2, PWM2/9/3). Everything
  * downstream drives whichever node landed in power_led.
  *
- * The SKU comes from the ONIE "TlvInfo" FRU. The FRU I2C bus is torn down at
- * the end of board_init() (before any task runs), so it cannot be read live
- * here; the board caches the whole FRU during board_init() and we read that
- * cache through board_fru_data().
+ * The SKU comes from the ONIE "TlvInfo" FRU. The board caches the whole FRU in
+ * board_init() as the single source of truth; we read that cache through
+ * board_fru_data() rather than doing our own I2C read.
  *
  * Panel layout is confirmed from the Netgate front panel: on Netgate the power
  * LED is the bottom of the three; on standard Ibiza it is the top.

@@ -46,11 +46,11 @@ int board_init(void);
 /**
  * @brief Get the cached ONIE "TlvInfo" FRU image.
  *
- * The FRU I2C bus is torn down at the end of board_init(), so the FRU can only
- * be read during board_init(). Boards that need runtime FRU access cache the
- * whole image there and expose it here; consumers (LED SKU select, LOM mgmt)
- * read from the cache instead of the bus. The default (weak) implementation
- * reports no FRU.
+ * Boards cache the whole FRU image in board_init() and expose it here so all
+ * consumers (LED SKU select, LOM mgmt) share one source of truth instead of
+ * each doing its own I2C reads. (This also stays correct if the intended
+ * board_init() FRU-bus disable, currently a no-op under CONFIG_PINCTRL, is
+ * ever made real.) The default (weak) implementation reports no FRU.
  *
  * @param len  Optional; set to the number of valid cached bytes (0 if none).
  * @retval Pointer to the cached FRU bytes, or NULL if no FRU was cached.
