@@ -171,7 +171,7 @@ struct sys_ids {
 void set_sys_ids (const uint8_t *pdata, uint8_t len);
 uint8_t get_bom_id (void);
 uint8_t get_board_id (void);
-struct sbl_version *get_sbl_version(void);
+void get_sbl_version(struct sbl_version *sbl);
 
 /**
     LOM IP address (IPv4 or IPv6), reported to the host on request.
