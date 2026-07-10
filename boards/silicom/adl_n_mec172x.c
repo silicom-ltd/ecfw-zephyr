@@ -744,11 +744,16 @@ static const struct pinctrl_dev_config *zephyr_user = PINCTRL_DT_DEV_CONFIG_GET(
 /*
  * Cached ONIE "TlvInfo" FRU image.
  *
- * The FRU sits on the SMBus whose pins (EC_GPIO_007/010) are reconfigured to
- * inputs at the end of board_init() to disable the bus, so no runtime task can
- * read the FRU directly. We read the whole image once here, while the bus is
- * still up, and hand it out via board_fru_data(). Consumers (LED SKU select,
- * and LOM mgmt later) parse this cache instead of touching the bus.
+ * Read once here so all consumers (LED SKU select, and LOM mgmt later) share a
+ * single source of truth instead of each doing its own repeated chunked I2C
+ * reads of the FRU.
+ *
+ * NOTE: board_init() ends with gpio_force_configure_pin(EC_GPIO_007/010,
+ * GPIO_INPUT), whose intent is to disable the FRU SMBus. That call is
+ * currently a no-op under CONFIG_PINCTRL (see gpio_mec172x.c), so the bus in
+ * fact stays up and a live read still works today (this is why LOM mgmt's live
+ * read works). Caching here keeps the FRU readable regardless: if that disable
+ * is ever made real, runtime readers would otherwise break.
  */
 #define FRU_HDR_SIZE	11		/* "TlvInfo\0" + version + 2-byte length */
 #define FRU_READ_MAX	64		/* per-transfer cap; keep CPU hold short */
@@ -887,9 +892,10 @@ int board_init(void)
 			read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7], read_data[8],
 			read_data[9], read_data[10], read_data[11], read_data[12], read_data[13], read_data[14], read_data[15]);
 	}
-	/* Cache the FRU now, while its SMBus is still enabled (the bus pins are
-	 * turned to inputs further down to disable the bus). Consumers read the
-	 * cache via board_fru_data().
+	/* Cache the FRU here, early, as the single source of truth for all
+	 * consumers, read via board_fru_data(). (The bus-disable further down is
+	 * currently a no-op under CONFIG_PINCTRL, but caching keeps this correct
+	 * if that disable is ever made real.)
 	 */
 	cache_fru();
 #if 0
