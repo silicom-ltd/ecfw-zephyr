@@ -88,6 +88,7 @@ enum lom_mgmt_msg_func {
 	FUNC_GET_FAULT_CODE       , /*07*/
 	FUNC_GET_EVENTS           , /*08*/
 	FUNC_GET_POSTCODE         , /*09*/
+	FUNC_REPORT_LOM_IP        , /*10*/
 
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	FUNC_TEST_L3              ,

@@ -169,6 +169,8 @@ static int lom_mgmt_func_cap[FUNC_COUNT] = {
 	[FUNC_GET_POSTCODE] = 1,
 #endif
 
+	[FUNC_REPORT_LOM_IP] = 1,
+
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	[FUNC_TEST_L3] = 1,
 #endif
