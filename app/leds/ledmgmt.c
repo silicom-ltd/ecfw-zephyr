@@ -53,11 +53,15 @@ static bool led_update;
  * here; the board caches the whole FRU during board_init() and we read that
  * cache through board_fru_data().
  *
- * NOTE: on this (adl_n) devicetree the vertical positions map as
- *   pwmmcled0 -> top, pwmmcled1 -> middle, pwmmcled2 -> bottom.
- * The node<->position mapping should be confirmed against the Netgate/Ibiza
- * schematic. If pwmmcled2 is not the physical bottom LED, only this one line
- * (POWER_LED_NETGATE) needs to change.
+ * Panel layout is confirmed from the Netgate front panel: on Netgate the power
+ * LED is the bottom of the three; on standard Ibiza it is the top.
+ *
+ * The DT PWM channels are pwmmcled0 -> PWM4/5/6, pwmmcled1 -> PWM10/7/8,
+ * pwmmcled2 -> PWM2/9/3. We assume the node index runs top->bottom
+ * (pwmmcled0 = top, pwmmcled2 = bottom); this node<->position wiring has not
+ * yet been bench-verified against the Ibiza/Netgate front-panel schematic. If
+ * pwmmcled2 is not the physical bottom LED, only POWER_LED_NETGATE (and
+ * POWER_LED_DEFAULT) need to change.
  */
 #define POWER_LED_DEFAULT	DT_NODELABEL(pwmmcled0)
 #define POWER_LED_NETGATE	DT_NODELABEL(pwmmcled2)
