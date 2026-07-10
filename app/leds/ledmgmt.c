@@ -7,6 +7,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/drivers/led.h>
+#include <string.h>
 #include "ledmgmt.h"
 #include "led_mec172x.h"
 #include "board_config.h"
@@ -37,6 +38,116 @@ void led_request()
 #else
 static bool led_update;
 #endif
+
+/*
+ * Front-panel power LED selection.
+ *
+ * By default the top-left RGB LED (pwmmcled0, PWM4/5/6) is the power LED and
+ * carries the breathing/solid amber power-state indication. The Netgate SKU
+ * instead uses the bottom-left RGB LED (pwmmcled2, PWM2/9/3). Everything
+ * downstream drives whichever node landed in power_led.
+ *
+ * The SKU comes from the ONIE "TlvInfo" FRU. The FRU I2C bus is torn down at
+ * the end of board_init() (before any task runs), so it cannot be read live
+ * here; the board caches the whole FRU during board_init() and we read that
+ * cache through board_fru_data().
+ *
+ * NOTE: on this (adl_n) devicetree the physical positions map as
+ *   pwmmcled0 -> top-left, pwmmcled1 -> top-right, pwmmcled2 -> bottom-left.
+ * The node<->position mapping should be confirmed against the Netgate/Ibiza
+ * schematic. If pwmmcled2 is not the physical bottom LED, only this one line
+ * (POWER_LED_NETGATE) needs to change.
+ */
+#define POWER_LED_DEFAULT	DT_NODELABEL(pwmmcled0)
+#define POWER_LED_NETGATE	DT_NODELABEL(pwmmcled2)
+
+static const struct device *power_led;
+
+/* ONIE "TlvInfo" FRU header: "TlvInfo\0" magic + version + 2-byte length. */
+#define FRU_HDR_SIZE		11
+#define FRU_TLV_SYS_MFG		0x51	/* Silicom sys-manufacturer TLV type */
+#define FRU_MFG_NETGATE		"Netgate"
+
+/*
+ * Weak fallback: boards that cache the FRU in board_init() provide a strong
+ * board_fru_data(); everything else reports "no FRU" so LED selection keeps
+ * legacy (top LED) behavior.
+ */
+__attribute__((weak)) const uint8_t *board_fru_data(uint16_t *len)
+{
+	if (len) {
+		*len = 0;
+	}
+	return NULL;
+}
+
+/*
+ * Return true if the cached FRU's sys-manufacturer TLV (type 0x51) identifies a
+ * Netgate SKU. On any missing/parse failure we fall back to false (default top
+ * LED) so an unreadable or non-Netgate FRU keeps legacy behavior.
+ */
+static bool fru_is_netgate(void)
+{
+	static const uint8_t fru_hdr_title[] = "TlvInfo";
+	uint16_t fru_len = 0;
+	const uint8_t *fru = board_fru_data(&fru_len);
+
+	if (fru == NULL || fru_len < FRU_HDR_SIZE) {
+		LOG_WRN("FRU unavailable; using default power LED");
+		return false;
+	}
+
+	if (memcmp(fru, fru_hdr_title, 8)) {
+		LOG_WRN("Unsupported FRU format; using default power LED");
+		return false;
+	}
+
+	uint16_t data_len = (fru[9] << 8) | fru[10];
+	uint16_t off = FRU_HDR_SIZE;
+	uint16_t end = FRU_HDR_SIZE + data_len;
+
+	if (end > fru_len) {
+		end = fru_len;		/* clamp to what was actually cached */
+	}
+
+	/* Walk the [type][len][value] records looking for sys-manufacturer. */
+	while (off + 2 <= end) {
+		uint8_t type = fru[off];
+		uint8_t len = fru[off + 1];
+
+		off += 2;
+
+		if (off + len > end) {
+			break;
+		}
+
+		if (type == FRU_TLV_SYS_MFG) {
+			char val[32];
+			uint8_t rd = len < sizeof(val) - 1 ? len : sizeof(val) - 1;
+
+			memcpy(val, &fru[off], rd);
+			val[rd] = '\0';
+			LOG_INF("FRU sys-manufacturer: %s", val);
+			return strstr(val, FRU_MFG_NETGATE) != NULL;
+		}
+
+		off += len;
+	}
+
+	return false;
+}
+
+/* Resolve which RGB node is the power LED. Called once at task startup. */
+static void select_power_led(void)
+{
+	if (fru_is_netgate()) {
+		power_led = DEVICE_DT_GET(POWER_LED_NETGATE);
+		LOG_INF("Netgate SKU: power LED = bottom (pwmmcled2)");
+	} else {
+		power_led = DEVICE_DT_GET(POWER_LED_DEFAULT);
+		LOG_INF("Default SKU: power LED = top (pwmmcled0)");
+	}
+}
 
 #if 0
 struct led_device *led_dev_tbl;
@@ -257,11 +368,17 @@ static void manage_local_leds(void)
 {
 	static uint16_t level = 0;
 	static uint16_t countup = 1;
-	static const struct device *led_pwm_mc = DEVICE_DT_GET(DT_NODELABEL(pwmmcled0));
+	const struct device *led_pwm_mc = power_led;
 	int err;
 	static int color_choice = 0;
 	static int loops = 0;
 	uint8_t colors[3];
+
+	/* power_led is resolved before the task loop starts; guard anyway. */
+	if (led_pwm_mc == NULL) {
+		return;
+	}
+
 	if (pwrseq_system_state() != SYSTEM_S0_STATE) {
 		colors[0] = color_table[color_choice] >> 16;
 		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
@@ -306,6 +423,12 @@ void ledmgmt_thread(void *p1, void *p2, void *p3)
 
 	LOG_INF("LEDMGMT thread starting");
 	init_leds();
+
+	/*
+	 * Requirement order: all LEDs are already off after init_leds(); now
+	 * read the FRU to pick the power LED before any breathing starts.
+	 */
+	select_power_led();
 
 #ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 	k_sem_init(&led_lock, 0, 1);

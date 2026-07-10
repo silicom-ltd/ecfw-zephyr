@@ -17,6 +17,7 @@
 #include <zephyr/drivers/espi.h>
 #include <zephyr/drivers/pinctrl.h>
 #include <zephyr/sys/util.h>
+#include <string.h>
 #include "i2c_hub.h"
 #include <zephyr/logging/log.h>
 #include "gpio_ec.h"
@@ -740,6 +741,80 @@ void board_post(void)
 PINCTRL_DT_DEFINE(ZEPHYR_USER);
 static const struct pinctrl_dev_config *zephyr_user = PINCTRL_DT_DEV_CONFIG_GET(ZEPHYR_USER);
 
+/*
+ * Cached ONIE "TlvInfo" FRU image.
+ *
+ * The FRU sits on the SMBus whose pins (EC_GPIO_007/010) are reconfigured to
+ * inputs at the end of board_init() to disable the bus, so no runtime task can
+ * read the FRU directly. We read the whole image once here, while the bus is
+ * still up, and hand it out via board_fru_data(). Consumers (LED SKU select,
+ * and LOM mgmt later) parse this cache instead of touching the bus.
+ */
+#define FRU_HDR_SIZE	11		/* "TlvInfo\0" + version + 2-byte length */
+#define FRU_READ_MAX	64		/* per-transfer cap; keep CPU hold short */
+#define FRU_CACHE_SIZE	512		/* full FRU EEPROM size (see DT: fru) */
+
+static uint8_t fru_cache[FRU_CACHE_SIZE];
+static uint16_t fru_cache_len;		/* 0 => FRU absent / unreadable */
+
+const uint8_t *board_fru_data(uint16_t *len)
+{
+	if (len) {
+		*len = fru_cache_len;
+	}
+	return fru_cache_len ? fru_cache : NULL;
+}
+
+/* Read + validate the FRU into fru_cache. Call while the FRU bus is still up. */
+static void cache_fru(void)
+{
+	static const uint8_t fru_hdr_title[] = "TlvInfo";
+	const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
+	uint16_t data_len, off;
+	int ret;
+
+	fru_cache_len = 0;
+
+	if (!device_is_ready(fru)) {
+		LOG_ERR("%s: FRU not ready", __func__);
+		return;
+	}
+
+	ret = eeprom_read(fru, 0, fru_cache, FRU_HDR_SIZE);
+	if (ret < 0) {
+		LOG_ERR("%s: FRU header read failed (%d)", __func__, ret);
+		return;
+	}
+
+	if (memcmp(fru_cache, fru_hdr_title, 8)) {
+		LOG_ERR("%s: unsupported FRU format", __func__);
+		return;
+	}
+
+	data_len = (fru_cache[9] << 8) | fru_cache[10];
+	if ((uint32_t)FRU_HDR_SIZE + data_len > FRU_CACHE_SIZE) {
+		LOG_WRN("%s: FRU data (%u) exceeds cache; truncating", __func__,
+			data_len);
+		data_len = FRU_CACHE_SIZE - FRU_HDR_SIZE;
+	}
+
+	off = FRU_HDR_SIZE;
+	for (uint16_t remains = data_len; remains > 0; ) {
+		uint8_t chunk = remains > FRU_READ_MAX ? FRU_READ_MAX : remains;
+
+		ret = eeprom_read(fru, off, &fru_cache[off], chunk);
+		if (ret < 0) {
+			LOG_ERR("%s: FRU body read failed (%d)", __func__, ret);
+			return;
+		}
+		off += chunk;
+		remains -= chunk;
+	}
+
+	fru_cache_len = FRU_HDR_SIZE + data_len;
+	LOG_INF("%s: cached %u FRU bytes", __func__, fru_cache_len);
+}
+
 int board_init(void)
 {
 	struct wktmr_regs *weektmr = (struct wktmr_regs *)0x4000ac80;
@@ -812,15 +887,11 @@ int board_init(void)
 			read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7], read_data[8],
 			read_data[9], read_data[10], read_data[11], read_data[12], read_data[13], read_data[14], read_data[15]);
 	}
-#if 0
-	const struct device *fru = DEVICE_DT_GET(DT_NODELABEL(fru));
-	ret = eeprom_read(fru, 0, read_data, 8);
-	if (ret < 0) {
-		LOG_ERR("%s: %d, Unable to read eeprom", __func__, ret);
-	} else {
-		LOG_INF("%s: Read 8 bytes from fru, 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x...", __func__, read_data[0], read_data[1], read_data[2], read_data[3], read_data[4], read_data[5], read_data[6], read_data[7]);
-	}
-#endif
+	/* Cache the FRU now, while its SMBus is still enabled (the bus pins are
+	 * turned to inputs further down to disable the bus). Consumers read the
+	 * cache via board_fru_data().
+	 */
+	cache_fru();
 #if 0
 	const struct device *i2c = DEVICE_DT_GET(DT_NODELABEL(i2c_smb_0));
 	char pmbus_addr[] = {
