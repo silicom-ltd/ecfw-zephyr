@@ -67,6 +67,7 @@ static bool led_update;
 #define POWER_LED_NETGATE	DT_NODELABEL(pwmmcled2)
 
 static const struct device *power_led;
+static uint8_t power_led_idx;	/* led_tbl index of power_led (for host handoff) */
 
 /* ONIE "TlvInfo" FRU header: "TlvInfo\0" magic + version + 2-byte length. */
 #define FRU_HDR_SIZE		11
@@ -142,7 +143,18 @@ static bool fru_is_netgate(void)
 	return false;
 }
 
-/* Resolve which RGB node is the power LED. Called once at task startup. */
+/*
+ * Resolve which RGB node is the power LED and map it to its host-facing
+ * led_tbl index, so the OS-handoff gate in manage_local_leds() watches the
+ * same physical LED the EC lights amber on.
+ *
+ * This keeps the EC self-consistent on both SKUs. It assumes the OS drives the
+ * power LED by its physical index (index 0 on standard, index 2 on Netgate).
+ * If the OS instead uses a fixed logical index regardless of SKU, a
+ * logical->physical remap in the host path would be needed -- bench-verify.
+ *
+ * Runs once at task startup, after init_leds() has populated led_tbl.
+ */
 static void select_power_led(void)
 {
 	if (fru_is_netgate()) {
@@ -152,6 +164,15 @@ static void select_power_led(void)
 		power_led = DEVICE_DT_GET(POWER_LED_DEFAULT);
 		LOG_INF("Default SKU: power LED = top (pwmmcled0)");
 	}
+
+	power_led_idx = 0;
+	for (uint8_t i = 0; i < max_led_dev; i++) {
+		if (led_tbl[i].dev == power_led) {
+			power_led_idx = i;
+			break;
+		}
+	}
+	LOG_INF("power LED host index = %u", power_led_idx);
 }
 
 #if 0
@@ -405,7 +426,7 @@ static void manage_local_leds(void)
 		else if (level == 0)
 			countup = 1;
 	}
-	else if (!is_led_controlled_by_host(0)) {
+	else if (!is_led_controlled_by_host(power_led_idx)) {
 		colors[0] = color_table[color_choice] >> 16;
 		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
 		colors[2] = color_table[color_choice] & 0xFF;
