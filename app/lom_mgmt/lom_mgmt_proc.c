@@ -735,6 +735,35 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 	return 0;
 }
 
+static int do_report_lom_ip(uint8_t* req_data, struct func_ret_info* fri)
+{
+	uint8_t family = req_data[0];
+	uint8_t prefix = req_data[1];
+	int size = 0;
+
+	if (family == LOM_IP_FAMILY_V4) {
+		size = 6;
+	}
+	else if (family == LOM_IP_FAMILY_V6) {
+		size = 18;
+	}
+	else {
+		LOG_ERR("Unsupported address family: %d", family);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
+#if CONFIG_LOM_MGMT_PROC_DBG_APP
+	if (size) {
+		LOG_HEXDUMP_INF(req_data, size, "REPORT_LOM_IP:");
+	}
+#endif
+
+	set_lom_ip(family, prefix, &req_data[2], size - 2);
+
+	return 0;
+}
+
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 static int do_test_l3(uint8_t* req, uint8_t*res, struct func_ret_info* fri)
 {
@@ -808,6 +837,9 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 	case FUNC_GET_POSTCODE:
 		do_get_postcode(res_data, &fri);
 		//LOG_HEXDUMP_ERR(res_data, fri.data_size, "postcode DUMP");
+		break;
+	case FUNC_REPORT_LOM_IP:
+		do_report_lom_ip(req_data, &fri);
 		break;
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	case FUNC_TEST_L3:
