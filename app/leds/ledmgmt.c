@@ -70,7 +70,6 @@ static uint8_t power_led_idx;	/* led_tbl index of power_led (for host handoff) *
 
 /* ONIE "TlvInfo" FRU header: "TlvInfo\0" magic + version + 2-byte length. */
 #define FRU_HDR_SIZE		11
-#define FRU_TLV_SYS_MFG		0x51	/* Silicom sys-manufacturer TLV type */
 #define FRU_MFG_NETGATE		"Netgate"
 
 /*
@@ -86,10 +85,43 @@ __attribute__((weak)) const uint8_t *board_fru_data(uint16_t *len)
 	return NULL;
 }
 
+static inline char fru_lc(char c)
+{
+	return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c;
+}
+
+/* Case-insensitive search for `needle` anywhere in [buf, buf+len). */
+static bool fru_mem_contains_ci(const uint8_t *buf, uint16_t len, const char *needle)
+{
+	size_t nlen = strlen(needle);
+
+	if (nlen == 0 || len < nlen) {
+		return false;
+	}
+	for (uint16_t i = 0; i + nlen <= len; i++) {
+		size_t j = 0;
+
+		while (j < nlen && fru_lc((char)buf[i + j]) == fru_lc(needle[j])) {
+			j++;
+		}
+		if (j == nlen) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /*
- * Return true if the cached FRU's sys-manufacturer TLV (type 0x51) identifies a
- * Netgate SKU. On any missing/parse failure we fall back to false (default top
- * LED) so an unreadable or non-Netgate FRU keeps legacy behavior.
+ * Return true if the cached FRU identifies a Netgate SKU.
+ *
+ * The Netgate marker is present in the FRU (confirmed on target), but the exact
+ * Silicom custom TLV that carries it (sys-manufacturer 0x51 vs sys-SKU 0x56 vs
+ * ...) is not yet pinned down, and it may live in the second EEPROM page
+ * (0x57). So we search the whole combined image for the marker string rather
+ * than a single TLV field -- robust regardless of which field holds it. The
+ * board's cache_fru() hex dump lets us tighten this to a specific TLV later.
+ *
+ * On any missing/invalid FRU we fall back to false (default top LED).
  */
 static bool fru_is_netgate(void)
 {
@@ -107,39 +139,10 @@ static bool fru_is_netgate(void)
 		return false;
 	}
 
-	uint16_t data_len = (fru[9] << 8) | fru[10];
-	uint16_t off = FRU_HDR_SIZE;
-	uint16_t end = FRU_HDR_SIZE + data_len;
+	bool netgate = fru_mem_contains_ci(fru, fru_len, FRU_MFG_NETGATE);
 
-	if (end > fru_len) {
-		end = fru_len;		/* clamp to what was actually cached */
-	}
-
-	/* Walk the [type][len][value] records looking for sys-manufacturer. */
-	while (off + 2 <= end) {
-		uint8_t type = fru[off];
-		uint8_t len = fru[off + 1];
-
-		off += 2;
-
-		if (off + len > end) {
-			break;
-		}
-
-		if (type == FRU_TLV_SYS_MFG) {
-			char val[32];
-			uint8_t rd = len < sizeof(val) - 1 ? len : sizeof(val) - 1;
-
-			memcpy(val, &fru[off], rd);
-			val[rd] = '\0';
-			LOG_INF("FRU sys-manufacturer: %s", val);
-			return strstr(val, FRU_MFG_NETGATE) != NULL;
-		}
-
-		off += len;
-	}
-
-	return false;
+	LOG_INF("FRU Netgate marker %sfound", netgate ? "" : "NOT ");
+	return netgate;
 }
 
 /*
