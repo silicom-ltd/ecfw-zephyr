@@ -43,8 +43,11 @@
 #define LEGACY_PECI_MODE 0
 #define PECI_OVER_ESPI_MODE 1
 
-/* EC identifier */
-#define SMCHOST_MAX_BUF_SIZE		10
+/* EC identifier.
+ * Must be large enough for the biggest host response; the GET_LOM_IP
+ * reply is up to LOM_IP_RESP_MAX (18) bytes for an IPv6 address.
+ */
+#define SMCHOST_MAX_BUF_SIZE		20
 
 /* Virtual Dock Status */
 #define VIRTUAL_DOCK_CONNECTED 0
