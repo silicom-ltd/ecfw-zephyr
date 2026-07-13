@@ -669,6 +669,7 @@ static void smchost_cmd_handler(uint8_t command)
 	case SMCHOST_HID_BTN_SCI_CONTROL:
 	case SMCHOST_HID_RST_BTN_SCI_CONTROL:
     case SMCHOST_GET_SYS_IDS:
+    case SMCHOST_GET_LOM_IP:
 		smchost_cmd_info_handler(command);
 		break;
 	case SMCHOST_PLN_CONFIG:

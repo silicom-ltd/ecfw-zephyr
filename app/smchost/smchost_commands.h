@@ -82,6 +82,7 @@
 #define SMCHOST_DNX_SET_STRAP		0xF7
 #endif
 #define SMCHOST_GET_SYS_IDS         0x4D
+#define SMCHOST_GET_LOM_IP          0x4E
 
 #endif /* __SMCHOST_COMMANDS_H__ */
 
