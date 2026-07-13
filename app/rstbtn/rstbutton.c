@@ -85,7 +85,7 @@ void rstbtn_register_handler(rstbtn_handler_t handler)
                 rstbtn_handler_index++;
         }
 	else {
-		LOG_ERR("No space for new rstbtn hadlers");
+		LOG_ERR("No space for new rstbtn handler");
 	}
 }
 
