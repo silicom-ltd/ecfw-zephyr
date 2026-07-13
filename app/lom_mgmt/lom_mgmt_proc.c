@@ -803,6 +803,21 @@ static int do_get_acpi(uint8_t* data, struct func_ret_info* fri)
 	return 0;
 }
 
+static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
+{
+	uint8_t* base = (uint8_t *)get_sbl_version();
+
+	memcpy(res_data, base, sizeof(struct sys_ids));
+
+	fri->data_size = sizeof(struct sys_ids);
+
+#ifdef CONFIG_LOM_MGMT_PROC_DBG_APP
+	LOG_HEXDUMP_INF(res_data, fri->data_size, "GET_IDS:");
+#endif
+
+	return 0;
+}
+
 static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 {
 	if (task->req == NULL || task->res == NULL) {
@@ -818,7 +833,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 
 	switch (task->req->func) {
 	case FUNC_GET_ID:
-		fri.code = EC_RET_ERR_NOT_IMPL;
+		do_get_ids(res_data, &fri);
 		break;
 	case FUNC_POWER_CTRL:
 		do_power_ctrl(req_data, &fri);
