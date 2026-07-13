@@ -41,10 +41,11 @@ target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
     ${CMAKE_CURRENT_LIST_DIR}/port80display_dummy.h
     )
 
-if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N OR CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
+if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N)
     if (CONFIG_THERMAL_MANAGEMENT)
 	target_sources(app
 	PRIVATE
+	${CMAKE_CURRENT_LIST_DIR}/fan.c
 	${CMAKE_CURRENT_LIST_DIR}/sensors.c
 	${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
 	PUBLIC
@@ -62,6 +63,18 @@ if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N OR CONFIG_BOARD_M
     )
     endif()
 endif()
+
+if (CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
+    target_sources(app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/sensors.c
+    ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/hwmon.h
+    ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
+    )
+endif()
+ 
 
 target_sources(app
     PRIVATE
@@ -100,9 +113,6 @@ target_sources_ifdef(CONFIG_SOC_SERIES_MEC1501X app
 target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/gpio_mec172x.c
-    # ${CMAKE_CURRENT_LIST_DIR}/rpm2pwm_mec172x.c
-    #    ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
-    ${CMAKE_CURRENT_LIST_DIR}/fan.c
     ${CMAKE_CURRENT_LIST_DIR}/led_mec172x.c
     # Require Soc-HW access via device tree
     #    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.c
