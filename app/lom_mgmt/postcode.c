@@ -83,7 +83,7 @@ static int _ring_buf_get_block(struct ring_buf* ring_buf, uint8_t* dest, uint16_
 		if (dest && readn) {
 			memcpy(&dest[count], data, readn);
 		}
-		ring_buf_get_finish(&postcode_ring_buf, readn);
+		ring_buf_get_finish(ring_buf, readn);
 
 		count += readn;
 	}
