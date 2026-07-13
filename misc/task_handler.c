@@ -29,6 +29,8 @@
 #endif
 #include "voltagemon.h"
 #include "currmon.h"
+#include "fanmon.h"
+
 LOG_MODULE_DECLARE(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
 
 #define EC_TASK_STACK_SIZE	1024
@@ -111,6 +113,12 @@ const uint32_t current_thrd_period = 1000;
 K_THREAD_DEFINE(current_thrd_id, EC_TASK_STACK_SIZE, current_monitor_thread,
 		&current_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
+#ifdef CONFIG_FAN_MONITOR
+const uint32_t fan_thrd_period = 1000;
+K_THREAD_DEFINE(fan_thrd_id, EC_TASK_STACK_SIZE, fan_monitor_thread,
+		&fan_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
+		K_INHERIT_PERMS, EC_WAIT_FOREVER);
+#endif
 
 
 #ifdef CONFIG_LOM_MGMT_PROC
@@ -178,6 +186,10 @@ static struct task_info tasks[] = {
 	  .tagname = VOLTAGE_MGMT_TASK_NAME },
 	{ .thread_id = current_thrd_id, .can_suspend = false,
 	  .tagname = CURRENT_MGMT_TASK_NAME },
+#ifdef CONFIG_FAN_MONITOR
+	{ .thread_id = fan_thrd_id, .can_suspend = false,
+	  .tagname = FAN_MGMT_TASK_NAME },
+#endif
 #ifdef CONFIG_LOM_MGMT_PROC
 	{ .thread_id = lom_mgmt_thrd_id, .can_suspend = false,
 	  .tagname = "LOM_MGMT_PROC" },

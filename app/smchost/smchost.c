@@ -30,7 +30,8 @@
 #include "dnx.h"
 #endif
 
-LOG_MODULE_REGISTER(smchost, CONFIG_SMCHOST_LOG_LEVEL);
+//LOG_MODULE_REGISTER(smchost, CONFIG_SMCHOST_LOG_LEVEL);
+LOG_MODULE_REGISTER(smchost, 4);
 
 uint8_t host_req[SMCHOST_MAX_BUF_SIZE];
 uint8_t host_res[SMCHOST_MAX_BUF_SIZE];

@@ -6,6 +6,7 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include "smc.h"
 #include "gpiomgmt.h"
 #include "board_config.h"
 #include "smchost.h"

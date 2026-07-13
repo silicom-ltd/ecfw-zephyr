@@ -108,8 +108,8 @@ struct hwmon_sram {
 	uint8_t rsvd[0x100];
 	struct hwmon_sdata mon[16];
 	struct hwmon_peci peci;	
-	struct hwmon_fdata fan[4];
-	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
+	struct hwmon_fdata fan[6];
+	struct hwmon_pdata pwm[6];
 } __attribute__ ((packed, aligned(32)));
 
 
@@ -118,6 +118,7 @@ struct hwmon_sram {
 int voltage_monitor_init(void);
 void voltage_monitor_update(void);
 void current_sense_update(void);
+void fan_update(void);
 
 /**
  * @brief Initialize sensor module.

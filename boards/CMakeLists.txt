@@ -42,6 +42,7 @@ target_sources_ifdef(CONFIG_BOARD_MEC172X_ADL_N app
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/silicom/adl_n_mec172x.h
     )
+
 target_sources(app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/silicom/${BOARD}.c

@@ -7,11 +7,14 @@
 #include <zephyr/logging/log.h>
 #include "board.h"
 #include "board_config.h"
+#include "smc.h"
 #include "smchost_commands.h"
 #include "gpiomgmt.h"
 
 LOG_MODULE_DECLARE(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 #define MAX_HOST_EC_GPIO 16
+
+extern struct acpi_tbl g_acpi_tbl;
 
 void smchost_cmd_gpio_handler(uint8_t command)
 {
