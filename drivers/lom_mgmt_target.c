@@ -79,7 +79,7 @@ enum ctx_sta_stages {
 };
 
 #if defined(CONFIG_LOM_MGMT_I2C_DBG_STA) || defined(CONFIG_LOM_MGMT_I2C_DBG_APP) || \
-	defined(CONFIG_LOM_MGMT_I2C_DBG_I2C_DAT)
+	defined(CONFIG_LOM_MGMT_I2C_DBG_I2C)
 /*
  * ctx_sta_stages's short name, used for debug
  */
@@ -418,7 +418,7 @@ static int lom_mgmt_tgt_wr_rcv(struct i2c_target_config *config, uint8_t val)
 
 		ctx->first_data_access = 1;
 
-#if (defined(_DBG_STA) || defined(_DBG_I2C_DAT)) && (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+#if defined(CONFIG_LOM_MGMT_I2C_DBG_STA) || defined(CONFIG_LOM_MGMT_I2C_DBG_I2C)
 		LOG_INF("(+) New Access @ COMM[0x%02x]", ctx->access_addr);
 #endif
 	}
@@ -447,7 +447,7 @@ static int lom_mgmt_tgt_stop(struct i2c_target_config *config)
 {
 	struct lom_mgmt_i2c_context * ctx = LOM_MGMT_CTX_FROM_CFG(config);
 
-#if (defined(_DBG_STA) || defined(_DBG_I2C_DAT)) && (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+#if defined(CONFIG_LOM_MGMT_I2C_DBG_STA) || defined(CONFIG_LOM_MGMT_I2C_DBG_I2C)
 	LOG_INF("Stop: COMM[0x%02x], REQ[idx %d, size %d], STA[%s]",
 		ctx->access_addr, ctx->req_idx, ctx->req.size, ctx_sta_string[ctx->state]);
 #endif
