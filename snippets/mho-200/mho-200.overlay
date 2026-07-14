@@ -189,5 +189,9 @@
 				  <&mfd8_iout>;
 
 		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
+
+		fan-temp-device = <&switch_maestro_temp>;
+		fan-cooling-devices = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>,
+				      <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
 	};
 };

@@ -13,6 +13,7 @@
 /** Number of loops to wait for host in burst */
 #define BURST_TIMEOUT        20ul
 
+#ifdef CONFIG_SMCHOST_THERMAL
 /**
  * @brief Thermal sensor list index in ACPI table.
  */
@@ -26,6 +27,7 @@ enum acpi_thrm_sens_idx {
 	ACPI_THRM_SEN_TOTAL,
 	ACPI_THERM_SEN_UNDEF,
 };
+#endif
 
 /**
  * @brief Wake reasons for BIOS.
@@ -69,6 +71,7 @@ void smc_generate_wake(uint8_t wake_reason);
 void smc_clear_wake_sts(void);
 uint8_t smc_get_wake_sts(void);
 
+#ifdef CONFIG_SMCHOST_THERMAL
 /**
  * @brief Update the thermal sensor temperature value in ACPI table.
  *
@@ -117,6 +120,7 @@ void smc_update_gpu_temperature(int temp);
  * @param temp pch temperature in degree celsius.
  */
 void smc_update_pch_dts_temperature(int temp);
+#endif /* CONFIG_SMCHOST_THERMAL */
 
 /**
  * @brief Check write permissions for ACPI offset.

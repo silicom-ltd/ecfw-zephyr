@@ -35,6 +35,31 @@
 				coefficients = <1 0 0>;
 			};
 		};
+		mfd3_1: mpq8787@31 {
+			compatible = "mps,mpq8785";
+			reg = <0x31>;
+
+			mfd31_vin: 3v3_left_vin {
+				compatible = "mps,mpq8785-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd31_vout: 3v3_left_vout {
+				compatible = "mps,mpq8785-vout";
+				page = <0>;
+				coefficients = <512 0 0>;
+			};
+			mfd31_iout: 3v3_left_iout {
+				compatible = "mps,mpq8785-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd31_temp: 3v3_left_temp {
+				compatible = "mps,mpq8785-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
 		mfd4: mpq8788@32 {
 			compatible = "mps,mpq8785";
 			reg = <0x32>;
@@ -196,5 +221,10 @@
 				  <&mfd8_iout>;
 
 		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
+
+		fan-temp-device = <&switch_maestro_temp>;
+		fan-cooling-devices = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>,
+				      <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
 	};
+
 };
