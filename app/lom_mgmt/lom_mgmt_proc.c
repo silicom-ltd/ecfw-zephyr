@@ -805,11 +805,15 @@ static int do_get_acpi(uint8_t* data, struct func_ret_info* fri)
 
 static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 {
-	uint8_t* base = (uint8_t *)get_sbl_version();
+	struct sys_ids ids;
 
-	memcpy(res_data, base, sizeof(struct sys_ids));
+	get_sbl_version(&ids.sbl);
+	ids.board_id = get_board_id();
+	ids.bom_id   = get_bom_id();
 
-	fri->data_size = sizeof(struct sys_ids);
+	memcpy(res_data, &ids, sizeof(ids));
+
+	fri->data_size = sizeof(ids);
 
 #ifdef CONFIG_LOM_MGMT_PROC_DBG_APP
 	LOG_HEXDUMP_INF(res_data, fri->data_size, "GET_IDS:");
