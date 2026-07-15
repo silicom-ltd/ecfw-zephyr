@@ -70,13 +70,17 @@ enum sensor_type {
 #endif
 
 enum sensor_types {
+	hwmon_chip,
 	hwmon_temp,
 	hwmon_in,
 	hwmon_curr,
 	hwmon_power,
 	hwmon_energy,
+	hwmon_humidity,
 	hwmon_fan,
 	hwmon_pwm,
+	hwmon_intrusion,
+	hwmon_max,
 };
 
 struct hwmon_sdata {
