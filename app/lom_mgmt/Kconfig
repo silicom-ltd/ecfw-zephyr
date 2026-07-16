@@ -1,20 +1,22 @@
 
+menu "EC LOM management processor"
+
 config LOM_MGMT_PROC
 	bool "Enable LOM_MGMT Processing"
 	depends on I2C_TARGET_LOM_MGMT
 	help
 	  Enable LOM_MGMT process module
 
+if LOM_MGMT_PROC
+
 config LOM_MGMT_LARGE_SENSOR_VALUE
 	bool "Support for large sensor value"
-	depends on LOM_MGMT_PROC
 	default n
 	help
 	  Enable this option to supports the sensor value large than 131.072
 
 config LOM_MGMT_FUNC_HOST_EVENT
 	bool "Host events monitoring support"
-	depends on LOM_MGMT_PROC
 	select RING_BUFFER
 	default y
 	help
@@ -29,7 +31,8 @@ config HOST_EVENT_ENTRY_MAX
 
 config LOM_MGMT_FUNC_POSTCODE
 	bool "BIOS POST code monitoring support"
-	depends on LOM_MGMT_PROC && POSTCODE_MANAGEMENT
+	depends on POSTCODE_MANAGEMENT
+	select POSTCODE_MONITOR_SUPPORT
 	select RING_BUFFER
 	default n
 	help
@@ -45,7 +48,6 @@ config HOST_POSTCODE_ENTRY_MAX
 
 config LOM_MGMT_FUNC_POWER_CTRL
 	bool "Power control support"
-	depends on LOM_MGMT_PROC
 	default n
 	help
 	  Enable support for host power control functions (e.g., power on,
@@ -69,22 +71,20 @@ config HOST_GRACEFUL_SHUTDOWN_WAIT_TIME
 
 config LOM_MGMT_FUNC_FRU
 	bool "FRU data retrieval support"
-	depends on LOM_MGMT_PROC
 	default n
 	help
 	  Enable support for reading FRU and providing it to the LOM.
 
 config LOM_MGMT_PROC_LOG_LEVEL
 	int "LOM management handler log level"
-	depends on LOG && LOM_MGMT_PROC
+	depends on LOG
 	default 2
-	default 4 if CONFIG_EC_DEBUG_LOG_LEVEL
 	help
 	  Set log level for LOM management handler module.
 
 config LOM_MGMT_PROC_DBG_APP
 	bool "LOM-MGMT Protocol Application Layer debugging"
-	depends on LOG && LOM_MGMT_PROC
+	depends on LOG
 	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
 	default n
 	help
@@ -108,8 +108,12 @@ config LOM_MGMT_PROC_DBG_EVENT
 
 config LOM_MGMT_PROC_DBG_SENS
 	bool "LOM-MGMT protocol's sensor processing debugging"
-	depends on LOG && LOM_MGMT_PROC
+	depends on LOG
 	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
 	default n
 	help
 	  Enable debug logging for the LOM-MGMT protocol's sensor processing
+
+endif
+
+endmenu

@@ -34,6 +34,10 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
 #ifdef CONFIG_LOM_MGMT_FUNC_FRU
+
+BUILD_ASSERT(DT_PROP_LEN_OR(DT_PATH(zephyr_user), host_frus, 0) > 0,
+	"The 'host-frus' property cannot be empty when enable LOM_MGMT_FUNC_FRU");
+
 struct fru_dev_info {
 	const struct device * dev;
 	int                   size;
@@ -41,19 +45,17 @@ struct fru_dev_info {
 
 #define HOST_FRU_INIT(node_id, prop, idx)				\
 	{								\
-		.dev = DEVICE_DT_GET_OR_NULL(DT_PHANDLE_BY_IDX(node_id, prop, idx)), \
-		.size = DT_PROP(DT_PHANDLE_BY_IDX(node_id, prop, idx), size), \
+		.dev = DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)), \
+		.size = DT_PROP(DT_PHANDLE_BY_IDX(node_id, prop, idx), size) \
 	},
 
 static struct fru_dev_info fru_devs[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), host_frus, HOST_FRU_INIT)
 };
 
-
 #define FRU_HDR_SIZE 11
 static uint8_t fru_hdr_title[] = "TlvInfo";
 
-#define FRU_READ_MAX 64 /* Read FRU should not occupy cpu for long time */
 #endif
 
 extern struct hwmon_sram *hwmon_data;
@@ -463,29 +465,38 @@ static int do_get_postcode(uint8_t *res_data, struct func_ret_info* fri)
 static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 {
 #ifdef CONFIG_LOM_MGMT_FUNC_FRU
-	off_t offset = 0;
-	int ret;
-	int dev_id = 0;
 	struct fru_dev_info *fru;
 	int fru_size = 0;
+	int ret;
 
 	for (int i = 0; i < ARRAY_SIZE(fru_devs); i++) {
-		struct fru_dev_info *fru = &fru_devs[i];
-		if (!device_is_ready(fru->dev)) {
-			LOG_ERR("Fru device is not ready");
+		fru = &fru_devs[i];
+
+		if (fru->dev == NULL || !device_is_ready(fru->dev)) {
+			LOG_DBG("FRU-%d: device is not ready", i);
 			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
 			return -1;
 		}
+
+		if (fru->size == 0 || fru->size > 512) {
+			LOG_ERR("FRU-%d: Invalid size %d", i, fru->size);
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
+			return -1;
+		}
+
 		fru_size += fru->size;
 	}
 
-	if (fru_size == 0) {
-		LOG_ERR("no FRU(s) on host");
-		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
-		return 0;
-	}
+	int dev_id = 0;
+	off_t offset = 0;
 
 	fru = &fru_devs[dev_id];
+
+	if (fru->size <= FRU_HDR_SIZE) {
+		LOG_ERR("FRU-0: too small, size %d", fru->size);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENXIO);
+		return -1;
+	}
 
 	ret = eeprom_read(fru->dev, offset, &data[offset], FRU_HDR_SIZE);
 	if (ret < 0) {
@@ -496,14 +507,14 @@ static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 	offset += FRU_HDR_SIZE;
 
 	if (memcmp(data, fru_hdr_title, 8)) {
-		LOG_ERR("Unsupport FRU format");
+		LOG_ERR("Only ONIE formatted FRUs are supported");
 		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENXIO);
 		return -1;
 	}
 
 	uint16_t fru_dat_len = data[9] << 8 | data[10];
 
-	LOG_DBG_APP("Fru data size %u (all size %u)", fru_dat_len, fru_dat_len + FRU_HDR_SIZE);
+	LOG_DBG_APP("Fru size: payload %u, total %u", fru_dat_len, fru_dat_len + FRU_HDR_SIZE);
 
 	if (FRU_HDR_SIZE + fru_dat_len > RES_DLEN_MAX || FRU_HDR_SIZE + fru_dat_len > fru_size) {
 		LOG_ERR("Too large FRU %d", FRU_HDR_SIZE + fru_dat_len);
@@ -513,8 +524,19 @@ static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 
 	size_t read_size = 0;
 	uint16_t readn = offset;
-	for (uint16_t remains = fru_dat_len; remains > 0; remains -= read_size) {
-		read_size = MIN(remains > FRU_READ_MAX ? FRU_READ_MAX : remains, fru->size - offset);
+	uint16_t remains = fru_dat_len;
+
+	while (remains > 0) {
+		if (offset == fru->size) { /* All data read for this FRU, switch to the next FRU */
+			fru = &fru_devs[++dev_id];
+			offset = 0;
+		}
+
+		read_size = MIN(remains, fru->size - offset);
+
+		LOG_DBG_APP("FRU-[%d] payload read: offset=%2ld read_size=%3d, to buff %3d", dev_id,
+			offset, read_size, readn);
+
 		ret = eeprom_read(fru->dev, offset, &data[readn], read_size);
 		if (ret < 0) {
 			LOG_ERR("read FRU data at %ld failed, ret %d", offset, ret);
@@ -524,13 +546,7 @@ static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
 
 		readn += read_size;
 		offset += read_size;
-		if (offset == fru->size) {
-			fru = &fru_devs[++dev_id];
-			offset = 0;
-		}
-
-		if (remains - read_size)
-			k_yield();
+		remains -= read_size;
 	}
 
 	fri->data_size = FRU_HDR_SIZE + fru_dat_len;
@@ -719,6 +735,7 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 	return 0;
 }
 
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 static int do_test_l3(uint8_t* req, uint8_t*res, struct func_ret_info* fri)
 {
 	int test_dlen = ((uint16_t)req[0] << 8) | req[1]; /* test_dlen include the timestamp */
@@ -741,6 +758,7 @@ static int do_test_l3(uint8_t* req, uint8_t*res, struct func_ret_info* fri)
 
 	return 0;
 }
+#endif
 
 static int do_get_acpi(uint8_t* data, struct func_ret_info* fri)
 {
@@ -791,9 +809,11 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_postcode(res_data, &fri);
 		//LOG_HEXDUMP_ERR(res_data, fri.data_size, "postcode DUMP");
 		break;
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	case FUNC_TEST_L3:
 		do_test_l3(req_data, res_data, &fri);
 		break;
+#endif
 	default:
 		fri.code = EC_RET_ERR_INV_FUNC;
 		LOG_ERR("Unknown func %d", task->req->func);

@@ -74,6 +74,8 @@ int lom_mgmt_i2c_set_avail_res(const struct device *dev, uint8_t bit, uint8_t va
 #define AVAIL_RES_POSTCODE     7
 #define AVAIL_RES_EVENT        6
 
+//#define LOM_MGMT_PROTO_STRESS_TESTING
+
 enum lom_mgmt_msg_func {
 	FUNC_INV                  = 0,
 	FUNC_FIRST                = 1,
@@ -87,15 +89,15 @@ enum lom_mgmt_msg_func {
 	FUNC_GET_EVENTS           , /*08*/
 	FUNC_GET_POSTCODE         , /*09*/
 
-	FUNC_TEST_L2              ,
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	FUNC_TEST_L3              ,
-	FUNC_LAST = FUNC_TEST_L3  ,
+#endif
 	FUNC_COUNT,
 };
 
 enum lom_mgmt_power_ctrl_act {
 	PWC_UP = 1,
-	PWC_SHUTDOWN ,
+	PWC_SHUTDOWN,
 	PWC_HARD_RESET,
 	PWC_FORCE_DOWN,
 };
