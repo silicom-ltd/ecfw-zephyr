@@ -741,6 +741,7 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 
 static int do_report_lom_ip(uint8_t* req_data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_REPORT_LOM_IP
 	uint8_t family = req_data[0];
 	uint8_t prefix = req_data[1];
 	int size = 0;
@@ -764,6 +765,9 @@ static int do_report_lom_ip(uint8_t* req_data, struct func_ret_info* fri)
 #endif
 
 	set_lom_ip(family, prefix, &req_data[2], size - 2);
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
 
 	return 0;
 }
@@ -805,6 +809,7 @@ static int do_get_acpi(uint8_t* data, struct func_ret_info* fri)
 
 static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_GET_SYS_IDS
 	struct sys_ids ids;
 
 	get_sbl_version(&ids.sbl);
@@ -817,6 +822,9 @@ static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 
 #ifdef CONFIG_LOM_MGMT_PROC_DBG_APP
 	LOG_HEXDUMP_INF(res_data, fri->data_size, "GET_IDS:");
+#endif
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
 #endif
 
 	return 0;
