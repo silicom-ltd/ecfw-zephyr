@@ -83,7 +83,7 @@ config LOM_MGMT_FUNC_REPORT_LOM_IP
 
 config LOM_MGMT_FUNC_GET_SYS_IDS
 	bool "Support obtaining the SBL version."
-	default n
+	default y
 	help
 	  Enable support for LOM to get SBL version from EC.
 
