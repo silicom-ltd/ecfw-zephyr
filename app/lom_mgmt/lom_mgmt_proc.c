@@ -37,31 +37,6 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 #error "Error: CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE must be enabled"
 #endif
 
-#ifdef CONFIG_LOM_MGMT_FUNC_FRU
-
-BUILD_ASSERT(DT_PROP_LEN_OR(DT_PATH(zephyr_user), host_frus, 0) > 0,
-	"The 'host-frus' property cannot be empty when enable LOM_MGMT_FUNC_FRU");
-
-struct fru_dev_info {
-	const struct device * dev;
-	int                   size;
-};
-
-#define HOST_FRU_INIT(node_id, prop, idx)				\
-	{								\
-		.dev = DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)), \
-		.size = DT_PROP(DT_PHANDLE_BY_IDX(node_id, prop, idx), size) \
-	},
-
-static struct fru_dev_info fru_devs[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), host_frus, HOST_FRU_INIT)
-};
-
-#define FRU_HDR_SIZE 11
-static uint8_t fru_hdr_title[] = "TlvInfo";
-
-#endif
-
 extern struct hwmon_sram *hwmon_data;
 
 #define SENS_DTYPE_INTEG 0
@@ -466,94 +441,30 @@ static int do_get_postcode(uint8_t *res_data, struct func_ret_info* fri)
 	return 0;
 }
 
-static int do_get_fru(uint8_t *data, struct func_ret_info* fri)
+static int do_get_fru_cache(uint8_t *data, struct func_ret_info* fri)
 {
 #ifdef CONFIG_LOM_MGMT_FUNC_FRU
-	struct fru_dev_info *fru;
-	int fru_size = 0;
-	int ret;
+	uint16_t fru_size = 0;
 
-	for (int i = 0; i < ARRAY_SIZE(fru_devs); i++) {
-		fru = &fru_devs[i];
+	const uint8_t *fru_cache = board_fru_data(&fru_size);
 
-		if (fru->dev == NULL || !device_is_ready(fru->dev)) {
-			LOG_DBG("FRU-%d: device is not ready", i);
-			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
-			return -1;
-		}
-
-		if (fru->size == 0 || fru->size > 512) {
-			LOG_ERR("FRU-%d: Invalid size %d", i, fru->size);
-			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
-			return -1;
-		}
-
-		fru_size += fru->size;
-	}
-
-	int dev_id = 0;
-	off_t offset = 0;
-
-	fru = &fru_devs[dev_id];
-
-	if (fru->size <= FRU_HDR_SIZE) {
-		LOG_ERR("FRU-0: too small, size %d", fru->size);
-		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENXIO);
+	if (fru_cache == NULL || fru_size == 0) {
+		LOG_ERR("FRU not present");
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
 		return -1;
 	}
 
-	ret = eeprom_read(fru->dev, offset, &data[offset], FRU_HDR_SIZE);
-	if (ret < 0) {
-		LOG_ERR("read FRU header failed, ret %d", ret);
-		SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
-		return -1;
-	}
-	offset += FRU_HDR_SIZE;
+	LOG_DBG_APP("FRU size %u", fru_size);
 
-	if (memcmp(data, fru_hdr_title, 8)) {
-		LOG_ERR("Only ONIE formatted FRUs are supported");
-		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENXIO);
-		return -1;
-	}
-
-	uint16_t fru_dat_len = data[9] << 8 | data[10];
-
-	LOG_DBG_APP("Fru size: payload %u, total %u", fru_dat_len, fru_dat_len + FRU_HDR_SIZE);
-
-	if (FRU_HDR_SIZE + fru_dat_len > RES_DLEN_MAX || FRU_HDR_SIZE + fru_dat_len > fru_size) {
-		LOG_ERR("Too large FRU %d", FRU_HDR_SIZE + fru_dat_len);
+	if (fru_size > RES_DLEN_MAX) {
+		LOG_ERR("Too large FRU %d", fru_size);
 		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENOSPC);
 		return -1;
 	}
 
-	size_t read_size = 0;
-	uint16_t readn = offset;
-	uint16_t remains = fru_dat_len;
+	memcpy(data, fru_cache, fru_size);
 
-	while (remains > 0) {
-		if (offset == fru->size) { /* All data read for this FRU, switch to the next FRU */
-			fru = &fru_devs[++dev_id];
-			offset = 0;
-		}
-
-		read_size = MIN(remains, fru->size - offset);
-
-		LOG_DBG_APP("FRU-[%d] payload read: offset=%2ld read_size=%3d, to buff %3d", dev_id,
-			offset, read_size, readn);
-
-		ret = eeprom_read(fru->dev, offset, &data[readn], read_size);
-		if (ret < 0) {
-			LOG_ERR("read FRU data at %ld failed, ret %d", offset, ret);
-			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
-			return -1;
-		}
-
-		readn += read_size;
-		offset += read_size;
-		remains -= read_size;
-	}
-
-	fri->data_size = FRU_HDR_SIZE + fru_dat_len;
+	fri->data_size = fru_size;
 #else
 	fri->code = EC_RET_ERR_NOT_IMPL;
 #endif
@@ -741,6 +652,7 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 
 static int do_report_lom_ip(uint8_t* req_data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_REPORT_LOM_IP
 	uint8_t family = req_data[0];
 	uint8_t prefix = req_data[1];
 	int size = 0;
@@ -764,6 +676,9 @@ static int do_report_lom_ip(uint8_t* req_data, struct func_ret_info* fri)
 #endif
 
 	set_lom_ip(family, prefix, &req_data[2], size - 2);
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
 
 	return 0;
 }
@@ -805,6 +720,7 @@ static int do_get_acpi(uint8_t* data, struct func_ret_info* fri)
 
 static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 {
+#ifdef CONFIG_LOM_MGMT_FUNC_GET_SYS_IDS
 	struct sys_ids ids;
 
 	get_sbl_version(&ids.sbl);
@@ -817,6 +733,9 @@ static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 
 #ifdef CONFIG_LOM_MGMT_PROC_DBG_APP
 	LOG_HEXDUMP_INF(res_data, fri->data_size, "GET_IDS:");
+#endif
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
 #endif
 
 	return 0;
@@ -849,7 +768,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_sensors(res_data, &fri);
 		break;
 	case FUNC_GET_FRU:
-		do_get_fru(res_data, &fri);
+		do_get_fru_cache(res_data, &fri);
 		break;
 	case FUNC_GET_FAULT_CODE:
 		fri.code = EC_RET_ERR_NOT_IMPL;

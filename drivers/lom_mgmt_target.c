@@ -150,7 +150,9 @@ struct i2c_lom_mgmt_target_config {
 	&(((struct i2c_lom_mgmt_target_data *)dev->data)->ctx)
 
 static int lom_mgmt_func_cap[FUNC_COUNT] = {
+#ifdef CONFIG_LOM_MGMT_FUNC_GET_SYS_IDS
 	[FUNC_GET_ID] = 1,
+#endif
 	[FUNC_FINI] = 1,
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
@@ -170,7 +172,9 @@ static int lom_mgmt_func_cap[FUNC_COUNT] = {
 	[FUNC_GET_POSTCODE] = 1,
 #endif
 
+#ifdef CONFIG_LOM_MGMT_FUNC_REPORT_LOM_IP
 	[FUNC_REPORT_LOM_IP] = 1,
+#endif
 
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	[FUNC_TEST_L3] = 1,
