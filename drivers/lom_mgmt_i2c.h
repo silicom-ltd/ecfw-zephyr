@@ -101,6 +101,7 @@ enum lom_mgmt_power_ctrl_act {
 	PWC_SHUTDOWN,
 	PWC_HARD_RESET,
 	PWC_FORCE_DOWN,
+	PWC_POWER_CYCLE,
 };
 
 enum lom_mgmt_i2c_stat {
