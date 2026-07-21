@@ -656,15 +656,15 @@ static void pwrctrl_worker(struct k_work *work)
 static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 {
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-	pwrctrl_work_data.act = req[0];
-	pwrctrl_work_data.sec = req[1] * 10;
-
 	uint32_t status = k_work_busy_get(&pwrctrl_work_data.work_item);
 	if (status & K_WORK_RUNNING) {
 		LOG_DBG_APP("PwrCtrl worker is busy");
 		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EBUSY);
 		return -1;
 	}
+
+	pwrctrl_work_data.act = req[0];
+	pwrctrl_work_data.sec = req[1] * 10;
 
 	k_work_submit(&pwrctrl_work_data.work_item);
 #else
