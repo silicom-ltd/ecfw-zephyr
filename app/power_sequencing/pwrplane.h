@@ -107,4 +107,16 @@ void power_off(void);
 
 extern struct pwr_flags g_pwrflags;
 
+
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+
+/**
+ * @brief API to power on/off the switch card.
+ *
+ * @act 0: power off, 1: power on
+ */
+void switch_card_power_control(int act);
+
+#endif
+
 #endif /* __PWRPLANE_H__ */
