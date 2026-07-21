@@ -694,6 +694,27 @@ static void pwrctrl_do_hard_reset(void)
 	}
 }
 
+static void pwrctrl_do_power_cycle(void)
+{
+	LOG_DBG_APP(">> Do Power Cycle");
+
+	pwrctrl_do_force_down();
+
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+	switch_card_power_control(0);
+#endif
+
+	k_msleep(2000); /* 2 seconds */
+
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+	switch_card_power_control(1);
+#endif
+
+	pwrctrl_do_up();
+
+	LOG_DBG_APP(">> Do Power Cycle End");
+}
+
 static void pwrctrl_worker(struct k_work *work)
 {
 	struct pwrctrl_work_data *data = CONTAINER_OF(work, struct pwrctrl_work_data, work_item);
@@ -709,8 +730,11 @@ static void pwrctrl_worker(struct k_work *work)
 	case PWC_HARD_RESET:
 		pwrctrl_do_hard_reset();
 		break;
-	case PWC_FORCE_DOWN: /* power off */
+	case PWC_FORCE_DOWN:
 		pwrctrl_do_force_down();
+		break;
+	case PWC_POWER_CYCLE:
+		pwrctrl_do_power_cycle();
 		break;
 	default:
 		return;
