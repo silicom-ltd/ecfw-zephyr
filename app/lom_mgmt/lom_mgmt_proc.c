@@ -607,23 +607,30 @@ static void pwrctrl_do_hard_reset(void)
 
 static void pwrctrl_do_power_cycle(void)
 {
-	LOG_DBG_APP(">> Do Power Cycle");
+	uint8_t pwr_state = pwrseq_system_state();
 
-	pwrctrl_do_force_down();
+	if (pwr_state == SYSTEM_S0_STATE) {
+		LOG_DBG_APP(">> Do Power Cycle");
 
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	switch_card_power_control(0);
-#endif
-
-	k_msleep(2000); /* 2 seconds */
+		pwrctrl_do_force_down();
 
 #if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	switch_card_power_control(1);
+		switch_card_power_control(0);
 #endif
 
-	pwrctrl_do_up();
+		k_msleep(2000); /* 2 seconds */
 
-	LOG_DBG_APP(">> Do Power Cycle End");
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+		switch_card_power_control(1);
+#endif
+
+		pwrctrl_do_up();
+
+		LOG_DBG_APP(">> Do Power Cycle End");
+	}
+	else {
+		LOG_DBG_APP(">> Skip Power Cycle");
+	}
 }
 
 static void pwrctrl_worker(struct k_work *work)
