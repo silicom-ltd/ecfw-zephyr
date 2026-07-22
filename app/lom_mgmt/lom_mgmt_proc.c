@@ -475,45 +475,24 @@ static int do_get_fru_cache(uint8_t *data, struct func_ret_info* fri)
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 static void pwrctrl_do_up(void)
 {
-	uint8_t pwr_state = pwrseq_system_state();
+	LOG_DBG_APP(">> Do UP");
 
-	if (pwr_state == SYSTEM_S5_STATE || pwr_state == SYSTEM_S4_STATE) {
-		LOG_DBG_APP(">> Do UP");
+	gpio_write_pin(PM_PWRBTN, 0);
+	k_msleep(150);
+	gpio_write_pin(PM_PWRBTN, 1);
 
-		gpio_write_pin(PM_PWRBTN, 0);
-		k_msleep(150);
-		gpio_write_pin(PM_PWRBTN, 1);
-
-		LOG_DBG_APP(">> Do UP end");
-	}
-	else if (pwr_state == SYSTEM_S3_STATE) { /* resume */
-		LOG_DBG_APP(">> Do Resume");
-		gpio_write_pin(PM_PWRBTN, 0);
-		k_msleep(100);
-		gpio_write_pin(PM_PWRBTN, 1);
-		LOG_DBG_APP(">> Do Resume end");
-	}
-	else {
-		LOG_DBG_APP(">> Skip UP");
-	}
+	LOG_DBG_APP(">> Do UP end");
 }
 
 static void pwrctrl_do_shutdown(void)
 {
-	uint8_t pwr_state = pwrseq_system_state();
+	LOG_DBG_APP(">> Do Normal Down");
 
-	if (pwr_state == SYSTEM_S0_STATE) {
-		LOG_DBG_APP(">> Do Normal Down");
+	gpio_write_pin(PM_PWRBTN, 0);
+	k_msleep(150);
+	gpio_write_pin(PM_PWRBTN, 1);
 
-		gpio_write_pin(PM_PWRBTN, 0);
-		k_msleep(150);
-		gpio_write_pin(PM_PWRBTN, 1);
-
-		LOG_DBG_APP(">> Do Normal Down end");
-	}
-	else {
-		LOG_DBG_APP(">> Skip Normal Down");
-	}
+	LOG_DBG_APP(">> Do Normal Down end");
 }
 
 
@@ -542,120 +521,97 @@ static inline void pwrctrl_forcedown_post(void)
 
 static void pwrctrl_do_force_down(void)
 {
-	uint8_t pwr_state = pwrseq_system_state();
 	int ret;
 
-	if (pwr_state == SYSTEM_S0_STATE) {
-		LOG_DBG_APP(">> Do Force Down");
+	LOG_DBG_APP(">> Do Force Down");
 
-		/* first try graceful shutdown */
 #ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
-		pwrctrl_do_shutdown();
+	pwrctrl_do_shutdown();
 
-		ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
+	ret = wait_sig_value(&slp_sig_PLTRST, -1, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
+	if (ret == WORK_RET_QUIT) {
+		LOG_DBG_APP(">> Normal Down wait quit");
+		return;
+	}
+
+	if (ret == WORK_RET_TIMEOUT) {
+		LOG_DBG_APP(">> Normal Down failed, try Force Down");
+#endif
+
+		gpio_write_pin(PM_PWRBTN, 0);
+
+		ret = wait_sig_value(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS);
 		if (ret == WORK_RET_QUIT) {
-			LOG_DBG_APP(">> Normal Down wait quit");
+			LOG_DBG_APP(">> Force Down Wait quit");
+			pwrctrl_forcedown_post();
 			return;
 		}
 
 		if (ret == WORK_RET_TIMEOUT) {
-			LOG_DBG_APP(">> Normal Down failed, try Force Down");
-#endif
-
-			gpio_write_pin(PM_PWRBTN, 0);
-
-			ret = wait_sig_value(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS);
-			if (ret == WORK_RET_QUIT) {
-				LOG_DBG_APP(">> Force Down Wait quit");
-				pwrctrl_forcedown_post();
-				return;
-			}
-
-			if (ret == WORK_RET_TIMEOUT) {
-				LOG_ERR(">> Do Force Down Failed");
-				pwrctrl_forcedown_post();
-				return;
-			}
-#ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
+			LOG_ERR(">> Do Force Down Failed");
+			pwrctrl_forcedown_post();
+			return;
 		}
+#ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
+	}
 #endif
 
-		LOG_DBG_APP(">> Do Force Down end");
-	}
-	else {
-		LOG_DBG_APP(">> Skip Force Down");
-	}
+	LOG_DBG_APP(">> Do Force Down end");
 }
 
 static void pwrctrl_do_hard_reset(void)
 {
-	uint8_t pwr_state = pwrseq_system_state();
+	LOG_DBG_APP(">> Do Hard Reset");
 
-	if (pwr_state == SYSTEM_S0_STATE) {
-		LOG_DBG_APP(">> Do Hard Reset");
+	gpio_write_pin(SOC_RSTBTN_N, 0);
+	k_msleep(20);
+	gpio_write_pin(SOC_RSTBTN_N, 1);
 
-		gpio_write_pin(SOC_RSTBTN_N, 0);
-		k_msleep(20);
-		gpio_write_pin(SOC_RSTBTN_N, 1);
-
-		LOG_DBG_APP(">> Do Hard Reset end");
-	}
-	else {
-		LOG_DBG_APP(">> Skip Hard Reset");
-	}
+	LOG_DBG_APP(">> Do Hard Reset end");
 }
 
 static void pwrctrl_do_power_cycle(void)
 {
-	uint8_t pwr_state = pwrseq_system_state();
+	LOG_DBG_APP(">> Do Power Cycle");
 
-	if (pwr_state == SYSTEM_S0_STATE) {
-		LOG_DBG_APP(">> Do Power Cycle");
-
-		pwrctrl_do_force_down();
+	pwrctrl_do_force_down();
 
 #if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-		switch_card_power_control(0);
+	switch_card_power_control(0);
 #endif
 
-		k_msleep(2000); /* 2 seconds */
+	k_msleep(2000); /* 2 seconds */
 
 #if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-		switch_card_power_control(1);
+	switch_card_power_control(1);
 #endif
 
-		pwrctrl_do_up();
+	pwrctrl_do_up();
 
-		LOG_DBG_APP(">> Do Power Cycle End");
-	}
-	else {
-		LOG_DBG_APP(">> Skip Power Cycle");
-	}
+	LOG_DBG_APP(">> Do Power Cycle End");
 }
+
+/*
+ * The array index must match the 'enum lom_mgmt_power_ctrl_act'.
+ */
+static void (*pwrctrl_funcs[])(void) = {
+	NULL,
+	pwrctrl_do_up,
+	pwrctrl_do_shutdown,
+	pwrctrl_do_hard_reset,
+	pwrctrl_do_force_down,
+	pwrctrl_do_power_cycle,
+};
 
 static void pwrctrl_worker(struct k_work *work)
 {
 	struct pwrctrl_work_data *data = CONTAINER_OF(work, struct pwrctrl_work_data, work_item);
 
-	switch (data->act)
-	{
-	case PWC_UP:
-		pwrctrl_do_up();
-		break;
-	case PWC_SHUTDOWN: /* gracefull shutdown */
-		pwrctrl_do_shutdown();
-		break;
-	case PWC_HARD_RESET:
-		pwrctrl_do_hard_reset();
-		break;
-	case PWC_FORCE_DOWN:
-		pwrctrl_do_force_down();
-		break;
-	case PWC_POWER_CYCLE:
-		pwrctrl_do_power_cycle();
-		break;
-	default:
-		return;
+	if (pwrctrl_funcs[data->act]) {
+		pwrctrl_funcs[data->act]();
+	}
+	else {
+		LOG_WRN("pwrctrl_worker fail quit");
 	}
 }
 #endif
@@ -663,6 +619,36 @@ static void pwrctrl_worker(struct k_work *work)
 static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 {
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+	uint8_t pwr_state = pwrseq_system_state();
+	int valid_request = 0;
+
+	switch (req[0]) {
+	case PWC_UP:
+		if (pwr_state == SYSTEM_S5_STATE || pwr_state == SYSTEM_S4_STATE) {
+			valid_request = 1;
+		}
+		break;
+	case PWC_SHUTDOWN:
+	case PWC_HARD_RESET:
+	case PWC_FORCE_DOWN:
+	case PWC_POWER_CYCLE:
+		if (pwr_state == SYSTEM_S0_STATE) {
+			valid_request = 1;
+		}
+		break;
+	default:
+		LOG_ERR("Unsupported PWC action %d", req[0]);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENOTSUP);
+		return -1;
+	}
+
+	if (!valid_request) {
+		LOG_ERR("Invalid PWC action <%d> on pwr_stat %d. Ignore", req[0],
+			pwr_state);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
 	uint32_t status = k_work_busy_get(&pwrctrl_work_data.work_item);
 	if (status & K_WORK_RUNNING) {
 		LOG_DBG_APP("PwrCtrl worker is busy");
