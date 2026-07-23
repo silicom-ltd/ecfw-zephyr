@@ -65,6 +65,7 @@ uint8_t get_board_id (void)
 void get_sbl_version(struct sbl_version *sbl)
 {
     /*
+      image_id; (8 bytes array)
       major_version;
       minor_version;
       build_number_high;

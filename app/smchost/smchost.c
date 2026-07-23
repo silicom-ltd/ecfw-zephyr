@@ -645,7 +645,7 @@ static uint8_t smchost_req_length(uint8_t command)
 		return 2;
 
     case SMCHOST_GET_SYS_IDS:
-        return 7;
+        return 15;
 
 	default:
 		return 0;
