@@ -131,20 +131,23 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 		return fan_lookup_tbl[idx].duty_cycle;
 	}
 
-	/* if temp rising above next temp and a timer isnt running, keep increasing index */
-	while ((temp >= fan_lookup_tbl[idx+1].temp) && (!timer_started || k_timer_status_get(&temp_timer))) {
+	/* Ramp up immediately: allowed every poll (~20s), NOT gated by the
+	 * ramp-down timer. A fast spin-up is what keeps the Falcon below 65C.
+	 */
+	while (temp >= fan_lookup_tbl[idx+1].temp) {
 		idx++;
 		index_changed = true;
 	}
-	/* if we are going higher, start the timer and return new higher duty cycle */
+	/* if we are going higher, return the new higher duty cycle right away */
 	if (index_changed) {
-		timer_started = 1;
-		k_timer_start(&temp_timer, K_SECONDS(60), K_NO_WAIT);
 		return fan_lookup_tbl[idx].duty_cycle;
 	}
 
-	/* if we are here, check for decreasing temperature */
-	while ((idx && (temp <= fan_lookup_tbl[idx-1].temp)) && (!timer_started || k_timer_status_get(&temp_timer)) ) {
+	/* Ramp down with negative hysteresis: leave a step only once temp falls
+	 * CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS degrees below that step's own
+	 * entry temperature. Rate-limited to one step per 60s by temp_timer.
+	 */
+	while ((idx && (temp < fan_lookup_tbl[idx].temp - CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS)) && (!timer_started || k_timer_status_get(&temp_timer)) ) {
 		idx--;
 		index_changed = true;
 	}

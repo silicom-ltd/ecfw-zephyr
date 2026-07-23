@@ -29,11 +29,13 @@ config THERMAL_FAN_OVERRIDE_VALUE
 
 config THERMAL_MGMT_NEGATIVE_HYSTERESIS
 	int "Negative hysteresis for fan control"
-	default 2
+	default 3
 	help
 	  Number of degrees of negative hysteresis to use for fan
-	  control.  Current temperature must be this many degrees 
-	  below current temperature/fan setting to slow the fan down.
+	  control.  To slow the fan down, the temperature must fall this
+	  many degrees below the entry temperature of the current fan step.
+	  Default 3 = conservative/Rule B (stays cooler longer); set to 2
+	  for Rule A. Provisional pending Beny/David confirmation.
 
 config EC_FAN_CONTROL
 	bool "Enable EC control"
