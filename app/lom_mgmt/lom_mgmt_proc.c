@@ -495,15 +495,9 @@ static void pwrctrl_do_shutdown(void)
 	LOG_DBG_APP(">> Do Normal Down end");
 }
 
-
-static int wait_sig_value(volatile int *sig,
-	int set_val, int exp_val, uint32_t timeout, bool init_sig)
+static int wait_sig_value(volatile int *sig, int exp_val, uint32_t timeout)
 {
 	uint16_t loop_cnt = MS_TIMEOUT_TO_CNT(timeout);
-
-	if (init_sig) {
-		*sig = set_val;
-	}
 
 	while (loop_cnt && *sig != exp_val) {
 		k_msleep(WAIT_SIG_SLEEP_TIME_MS);
@@ -513,9 +507,12 @@ static int wait_sig_value(volatile int *sig,
 	return ((*sig == exp_val) ? WORK_RET_OK : WORK_RET_TIMEOUT);
 }
 
-static inline int wait_sig_value_no_init(volatile int *sig, int exp_val, uint32_t timeout)
+static int wait_sig_value_with_init(volatile int *sig, int set_val, int exp_val,
+	uint32_t timeout)
 {
-	return wait_sig_value(sig, 0, exp_val, timeout, false);
+	*sig = set_val;
+
+	return wait_sig_value(sig, exp_val, timeout);
 }
 
 static inline void pwrctrl_forcedown_post(void)
@@ -537,7 +534,7 @@ static void pwrctrl_do_force_down(void)
 
 	pwrctrl_do_shutdown();
 
-	ret = wait_sig_value_no_init(&slp_sig_PLTRST, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
+	ret = wait_sig_value(&slp_sig_PLTRST, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
 	if (ret == WORK_RET_QUIT) {
 		LOG_DBG_APP(">> Normal Down wait quit");
 		return;
@@ -549,7 +546,7 @@ static void pwrctrl_do_force_down(void)
 
 		gpio_write_pin(PM_PWRBTN, 0);
 
-		ret = wait_sig_value(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS, true);
+		ret = wait_sig_value_with_init(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS);
 		if (ret == WORK_RET_QUIT) {
 			LOG_DBG_APP(">> Force Down Wait quit");
 			pwrctrl_forcedown_post();
