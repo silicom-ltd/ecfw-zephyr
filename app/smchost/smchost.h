@@ -44,7 +44,7 @@
 #define PECI_OVER_ESPI_MODE 1
 
 /* EC identifier */
-#define SMCHOST_MAX_BUF_SIZE		10
+#define SMCHOST_MAX_BUF_SIZE		20
 
 /* Virtual Dock Status */
 #define VIRTUAL_DOCK_CONNECTED 0
