@@ -181,15 +181,45 @@ menu "EC LOM management interface"
 
 config I2C_TARGET_LOM_MGMT
 	bool "I2C Target LOM_MGMT driver"
-	depends on I2C_TARGET
+	depends on I2C
+	depends on DT_HAS_I2C_TARGET_LOM_MGMT_ENABLED
+	select I2C_TARGET
 	help
 	  Enable virtual I2C Target LOM_MGMT driver
 
+if I2C_TARGET_LOM_MGMT
+
 config LOM_MGMT_I2C_LOG_LEVEL
-	int "lom mgmt i2c log level"
-	depends on LOG && I2C_TARGET_LOM_MGMT
-	default 0
+	int "Log level of LOM-MGMT I2C target driver"
+	depends on LOG
 	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	default 0
 	help
-	  Set log level for LOM_MGMT I2C target driver.
+	  Set log level for LOM-MGMT I2C target driver.
+
+config LOM_MGMT_I2C_DBG_APP
+	bool "LOM-MGMT Protocol(I2C part) application layer debugging"
+	depends on LOG
+	depends on LOM_MGMT_I2C_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol(I2C part) at the application level
+
+config LOM_MGMT_I2C_DBG_STA
+	bool "LOM-MGMT Protocol(I2C part) state machine debugging"
+	depends on LOG
+	depends on LOM_MGMT_I2C_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol(I2C part)'s state machine
+
+config LOM_MGMT_I2C_DBG_I2C
+	bool "LOM-MGMT Protocol(I2C part) I2C data debugging"
+	depends on LOG
+	depends on LOM_MGMT_I2C_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol(I2C part)'s I2C data transfer
+endif
+
 endmenu

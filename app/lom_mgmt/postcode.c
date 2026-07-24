@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 
 #include <zephyr/kernel.h>
@@ -7,7 +13,7 @@
 #include "lom_mgmt_proc_inc.h"
 #include "postcode.h"
 
-LOG_MODULE_REGISTER(postcode_mon, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
+LOG_MODULE_DECLARE(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 //#define DBG_SHARED_RB
 
@@ -77,7 +83,7 @@ static int _ring_buf_get_block(struct ring_buf* ring_buf, uint8_t* dest, uint16_
 		if (dest && readn) {
 			memcpy(&dest[count], data, readn);
 		}
-		ring_buf_get_finish(&postcode_ring_buf, readn);
+		ring_buf_get_finish(ring_buf, readn);
 
 		count += readn;
 	}
@@ -407,7 +413,7 @@ int postcode_get(uint8_t *buf, uint16_t buf_size, uint16_t *ret_size)
 }
 #endif
 
-int postcode_count()
+int postcode_count(void)
 {
 	uint16_t count = 0;
 

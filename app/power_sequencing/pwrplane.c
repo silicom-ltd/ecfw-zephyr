@@ -83,10 +83,12 @@ static bool pwrseq_failure;
 static enum system_power_state current_state;
 static enum system_power_state next_state;
 
+#ifdef CONFIG_TRACK_ALL_ACPI_SLEEP_SIGNALS
 #define SLP_SIG_S3 0x1
 #define SLP_SIG_S4 0x2
 #define SLP_SIG_S5 0x4
 static int asserted_slp_sigs;
+#endif
 
 /* Handle S5 entry/exit and G3 exit */
 void power_off(void);
@@ -149,6 +151,25 @@ static void pwrseq_slp_handler(uint32_t signal, uint32_t status)
 		}
 	} else {
 		/* SLPx assertion indicates a specific power system state */
+#ifndef CONFIG_TRACK_ALL_ACPI_SLEEP_SIGNALS
+		switch (current_state) {
+		case SYSTEM_S0_STATE:
+			if (signal == ESPI_VWIRE_SIGNAL_SLP_S3) {
+				LOG_DBG("SLP S3 asserted");
+				next_state = SYSTEM_S3_STATE;
+			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S4) {
+				LOG_DBG("SLP S4 asserted");
+		//		if (next_state != SYSTEM_S5_STATE)
+					next_state = SYSTEM_S4_STATE;
+			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S5) {
+				LOG_DBG("SLP S5 asserted");
+				next_state = SYSTEM_S5_STATE;
+			}
+			break;
+		default:
+			LOG_WRN("<DN> SLP_SX[%d] while at %x", signal, current_state);
+		}
+#else
 		if (current_state >= SYSTEM_S0_STATE && current_state <= SYSTEM_S5_STATE) {
 			switch (signal) {
 			case ESPI_VWIRE_SIGNAL_SLP_S3:
@@ -189,6 +210,7 @@ static void pwrseq_slp_handler(uint32_t signal, uint32_t status)
 		else {
 			LOG_WRN("<DN> SLP_SX[%d] while at %x", signal, current_state);
 		}
+#endif
 	}
 }
 
@@ -591,9 +613,11 @@ static void pwrseq_update(void)
 	}
 
 	if (valid_sx_transition) {
-		LOG_INF("System transition %d->%d", current_state, next_state);
+		LOG_WRN("System transition %d->%d", current_state, next_state);
 		current_state = next_state;
+#ifdef CONFIG_TRACK_ALL_ACPI_SLEEP_SIGNALS
 		asserted_slp_sigs = 0;
+#endif
 	} else {
 		LOG_ERR("Unsupported next state: %d", next_state);
 		/* Do not transition to invalid state,
@@ -642,6 +666,37 @@ void set_next_state_to_S5(void)
 {
 	next_state = SYSTEM_S5_STATE;
 }
+
+#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
+void switch_card_power_control(int act)
+{
+	int ret;
+
+	ret = gpio_read_pin(SW_SENSE_N);
+	if (ret < 0) {
+		LOG_ERR("Read SW_SENSE_N failed: %d", ret);
+		return;
+	}
+	if (ret == 1) {
+		LOG_ERR("Switch card not present!");
+		return;
+	}
+
+	ret = gpio_write_pin(SW_PWR_ON_OFF, !!act);
+	if (ret < 0) {
+		LOG_ERR("Write SW_PWR_ON_OFF failed: %d", ret);
+		return;
+	}
+
+	ret = wait_for_pin(SW_PWR_OK, 150000, !!act);
+	if (ret < 0) {
+		LOG_ERR("Power %s switch card failed: %d.", act ? "on" : "off", ret);
+		return;
+	}
+
+	LOG_INF("Power %s switch card successfully", act ? "on" : "off");
+}
+#endif
 
 void pwrseq_thread(void *p1, void *p2, void *p3)
 {
@@ -780,6 +835,8 @@ void power_off(void)
 {
 	int level;
 
+	LOG_DBG("Power off started");
+
 #ifdef VCCST_PWRGD
 	gpio_write_pin(VCCST_PWRGD, 0);
 #endif
@@ -821,18 +878,14 @@ extern void host_clear_all_led_ownership(void);
 	port80_display_off();
 #endif
 
-	LOG_DBG("Power off complete");
+	LOG_INF("Power off complete");
 }
-
 
 static int power_on(void)
 {
 	int ret;
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	int level;
-#endif
 
-	LOG_INF("%s", __func__);
+	LOG_INF("Power on started");
 
 	pwrseq_reset();
 
@@ -888,16 +941,7 @@ static int power_on(void)
 	k_busy_wait(VR_ON_RAMP_DELAY_US);
 
 #if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	LOG_DBG("Turn on Switch card");
-	ret = gpio_write_pin(SW_PWR_ON_OFF, 1);
-
-	level = gpio_read_pin(SW_SENSE_N);
-
-	if (level == 0) {
-		LOG_DBG("Switch card detected!");
-		ret = wait_for_pin(SW_PWR_OK, 150000, 1);
-		LOG_DBG("Switch card SW_PWR_OK timeout");
-	}
+	switch_card_power_control(1);
 #endif
 
 #if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N) || \
@@ -956,14 +1000,14 @@ extern void fans_set_default(void);
 #ifdef CONFIG_ESPI_PERIPHERAL_8042_KBC
 	kbc_enable_interface();
 #endif
-	LOG_INF("%s new state %d", __func__, current_state);
+	LOG_INF("Power on complete. current state %d", current_state);
 
 	return 0;
 }
 
 static void suspend(void)
 {
-	LOG_DBG("%s", __func__);
+	LOG_DBG("Suspend started");
 
 	gpio_write_pin(PCH_PWROK, 0);
 	gpio_write_pin(SYS_PWROK, 0);
@@ -971,13 +1015,15 @@ static void suspend(void)
 #ifdef CONFIG_POSTCODE_MANAGEMENT
 	port80_display_off();
 #endif
+
+	LOG_INF("Suspend complete");
 }
 
 static int resume(void)
 {
 	int ret;
 
-	LOG_DBG("%s", __func__);
+	LOG_DBG("Resume started");
 
 	/* Perform power on sequence. If no errors, notify BIOS */
 	ret = power_on();
@@ -986,5 +1032,8 @@ static int resume(void)
 	}
 
 	board_resume();
+
+	LOG_INF("Resume complete");
+
 	return ret;
 }

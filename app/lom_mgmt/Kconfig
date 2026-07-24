@@ -1,22 +1,22 @@
 
+menu "EC LOM management processor"
+
 config LOM_MGMT_PROC
 	bool "Enable LOM_MGMT Processing"
 	depends on I2C_TARGET_LOM_MGMT
 	help
 	  Enable LOM_MGMT process module
 
-config LOM_MGMT_PROC_LOG_LEVEL
-	int "LOM management handler log level"
-	depends on LOG
-	depends on LOM_MGMT_PROC
-	default 2
-	default 4 if CONFIG_EC_DEBUG_LOG_LEVEL
+if LOM_MGMT_PROC
+
+config LOM_MGMT_LARGE_SENSOR_VALUE
+	bool "Support for large sensor value"
+	default n
 	help
-	  Set log level for LOM management handler module.
+	  Enable this option to supports the sensor value large than 131.072
 
 config LOM_MGMT_FUNC_HOST_EVENT
 	bool "Host events monitoring support"
-	depends on LOM_MGMT_PROC
 	select RING_BUFFER
 	default y
 	help
@@ -24,14 +24,15 @@ config LOM_MGMT_FUNC_HOST_EVENT
 
 config HOST_EVENT_ENTRY_MAX
 	int "Maxmium log entries for host event"
-	depends on LOM_MGMT_PROC
+	depends on LOM_MGMT_FUNC_HOST_EVENT
 	default 512
 	help
 	  Set limits of ring buffer for host event log.
 
 config LOM_MGMT_FUNC_POSTCODE
 	bool "BIOS POST code monitoring support"
-	depends on LOM_MGMT_PROC && POSTCODE_MANAGEMENT
+	depends on POSTCODE_MANAGEMENT
+	select POSTCODE_MONITOR_SUPPORT
 	select RING_BUFFER
 	default n
 	help
@@ -47,16 +48,84 @@ config HOST_POSTCODE_ENTRY_MAX
 
 config LOM_MGMT_FUNC_POWER_CTRL
 	bool "Power control support"
-	depends on LOM_MGMT_PROC
 	default n
 	help
 	  Enable support for host power control functions (e.g., power on,
 	  power off, and reset) via the EC.
 
+config ATTEMPT_GRACEFUL_SHUTDOWN
+	bool "Attempt graceful shutdown before forced shutdown"
+	depends on LOM_MGMT_FUNC_POWER_CTRL
+	default y
+	help
+	  If enabled, the system will attempt to perform a graceful
+	  shutdown before a forced shutdown is executed
+
+config HOST_GRACEFUL_SHUTDOWN_WAIT_TIME
+	int "Host graceful shutdown timeout"
+	depends on LOM_MGMT_FUNC_POWER_CTRL && ATTEMPT_GRACEFUL_SHUTDOWN
+	default 30000
+	help
+	  The amount of time, in miliseconds, to wait for the host to
+	  perform a graceful shutdown before proceeding.
+
 config LOM_MGMT_FUNC_FRU
 	bool "FRU data retrieval support"
-	depends on LOM_MGMT_PROC
 	default n
 	help
-	  Enable support for reading Field Replaceable Unit (FRU) information
-	  and providing it to the LOM.
+	  Enable support for reading FRU and providing it to the LOM.
+
+config LOM_MGMT_FUNC_REPORT_LOM_IP
+	bool "Support LOM to report its IP information"
+	default y
+	help
+	  Enable support for LOM to report its IP information.
+
+config LOM_MGMT_FUNC_GET_SYS_IDS
+	bool "Support obtaining the SBL version."
+	default y
+	help
+	  Enable support for LOM to get SBL version from EC.
+
+config LOM_MGMT_PROC_LOG_LEVEL
+	int "LOM management handler log level"
+	depends on LOG
+	default 2
+	help
+	  Set log level for LOM management handler module.
+
+config LOM_MGMT_PROC_DBG_APP
+	bool "LOM-MGMT Protocol Application Layer debugging"
+	depends on LOG
+	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol at the application level
+
+config LOM_MGMT_PROC_DBG_PCODE
+	bool "LOM-MGMT protocol's postcode processing debugging"
+	depends on LOG && LOM_MGMT_FUNC_POSTCODE
+	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol's postcode processing
+
+config LOM_MGMT_PROC_DBG_EVENT
+	bool "LOM-MGMT protocol's host_event processing debugging"
+	depends on LOG && LOM_MGMT_FUNC_HOST_EVENT
+	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol's host_event processing
+
+config LOM_MGMT_PROC_DBG_SENS
+	bool "LOM-MGMT protocol's sensor processing debugging"
+	depends on LOG
+	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol's sensor processing
+
+endif
+
+endmenu

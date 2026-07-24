@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020 Intel Corporation
+ * Copyright (c) 2023 Silicom Connectivity Solutions, Ltd.
  *
  * SPDX-License-Identifier: Apache-2.0
  */
