@@ -41,9 +41,8 @@
 		fan7 = &fan2_4;
 		gpioled0 = &amber_mid;
 		gpioled1 = &amber_bot;
-		gpioled2 = &pwr_led_green;
-		gpioled3 = &front_location;
-		gpioled4 = &failed_led;
+		gpioled2 = &front_location;
+		gpioled3 = &failed_led;
 	};
 
 	gpio_keys {
@@ -119,13 +118,6 @@
 		/* GPIO 244 */
 		led5 {
 			gpios = <&gpio_240_276 4 GPIO_ACTIVE_LOW>;
-		};
-	};
-	pwr_led_green: led_6 {
-		compatible = "gpio-leds";
-		/* GPIO 115 */
-		led6 {
-			gpios = <&gpio_100_136 13 GPIO_ACTIVE_LOW>;
 		};
 	};
 	fan_fail: led_7 {
@@ -267,6 +259,11 @@
 		gpio-hog;
 		gpios = <16 GPIO_ACTIVE_HIGH>;
 		output-high;
+	};
+	pwrled {
+		gpio-hog;
+		gpios = <13 GPIO_ACTIVE_HIGH>;
+		output-low;
 	};
 };
 //&gpio_140_176 {
