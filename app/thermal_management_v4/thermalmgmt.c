@@ -109,62 +109,82 @@ const struct device *fan_devices[] = {
 };
 
 K_TIMER_DEFINE(temp_timer, NULL, NULL);
+
+/* Current fan step index into fan_lookup_tbl[]. File-scope (not a function
+ * static) so the ramp-up confirm-read in manage_fan can peek the current step
+ * before a change is committed.
+ */
+static int fan_step_idx;
+static int fan_timer_started;
+
 static uint16_t get_fan_speed_for_temp(uint16_t temp)
 {
-	static int idx = 0;
-	static int timer_started = 0;
 	bool index_changed = false;
+	const int last = ARRAY_SIZE(fan_lookup_tbl) - 1;
 
 	/* less than or = lowest temp, return lowest duty cycle */
 	if (temp <= fan_lookup_tbl[0].temp){
-		idx = 0;
+		fan_step_idx = 0;
 		k_timer_stop(&temp_timer);
-		timer_started = 0;
-		return fan_lookup_tbl[idx].duty_cycle;
+		fan_timer_started = 0;
+		return fan_lookup_tbl[fan_step_idx].duty_cycle;
 	}
 
 	/* greater than or = highest temp, return max duty cycle */
-	if (temp >= fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
-		idx = ARRAY_SIZE(fan_lookup_tbl)-1;
+	if (temp >= fan_lookup_tbl[last].temp) {
+		fan_step_idx = last;
 		k_timer_stop(&temp_timer);
-		timer_started = 0;
-		return fan_lookup_tbl[idx].duty_cycle;
+		fan_timer_started = 0;
+		return fan_lookup_tbl[fan_step_idx].duty_cycle;
 	}
 
 	/* Ramp up immediately: allowed every poll (~20s), NOT gated by the
 	 * ramp-down timer. A fast spin-up is what keeps the Falcon below 65C.
+	 * Single-sample glitches on this edge are rejected by the confirm-read
+	 * in manage_fan before we get here.
 	 */
-	while (temp >= fan_lookup_tbl[idx+1].temp) {
-		idx++;
+	while (fan_step_idx < last && temp >= fan_lookup_tbl[fan_step_idx+1].temp) {
+		fan_step_idx++;
 		index_changed = true;
 	}
 	/* if we are going higher, return the new higher duty cycle right away */
 	if (index_changed) {
-		return fan_lookup_tbl[idx].duty_cycle;
+		return fan_lookup_tbl[fan_step_idx].duty_cycle;
 	}
 
 	/* Ramp down with negative hysteresis: leave a step only once temp falls
 	 * CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS degrees below that step's own
 	 * entry temperature. Rate-limited to one step per 60s by temp_timer.
 	 */
-	while ((idx && (temp < fan_lookup_tbl[idx].temp - CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS)) && (!timer_started || k_timer_status_get(&temp_timer)) ) {
-		idx--;
+	while ((fan_step_idx && (temp < fan_lookup_tbl[fan_step_idx].temp - CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS)) && (!fan_timer_started || k_timer_status_get(&temp_timer)) ) {
+		fan_step_idx--;
 		index_changed = true;
 	}
 
-	/* if we got a new lower index, start the timer and return new lower duty cycle */	
+	/* if we got a new lower index, start the timer and return new lower duty cycle */
 	if (index_changed) {
-		timer_started = 1;
+		fan_timer_started = 1;
 		k_timer_start(&temp_timer, K_SECONDS(60), K_NO_WAIT);
-		return fan_lookup_tbl[idx].duty_cycle;
+		return fan_lookup_tbl[fan_step_idx].duty_cycle;
 	}
 
 	/* if here, temp is stablizing, if its expired no timers */
 	if (k_timer_status_get(&temp_timer)) {
-		timer_started = 0;
+		fan_timer_started = 0;
 	}
-		
-	return fan_lookup_tbl[idx].duty_cycle;
+
+	return fan_lookup_tbl[fan_step_idx].duty_cycle;
+}
+
+/* Read the Falcon (switch ASIC) temperature in whole degrees C. */
+static int read_falcon_temp(void)
+{
+	struct sensor_value t;
+
+	sensor_sample_fetch_chan(temp_device, SENSOR_CHAN_DIE_TEMP);
+	sensor_channel_get(temp_device, SENSOR_CHAN_DIE_TEMP, &t);
+
+	return t.val1;
 }
 
 static void init_fans(void)
@@ -227,8 +247,10 @@ void host_set_bios_fan_override(bool en, uint8_t speed)
 
 static void manage_fan(void)
 {
-	struct sensor_value temp;
 	uint8_t fan_duty_cycle;
+	int temp, cur;
+	const int last = ARRAY_SIZE(fan_lookup_tbl) - 1;
+	bool hold = false;
 	int i;
 
 	/* Disable power to fan in S5/4/3 and in CS,
@@ -242,11 +264,45 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
-	sensor_sample_fetch_chan(temp_device, SENSOR_CHAN_DIE_TEMP);
-	sensor_channel_get(temp_device, SENSOR_CHAN_DIE_TEMP, &temp);
+	temp = read_falcon_temp();
+	cur = fan_step_idx;
 
-	fan_duty_cycle = get_fan_speed_for_temp(temp.val1);
-	LOG_DBG("Temp read %d, fan state %d", temp.val1, fan_duty_cycle);
+	/* Ramp-up change point? Confirm it with a second reading before raising
+	 * the fan (Beny's "2 consecutive readings" debounce on step entry) so a
+	 * single-sample sensor glitch cannot kick the fan up. Only the ramp-up
+	 * edge is confirmed - ramp-down already has hysteresis + the 60s gate.
+	 * The >=65C -> 100% safety jump (temp >= last-step temp) is NOT confirmed
+	 * so full speed is never delayed. CONFIRM_MS = 0 disables the re-read.
+	 *
+	 * Note: the confirm sleeps in the thermal thread, so at a change point the
+	 * following manage_cpu_thermal() crit-temp check is delayed by CONFIRM_MS.
+	 * Harmless (crit is 103C and the fan is already ramping).
+	 */
+	if (CONFIG_THERMAL_MGMT_CONFIRM_MS > 0 &&
+	    temp < fan_lookup_tbl[last].temp &&
+	    cur < last && temp >= fan_lookup_tbl[cur+1].temp) {
+		int t2;
+
+		k_msleep(CONFIG_THERMAL_MGMT_CONFIRM_MS);
+		t2 = read_falcon_temp();
+
+		if (t2 >= fan_lookup_tbl[cur+1].temp) {
+			/* both readings agree: commit using the fresh reading */
+			temp = t2;
+		} else {
+			/* second read disagrees -> glitch: hold this cycle */
+			hold = true;
+			LOG_DBG("Ramp-up unconfirmed (crossed %d, t2=%d); hold step %d",
+				fan_lookup_tbl[cur+1].temp, t2, cur);
+		}
+	}
+
+	if (hold)
+		fan_duty_cycle = fan_lookup_tbl[cur].duty_cycle;
+	else
+		fan_duty_cycle = get_fan_speed_for_temp(temp);
+
+	LOG_DBG("Temp read %d, fan state %d", temp, fan_duty_cycle);
 
 	for (i = 0; i < ARRAY_SIZE(fan_devices); i++)
 		fan_set_cycles(fan_devices[i], fan_duty_cycle);

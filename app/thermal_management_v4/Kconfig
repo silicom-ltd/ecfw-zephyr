@@ -37,6 +37,18 @@ config THERMAL_MGMT_NEGATIVE_HYSTERESIS
 	  Default 3 = conservative/Rule B (stays cooler longer); set to 2
 	  for Rule A. Provisional pending Beny/David confirmation.
 
+config THERMAL_MGMT_CONFIRM_MS
+	int "Ramp-up change confirmation delay (ms)"
+	default 1500
+	help
+	  When a temperature reading first crosses a fan step upward, the EC
+	  waits this many milliseconds and takes a second reading before
+	  raising the fan; the step only changes if the second reading agrees.
+	  This is a debounce on step entry ("2 consecutive readings") that
+	  rejects single-sample sensor glitches. The >=65C -> 100% safety jump
+	  is not delayed. Set 0 to disable the confirm read (act on a single
+	  reading).
+
 config EC_FAN_CONTROL
 	bool "Enable EC control"
 	help
