@@ -143,6 +143,7 @@ extern uint8_t platformskutype;
 
 // struct sbl version for LOM
 struct sbl_version {
+    uint8_t image_id[8];
     uint8_t major_version;
     uint8_t minor_version;
     uint8_t build_number_high;
@@ -155,7 +156,7 @@ struct sbl_version {
 
 /**
     struct sys_ids holds all the members of struct sbl_version
-    e.g major, minor, bld_number_high and bld_number_low, flags,
+    e.g image id, major, minor, bld_number_high and bld_number_low, flags,
     and additionally board_id and bom_id
 **/
 struct sys_ids {
