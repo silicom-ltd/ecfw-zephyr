@@ -37,6 +37,13 @@ extern uint8_t boot_mode_maf;
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 #include "thermalmgmt.h"
 #include "board_thermal.h"
+#elif defined(CONFIG_THERMAL_MANAGEMENT_V4)
+/* V4 gets its sensor and fan devices from the devicetree, so it does not use
+ * the V1/V2 board table API in board_thermal.h - and that header's prototypes
+ * reference struct therm_sensor / struct fan_dev, which V4 does not define.
+ * Pull in thermalmgmt.h alone so the SMC host can reach the V4 hooks.
+ */
+#include "thermalmgmt.h"
 #endif
 /**
  * @brief Perform platform configuration depending on the board.

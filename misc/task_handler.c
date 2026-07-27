@@ -159,7 +159,7 @@ static struct task_info tasks[] = {
 	  .tagname = "SMC" },
 
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2) || \
-	defined(CONFIG_THERMAL_MANAGEMENT_V3)
+	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4)
 	{ .thread_id = thermal_thrd_id, .can_suspend = false,
 	  .tagname = THRML_MGMT_TASK_NAME },
 #endif
