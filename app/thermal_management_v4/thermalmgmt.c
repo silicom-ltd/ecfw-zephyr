@@ -90,13 +90,16 @@ struct fan_lookup {
 	uint8_t duty_cycle;
 };
 
+/* Maestro fan curve (Beny profile, confirmed 2026-07-27). Index 0 is the idle floor for
+ * temperatures below 60 C; its .temp is a sentinel and is not a real threshold.
+ */
 static const struct fan_lookup fan_lookup_tbl[]= {
+	{0,  50},	/* < 60 C : idle */
 	{60, 60},
 	{61, 70},
 	{62, 80},
 	{63, 90},
-	{64, 95},
-	{65, 100},
+	{64, 100},
 };
 
 const struct device *temp_device = DEVICE_DT_GET(DT_PHANDLE(DT_PATH(zephyr_user), fan_temp_device));
@@ -122,12 +125,12 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	bool index_changed = false;
 	const int last = ARRAY_SIZE(fan_lookup_tbl) - 1;
 
-	/* less than or = lowest temp, return lowest duty cycle */
-	if (temp <= fan_lookup_tbl[0].temp){
+	/* below the lowest active step (60 C): idle floor, index 0 (50%) */
+	if (temp < fan_lookup_tbl[1].temp){
 		fan_step_idx = 0;
 		k_timer_stop(&temp_timer);
 		fan_timer_started = 0;
-		return fan_lookup_tbl[fan_step_idx].duty_cycle;
+		return fan_lookup_tbl[0].duty_cycle;
 	}
 
 	/* greater than or = highest temp, return max duty cycle */
@@ -269,17 +272,16 @@ static void manage_fan(void)
 
 	/* Ramp-up change point? Confirm it with a second reading before raising
 	 * the fan (Beny's "2 consecutive readings" debounce on step entry) so a
-	 * single-sample sensor glitch cannot kick the fan up. Only the ramp-up
-	 * edge is confirmed - ramp-down already has hysteresis + the 60s gate.
-	 * The >=65C -> 100% safety jump (temp >= last-step temp) is NOT confirmed
-	 * so full speed is never delayed. CONFIRM_MS = 0 disables the re-read.
+	 * single-sample sensor glitch cannot kick the fan up. Every upward step
+	 * (including 100% at >=64C) is confirmed, per Beny's table. Ramp-down is
+	 * not confirmed - the 60s rate limiter is its "hysteresis" instead.
+	 * CONFIRM_MS = 0 disables the re-read.
 	 *
 	 * Note: the confirm sleeps in the thermal thread, so at a change point the
 	 * following manage_cpu_thermal() crit-temp check is delayed by CONFIRM_MS.
 	 * Harmless (crit is 103C and the fan is already ramping).
 	 */
 	if (CONFIG_THERMAL_MGMT_CONFIRM_MS > 0 &&
-	    temp < fan_lookup_tbl[last].temp &&
 	    cur < last && temp >= fan_lookup_tbl[cur+1].temp) {
 		int t2;
 
