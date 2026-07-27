@@ -277,7 +277,8 @@ static void smchost_pltrst_handler(uint8_t pltrst_sts)
 	pltrst_signal_sts = pltrst_sts;
 	LOG_DBG("SCI enabled %d", g_acpi_state_flags.sci_enabled);
 
-#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2) || \
+	defined(CONFIG_THERMAL_MANAGEMENT_V4)
 	if (pltrst_sts) {
 		peci_start_delay_timer();
 	}

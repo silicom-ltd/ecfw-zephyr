@@ -246,7 +246,8 @@ static void cs_exit(void)
 #endif
 	cs_state = false;
 
-#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
+#if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2) || \
+	defined(CONFIG_THERMAL_MANAGEMENT_V4)
 	thermalmgmt_handle_cs_exit();
 #endif
 }
