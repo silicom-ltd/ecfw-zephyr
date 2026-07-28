@@ -185,8 +185,7 @@ if I2C_TARGET_LOM_MGMT
 config LOM_MGMT_I2C_LOG_LEVEL
 	int "Log level of LOM-MGMT I2C target driver"
 	depends on LOG
-	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
-	default 0
+	default 3
 	help
 	  Set log level for LOM-MGMT I2C target driver.
 
