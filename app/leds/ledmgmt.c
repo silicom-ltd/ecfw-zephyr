@@ -68,6 +68,7 @@ static bool led_update;
 static const struct device *power_led;
 static uint8_t power_led_idx;	/* led_tbl index of power_led (for host handoff) */
 static uint8_t host_power_idx;	/* led_tbl index the host uses for the power LED */
+static bool netgate_sku;	/* FRU says Netgate: bottom power LED, green boot */
 
 /* ONIE "TlvInfo" FRU header: "TlvInfo\0" magic + version + 2-byte length. */
 #define FRU_HDR_SIZE		11
@@ -161,12 +162,14 @@ static void select_power_led(void)
 {
 	const struct device *default_led = DEVICE_DT_GET(POWER_LED_DEFAULT);
 
-	if (fru_is_netgate()) {
+	netgate_sku = fru_is_netgate();
+
+	if (netgate_sku) {
 		power_led = DEVICE_DT_GET(POWER_LED_NETGATE);
-		LOG_INF("Netgate SKU: power LED = bottom (pwmmcled2)");
+		LOG_INF("Netgate SKU: power LED = bottom (pwmmcled2), green boot");
 	} else {
 		power_led = default_led;
-		LOG_INF("Default SKU: power LED = top (pwmmcled0)");
+		LOG_INF("Default SKU: power LED = top (pwmmcled0), amber boot");
 	}
 
 	power_led_idx = 0;
@@ -467,9 +470,10 @@ static int color_table[] = {
 
 /*
  * The power LED breathes in both EC-owned states; only the color differs.
- * Amber until the platform reaches S0, then green from S0 until the OS claims
- * the LED -- so the whole SBL/UEFI boot window is breathing green. Once the
- * host owns the LED the EC stops driving it.
+ * Both SKUs breathe amber until the platform reaches S0. From S0 until the OS
+ * claims the LED -- the SBL/UEFI boot window -- they differ: Netgate breathes
+ * green, standard Ibiza keeps its legacy solid amber. Once the host owns the
+ * LED the EC stops driving it either way.
  *
  * The ramp advances one step per task tick (led_thrd_period, 5 ms), so a full
  * breath is ~1 s. Step `level` by more than 1, or only every Nth tick, to slow
@@ -510,6 +514,21 @@ static void manage_local_leds(void)
 		return;
 	}
 	handed_off = false;
+
+	/*
+	 * Boot window, standard SKU: legacy solid amber, unchanged. Only Netgate
+	 * breathes green here. Standby is amber on both, so the ramp below still
+	 * runs for this SKU whenever the platform is out of S0.
+	 */
+	if (in_s0 && !netgate_sku) {
+		colors[0] = color_table[COLOR_AMBER] >> 16;
+		colors[1] = (color_table[COLOR_AMBER] >> 8) & 0xFF;
+		colors[2] = color_table[COLOR_AMBER] & 0xFF;
+
+		led_set_color(led_pwm_mc, 0, 3, colors);
+		led_set_brightness(led_pwm_mc, 0, 100);
+		return;
+	}
 
 	color_choice = in_s0 ? COLOR_GREEN : COLOR_AMBER;
 
