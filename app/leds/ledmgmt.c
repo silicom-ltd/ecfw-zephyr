@@ -299,6 +299,25 @@ void host_update_led_ownership(uint8_t idx)
 	}
 }
 
+/*
+ * Drop all host LED ownership, handing the LEDs back to the EC.
+ *
+ * Ownership is otherwise set-only: nothing clears it on reset, and the OS sends
+ * no DISABLE_ACPI on reboot or poweroff, so without this the very first
+ * SLCM.RSET() would own the power LED for the rest of the EC's uptime. Every
+ * later boot would then skip the EC's boot indication and sit on whatever color
+ * was last programmed.
+ *
+ * Called on PLTRST# assertion, which covers both a warm reboot and the reset
+ * that precedes any cold boot, so the boot indication runs on every host boot.
+ */
+void host_clear_all_led_ownership(void)
+{
+	for (uint8_t i = 0; i < max_led_dev; i++) {
+		led_tbl[i].owned = 0;
+	}
+}
+
 void host_update_led_color(uint8_t idx, uint16_t greenblue, uint16_t red)
 {
 	idx = led_host_to_phys(idx);

@@ -25,6 +25,9 @@
 #else
 #include "led.h"
 #endif
+#ifdef CONFIG_LED_MANAGEMENT
+#include "ledmgmt.h"
+#endif
 
 #ifdef CONFIG_DNX_SUPPORT
 #include "dnx.h"
@@ -273,6 +276,17 @@ static void smchost_pltrst_handler(uint8_t pltrst_sts)
 	g_acpi_state_flags.sci_enabled = pltrst_sts;
 	pltrst_signal_sts = pltrst_sts;
 	LOG_DBG("SCI enabled %d", g_acpi_state_flags.sci_enabled);
+
+#ifdef CONFIG_LED_MANAGEMENT
+	if (!pltrst_sts) {
+		/*
+		 * Host is resetting: take the LEDs back so the EC's boot
+		 * indication runs again. The OS re-claims them from
+		 * SLCM.RSET() once ACPI is up.
+		 */
+		host_clear_all_led_ownership();
+	}
+#endif
 
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 	if (pltrst_sts) {
