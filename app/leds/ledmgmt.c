@@ -44,9 +44,9 @@ static bool led_update;
  *
  * The front panel has three RGB LEDs stacked vertically (top, middle,
  * bottom). By default the top RGB LED (pwmmcled0, PWM4/5/6) is the power LED
- * and carries the breathing/solid amber power-state indication. The Netgate
- * SKU instead uses the bottom RGB LED (pwmmcled2, PWM2/9/3). Everything
- * downstream drives whichever node landed in power_led.
+ * and carries the breathing power-state indication. The Netgate SKU instead
+ * uses the bottom RGB LED (pwmmcled2, PWM2/9/3). Everything downstream drives
+ * whichever node landed in power_led.
  *
  * The SKU comes from the ONIE "TlvInfo" FRU. The board caches the whole FRU in
  * board_init() as the single source of truth; we read that cache through
@@ -67,6 +67,8 @@ static bool led_update;
 
 static const struct device *power_led;
 static uint8_t power_led_idx;	/* led_tbl index of power_led (for host handoff) */
+static uint8_t host_power_idx;	/* led_tbl index the host uses for the power LED */
+static bool netgate_sku;	/* FRU says Netgate: bottom power LED, green boot */
 
 /* ONIE "TlvInfo" FRU header: "TlvInfo\0" magic + version + 2-byte length. */
 #define FRU_HDR_SIZE		11
@@ -146,35 +148,73 @@ static bool fru_is_netgate(void)
 }
 
 /*
- * Resolve which RGB node is the power LED and map it to its host-facing
- * led_tbl index, so the OS-handoff gate in manage_local_leds() watches the
- * same physical LED the EC lights amber on.
+ * Resolve which RGB node is the power LED and map it to its led_tbl index, so
+ * the OS-handoff gate in manage_local_leds() watches the same physical LED the
+ * EC breathes on.
  *
- * This keeps the EC self-consistent on both SKUs. It assumes the OS drives the
- * power LED by its physical index (index 0 on standard, index 2 on Netgate).
- * If the OS instead uses a fixed logical index regardless of SKU, a
- * logical->physical remap in the host path would be needed -- bench-verify.
+ * host_power_idx is the index the host uses to mean "the power LED": ACPI is
+ * SKU-agnostic and always addresses the default (top) node, so on Netgate the
+ * host index and the physical index differ and led_host_to_phys() bridges them.
  *
  * Runs once at task startup, after init_leds() has populated led_tbl.
  */
 static void select_power_led(void)
 {
-	if (fru_is_netgate()) {
+	const struct device *default_led = DEVICE_DT_GET(POWER_LED_DEFAULT);
+
+	netgate_sku = fru_is_netgate();
+
+	if (netgate_sku) {
 		power_led = DEVICE_DT_GET(POWER_LED_NETGATE);
-		LOG_INF("Netgate SKU: power LED = bottom (pwmmcled2)");
+		LOG_INF("Netgate SKU: power LED = bottom (pwmmcled2), green boot");
 	} else {
-		power_led = DEVICE_DT_GET(POWER_LED_DEFAULT);
-		LOG_INF("Default SKU: power LED = top (pwmmcled0)");
+		power_led = default_led;
+		LOG_INF("Default SKU: power LED = top (pwmmcled0), amber boot");
 	}
 
 	power_led_idx = 0;
+	host_power_idx = 0;
 	for (uint8_t i = 0; i < max_led_dev; i++) {
 		if (led_tbl[i].dev == power_led) {
 			power_led_idx = i;
-			break;
+		}
+		if (led_tbl[i].dev == default_led) {
+			host_power_idx = i;
 		}
 	}
-	LOG_INF("power LED host index = %u", power_led_idx);
+	LOG_INF("power LED idx = %u (host addresses %u)", power_led_idx,
+		host_power_idx);
+}
+
+/*
+ * Translate a host-supplied LED index into a led_tbl index.
+ *
+ * The host (ACPI) does not know about the SKU: it always drives the power LED
+ * at the default index, so on Netgate its writes -- e.g. the solid blue it sets
+ * once the OS is up -- would land on the top LED while the EC is still
+ * breathing on the bottom one, and the ownership gate would never trip.
+ *
+ * Swapping rather than one-way mapping keeps the other RGB LED addressable: the
+ * host index the power LED vacated now reaches the node the power LED isn't
+ * using. On the standard SKU the two indices are equal and this is a no-op.
+ *
+ * Note this assumes the host addresses the power LED at host_power_idx on both
+ * SKUs. If the OS is instead SKU-aware and already sends the physical index,
+ * this swap would undo that -- bench-verify against the ACPI/OS side before
+ * shipping (see also the FRU-marker caveat in fru_is_netgate()).
+ */
+static uint8_t led_host_to_phys(uint8_t idx)
+{
+	if (idx >= max_led_dev || power_led_idx == host_power_idx) {
+		return idx;
+	}
+	if (idx == host_power_idx) {
+		return power_led_idx;
+	}
+	if (idx == power_led_idx) {
+		return host_power_idx;
+	}
+	return idx;
 }
 
 #if 0
@@ -234,8 +274,13 @@ static void init_leds(void)
 
 }
 
+/* Takes a led_tbl (physical) index; host indices go through led_host_to_phys. */
 bool is_led_controlled_by_host(uint8_t idx)
 {
+	if (idx >= max_led_dev) {
+		return 0;
+	}
+
 	if (!is_system_in_acpi_mode()) {
 		LOG_DBG("LED control is over-ridden when not in ACPI mode.");
 		return 0;
@@ -250,13 +295,36 @@ bool is_led_controlled_by_host(uint8_t idx)
 
 void host_update_led_ownership(uint8_t idx)
 {
+	idx = led_host_to_phys(idx);
+
 	if (idx < max_led_dev) {
 		led_tbl[idx].owned = 1;
 	}
 }
 
+/*
+ * Drop all host LED ownership, handing the LEDs back to the EC.
+ *
+ * Ownership is otherwise set-only: nothing clears it on reset, and the OS sends
+ * no DISABLE_ACPI on reboot or poweroff, so without this the very first
+ * SLCM.RSET() would own the power LED for the rest of the EC's uptime. Every
+ * later boot would then skip the EC's boot indication and sit on whatever color
+ * was last programmed.
+ *
+ * Called on PLTRST# assertion, which covers both a warm reboot and the reset
+ * that precedes any cold boot, so the boot indication runs on every host boot.
+ */
+void host_clear_all_led_ownership(void)
+{
+	for (uint8_t i = 0; i < max_led_dev; i++) {
+		led_tbl[i].owned = 0;
+	}
+}
+
 void host_update_led_color(uint8_t idx, uint16_t greenblue, uint16_t red)
 {
+	idx = led_host_to_phys(idx);
+
 	if (!is_led_controlled_by_host(idx)) {
 		LOG_INF("LED %d is not in host control", idx);
 		return;
@@ -282,6 +350,8 @@ void host_update_led_color(uint8_t idx, uint16_t greenblue, uint16_t red)
 
 void host_update_led_brightness(uint8_t idx, uint8_t brightness)
 {
+	idx = led_host_to_phys(idx);
+
 	if (!is_led_controlled_by_host(idx)) {
 		LOG_INF("LED %d is not in host control", idx);
 		return;
@@ -304,6 +374,8 @@ void host_update_led_brightness(uint8_t idx, uint8_t brightness)
 
 void host_update_led_blink(uint8_t idx, uint16_t on, uint16_t off)
 {
+	idx = led_host_to_phys(idx);
+
 	if (!is_led_controlled_by_host(idx)) {
 		LOG_INF("LED %d is not in host control", idx);
 		return;
@@ -390,16 +462,32 @@ static int color_table[] = {
 	0xF0183C, /* darkish red */
 #endif
 	0xFF7F00, /* amber */
+	0x00FF00, /* green */
 };
 
+#define COLOR_AMBER	0
+#define COLOR_GREEN	1
+
+/*
+ * The power LED breathes in both EC-owned states; only the color differs.
+ * Both SKUs breathe amber until the platform reaches S0. From S0 until the OS
+ * claims the LED -- the SBL/UEFI boot window -- they differ: Netgate breathes
+ * green, standard Ibiza keeps its legacy solid amber. Once the host owns the
+ * LED the EC stops driving it either way.
+ *
+ * The ramp advances one step per task tick (led_thrd_period, 5 ms), so a full
+ * breath is ~1 s. Step `level` by more than 1, or only every Nth tick, to slow
+ * it down.
+ */
 static void manage_local_leds(void)
 {
 	static uint16_t level = 0;
 	static uint16_t countup = 1;
+	static bool handed_off;
 	const struct device *led_pwm_mc = power_led;
 	int err;
-	static int color_choice = 0;
-	static int loops = 0;
+	int color_choice;
+	bool in_s0;
 	uint8_t colors[3];
 
 	/* power_led is resolved before the task loop starts; guard anyway. */
@@ -407,40 +495,61 @@ static void manage_local_leds(void)
 		return;
 	}
 
-	if (pwrseq_system_state() != SYSTEM_S0_STATE) {
-		colors[0] = color_table[color_choice] >> 16;
-		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
-		colors[2] = color_table[color_choice] & 0xFF;
-	
-		led_set_color(led_pwm_mc, 0, 3, colors);
-		err = led_set_brightness(led_pwm_mc, 0, level);
-		if (err)
-			return;
-		if (countup)
-			level++;
-		else
-			level--;
+	in_s0 = (pwrseq_system_state() == SYSTEM_S0_STATE);
 
-		if (level == 100) {
-			countup = 0;
-			loops++;
-		}
-		else if (level == 0)
+	if (in_s0 && is_led_controlled_by_host(power_led_idx)) {
+		/*
+		 * Host owns the LED now. Blank the breathe once on the way out,
+		 * otherwise it stays frozen at whatever level the ramp had
+		 * reached; manage_leds() then applies the host's own color and
+		 * brightness. Re-armed below if control ever comes back.
+		 */
+		if (!handed_off) {
+			led_set_brightness(led_pwm_mc, 0, 0);
+			level = 0;
 			countup = 1;
+			handed_off = true;
+			LOG_INF("power LED handed off to host");
+		}
+		return;
 	}
-	else if (!is_led_controlled_by_host(power_led_idx)) {
-		colors[0] = color_table[color_choice] >> 16;
-		colors[1] = (color_table[color_choice] >> 8) & 0xFF;
-		colors[2] = color_table[color_choice] & 0xFF;
-		/* set to amber when BIOS booting */
+	handed_off = false;
+
+	/*
+	 * Boot window, standard SKU: legacy solid amber, unchanged. Only Netgate
+	 * breathes green here. Standby is amber on both, so the ramp below still
+	 * runs for this SKU whenever the platform is out of S0.
+	 */
+	if (in_s0 && !netgate_sku) {
+		colors[0] = color_table[COLOR_AMBER] >> 16;
+		colors[1] = (color_table[COLOR_AMBER] >> 8) & 0xFF;
+		colors[2] = color_table[COLOR_AMBER] & 0xFF;
+
 		led_set_color(led_pwm_mc, 0, 3, colors);
-		err = led_set_brightness(led_pwm_mc, 0, 100);
+		led_set_brightness(led_pwm_mc, 0, 100);
+		return;
 	}
 
-	if (loops == 10) {
-		color_choice = (color_choice + 1) % ARRAY_SIZE(color_table);
-		loops = 0;
-	}
+	color_choice = in_s0 ? COLOR_GREEN : COLOR_AMBER;
+
+	colors[0] = color_table[color_choice] >> 16;
+	colors[1] = (color_table[color_choice] >> 8) & 0xFF;
+	colors[2] = color_table[color_choice] & 0xFF;
+
+	led_set_color(led_pwm_mc, 0, 3, colors);
+	err = led_set_brightness(led_pwm_mc, 0, level);
+	if (err)
+		return;
+
+	if (countup)
+		level++;
+	else
+		level--;
+
+	if (level == 100)
+		countup = 0;
+	else if (level == 0)
+		countup = 1;
 }
 
 void ledmgmt_thread(void *p1, void *p2, void *p3)
