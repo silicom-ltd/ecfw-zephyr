@@ -235,6 +235,13 @@ target_sources_ifdef(CONFIG_LOM_MGMT_PROC app
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/postcode.h
 )
 
+target_sources_ifdef(CONFIG_LOM_MGMT_FUNC_POWER_CTRL app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_pwrcycle.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_pwrcycle.h
+)
+
 target_sources_ifdef(CONFIG_SW_POWER_SIGNAL app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/sw_power/sw_power.c
