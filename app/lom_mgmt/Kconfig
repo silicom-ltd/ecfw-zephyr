@@ -132,12 +132,16 @@ config LOM_PWRCYCLE_FORCEOFF_HOLD_MS
 	int "Maximum power button hold during a LOM power cycle (ms)"
 	default 13000
 	help
-	  Upper bound on how long PM_PWRBTN is held low waiting for the PCH to
-	  honour the power button override. The hold must outlast the PCH's
-	  configured override period, which is platform specific and set by
-	  BIOS (PchPmPwrBtnOverridePeriod). The default covers the longest
-	  selectable period with margin. The wait exits as soon as the host
-	  starts going down, so a generous value costs nothing.
+	  Step 2, which is a forced power off: PM_PWRBTN is asserted and held
+	  until the PCH honours its power button override. No ACPI shutdown
+	  request is sent and no graceful wait is attempted; PWC_SHUTDOWN
+	  remains available for a graceful shutdown.
+
+	  This value is the upper bound on that hold. It must outlast the PCH's
+	  configured override period, which is platform specific and set by BIOS
+	  (PchPmPwrBtnOverridePeriod - 6 s on Maestro). The default covers the
+	  longest selectable period with margin. The wait exits as soon as the
+	  host starts going down, so a generous value costs nothing.
 
 config LOM_PWRCYCLE_DOWN_WAIT_MS
 	int "Maximum wait for the host to be confirmed down (ms)"
@@ -152,8 +156,30 @@ config LOM_PWRCYCLE_DWELL_MS
 	int "Host off dwell during a LOM power cycle (ms)"
 	default 5000
 	help
-	  How long the host and switch card stay powered off before the host is
-	  powered back on. Measured from the point the host is confirmed down.
+	  Step 5. How long the host and switch card stay powered off before the
+	  host is powered back on. Measured from the confirmed switch card power
+	  down, not from an earlier point in the shutdown.
+
+config LOM_PWRCYCLE_SWITCH_ON_BEFORE_CPU
+	bool "Restore switch card power before powering the host on"
+	default y
+	help
+	  Step 6. Enable switch card power explicitly before pressing the power
+	  button, so the switch has the maximum time to come out of reset before
+	  BIOS enumerates PCIe.
+
+	  power_on() also enables the switch, after ALL_SYS_PWRGD and before
+	  PCH_PWROK, so the switch is ahead of the CPU leaving reset either way.
+	  Disable this only to rely on that later call, which grants roughly the
+	  platform power up duration less lead time.
+
+config LOM_PWRCYCLE_UP_WAIT_MS
+	int "Maximum wait for the host to come back up (ms)"
+	default 30000
+	help
+	  Step 7. Upper bound on how long to wait for the sequencer to report
+	  SYSTEM_S0_STATE after the power button is pressed. Exceeding it is
+	  logged as a failed power cycle; no further action is taken.
 
 choice
 	prompt "How to confirm the host is down"
