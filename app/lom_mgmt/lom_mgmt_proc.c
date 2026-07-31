@@ -205,7 +205,7 @@ static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 
-static int slp_sig_PLTRST;
+static int slp_sig_S5;
 static int in_force_down;
 
 struct pwrctrl_work_data
@@ -531,11 +531,11 @@ static void pwrctrl_do_force_down(void)
 	LOG_DBG_APP(">> Do Force Down");
 
 #ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
-	slp_sig_PLTRST = -1;
+	slp_sig_S5 = -1;
 
 	pwrctrl_do_shutdown();
 
-	ret = wait_sig_value(&slp_sig_PLTRST, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
+	ret = wait_sig_value(&slp_sig_S5, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
 	if (ret == WORK_RET_QUIT) {
 		LOG_DBG_APP(">> Normal Down wait quit");
 		return;
@@ -931,6 +931,10 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_SLP_S5:
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+		slp_sig_S5 = event.evt_data;
+#endif
+
 		if (event.evt_data == 0) { /* power off sequence */
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Off]");
@@ -957,9 +961,6 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_PLTRST:
-#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-		slp_sig_PLTRST = event.evt_data;
-#endif
 		if (event.evt_data) {
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [Host Reboot]");

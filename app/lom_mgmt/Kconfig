@@ -56,7 +56,7 @@ config LOM_MGMT_FUNC_POWER_CTRL
 config ATTEMPT_GRACEFUL_SHUTDOWN
 	bool "Attempt graceful shutdown before forced shutdown"
 	depends on LOM_MGMT_FUNC_POWER_CTRL
-	default y
+	default n
 	help
 	  If enabled, the system will attempt to perform a graceful
 	  shutdown before a forced shutdown is executed
