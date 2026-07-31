@@ -29,6 +29,9 @@
 #include "lom_mgmt_proc_inc.h"
 #include "host_event.h"
 #include "postcode.h"
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+#include "lom_pwrcycle.h"
+#endif
 
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
@@ -577,29 +580,12 @@ static void pwrctrl_do_hard_reset(void)
 	LOG_DBG_APP(">> Do Hard Reset end");
 }
 
-static void pwrctrl_do_power_cycle(void)
-{
-	LOG_DBG_APP(">> Do Power Cycle");
-
-	pwrctrl_do_force_down();
-
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	switch_card_power_control(0);
-#endif
-
-	k_msleep(2000); /* 2 seconds */
-
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	switch_card_power_control(1);
-#endif
-
-	pwrctrl_do_up();
-
-	LOG_DBG_APP(">> Do Power Cycle End");
-}
-
 /*
  * The array index must match the 'enum lom_mgmt_power_ctrl_act'.
+ *
+ * PWC_POWER_CYCLE is handled by lom_pwrcycle.c, which confirms the host
+ * actually reached S5 before restarting it. lom_pwrcycle_start() returns
+ * immediately; the sequence runs on its own thread.
  */
 static void (*pwrctrl_funcs[])(void) = {
 	NULL,
@@ -607,7 +593,7 @@ static void (*pwrctrl_funcs[])(void) = {
 	pwrctrl_do_shutdown,
 	pwrctrl_do_hard_reset,
 	pwrctrl_do_force_down,
-	pwrctrl_do_power_cycle,
+	lom_pwrcycle_start,
 };
 
 static void pwrctrl_worker(struct k_work *work)
