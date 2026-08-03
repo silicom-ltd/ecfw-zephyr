@@ -94,7 +94,7 @@ struct fan_lookup {
  * temperatures below 60 C; its .temp is a sentinel and is not a real threshold.
  */
 static const struct fan_lookup fan_lookup_tbl[]= {
-	{0,  50},	/* < 60 C : idle */
+	{59, 50},
 	{60, 60},
 	{61, 70},
 	{62, 80},
@@ -111,119 +111,134 @@ const struct device *fan_devices[] = {
 	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_cooling_devices, FAN_DEVICE_GET)
 };
 
-K_TIMER_DEFINE(temp_timer, NULL, NULL);
+static float temp_buff[5] = {0};
+int buff_idx = 0;
+float sum = 0;
 
-/* Current fan step index into fan_lookup_tbl[]. File-scope (not a function
- * static) so the ramp-up confirm-read in manage_fan can peek the current step
- * before a change is committed.
- */
-static int fan_step_idx;
-
-/* Set exactly when temp_timer is running, i.e. when a ramp-down is pending and
- * we are waiting out its 60s window. The two are always armed and cleared
- * together: a set flag with a stopped timer would wedge the gate closed and pin
- * the fan at its current step forever.
- */
-static int fan_timer_started;
-
-/* Abandon a pending ramp-down (temp recovered, or the drop just happened). */
-static void rampdown_window_cancel(void)
+static float filter_temp(uint16_t temp)
 {
-	if (fan_timer_started) {
-		k_timer_stop(&temp_timer);
-		fan_timer_started = 0;
-	}
+	sum -= temp_buff[buff_idx];
+	temp_buff[buff_idx] = (float)temp;
+	sum += (float)temp;
+	buff_idx = (buff_idx +1) % 5;
+	return sum / 5;
 }
 
 static uint16_t get_fan_speed_for_temp(uint16_t temp)
 {
-	bool index_changed = false;
-	const int last = ARRAY_SIZE(fan_lookup_tbl) - 1;
+	static float avg_temp = 0;
+	static int idx = 0;
+	static bool decreasing = false;
+	static bool increasing = true;
+	static uint64_t decreasing_time;
+	static uint64_t increasing_time;
 
-	/* No fast path for "below the lowest active step (60 C)": per Beny's table
-	 * "<60C -> 50%" is a ramp-down transition like any other, so it goes through
-	 * the 60s window below and lands on index 0 (the 50% idle floor).
+	/*
+	 * start condition, pick speed and idx
 	 */
-
-	/* greater than or = highest temp, return max duty cycle */
-	if (temp >= fan_lookup_tbl[last].temp) {
-		fan_step_idx = last;
-		rampdown_window_cancel();
-		return fan_lookup_tbl[fan_step_idx].duty_cycle;
+	if (avg_temp == 0) {
+		avg_temp = temp;
+		while (avg_temp >= fan_lookup_tbl[idx+1].temp)
+			idx++;
+		return fan_lookup_tbl[idx].duty_cycle;
 	}
 
-	/* Ramp up immediately: allowed every poll (~20s), and evaluated BEFORE the
-	 * ramp-down window below so a rising temp always wins over a pending
-	 * descent. A step-up during the 60s wait is therefore acted on at that 20s
-	 * poll and abandons the descent - the fan never waits out the window to go
-	 * faster. A fast spin-up is what keeps the Falcon below 65C. Single-sample
-	 * glitches on this edge are rejected by the confirm-read in manage_fan
-	 * before we get here.
+	avg_temp = filter_temp(temp);
+
+	LOG_DBG("filter_temp = %f",(double)avg_temp);	
+	/*
+	 * case where avg_temp is <= lowest
 	 */
-	while (fan_step_idx < last && temp >= fan_lookup_tbl[fan_step_idx+1].temp) {
-		fan_step_idx++;
-		index_changed = true;
-	}
-	/* if we are going higher, return the new higher duty cycle right away */
-	if (index_changed) {
-		rampdown_window_cancel();
-		return fan_lookup_tbl[fan_step_idx].duty_cycle;
+	if (avg_temp <= (float)fan_lookup_tbl[0].temp) {
+		/* if we are on downswing, check the time passed */
+		if (decreasing) {
+			/* if the time has passed since we started going down, set idx to 0 */
+			if (k_uptime_get() - decreasing_time >= 55000) {
+				idx = 0;
+				decreasing = false;
+			}
+			/* we either have set idx to 0 or we just return the current idx speed */
+			return fan_lookup_tbl[idx].duty_cycle;
+		}
+		/* this is the first time we are below idx 0 and were steady-state */
+		else {
+			decreasing = true;
+			increasing = false;
+			decreasing_time = k_uptime_get();
+			return fan_lookup_tbl[idx].duty_cycle;
+		}
 	}
 
-	/* Ramp down. Beny's spec is "on ramp-down change every 1min", so the rate
-	 * limit is on how OFTEN the fan may drop, not on how FAR it may drop: when
-	 * the window expires we go straight to the table's target for the current
-	 * temperature, which may be several steps at once (64C -> 60C is 100% ->
-	 * 60%, a single change).
-	 *
-	 * The window is opened by the first poll that sees the descent and the drop
-	 * happens when it expires - never on the 20s poll that detected it. Because
-	 * the temp must still be below this step 60s later, the window doubles as
-	 * the anti-chatter dead-band that replaced NEGATIVE_HYSTERESIS (now 0).
+	/*
+	 * case where avg_temp is >= max
 	 */
-	if (fan_step_idx && (temp < fan_lookup_tbl[fan_step_idx].temp -
-			     CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS)) {
-		if (!fan_timer_started) {
-			/* first poll to see it: open the window, hold this step */
-			fan_timer_started = 1;
-			k_timer_start(&temp_timer, K_SECONDS(60), K_NO_WAIT);
-			LOG_DBG("Ramp-down armed at %dC; holding step %d for 60s",
-				temp, fan_step_idx);
-			return fan_lookup_tbl[fan_step_idx].duty_cycle;
+	if (avg_temp >= (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+		if (increasing) {
+			/* if the time has passed since we started going up, set idx to max */
+			if (k_uptime_get() - increasing_time >= 15000) {
+				idx = ARRAY_SIZE(fan_lookup_tbl)-1;
+				increasing = false;
+			}
+			/* we have either set to max, or just return the current speed */
+			return fan_lookup_tbl[idx].duty_cycle;
 		}
-
-		if (!k_timer_status_get(&temp_timer)) {
-			/* window still open: hold */
-			return fan_lookup_tbl[fan_step_idx].duty_cycle;
+		/* this is the first time we are over max and were steady-state */
+		else {
+			increasing = true;
+			decreasing = false;
+			increasing_time = k_uptime_get();
+			return fan_lookup_tbl[idx].duty_cycle;
 		}
-
-		/* 60s elapsed and temp is still below this step: drop to the table
-		 * target for the temperature we are reading right now.
-		 */
-		while (fan_step_idx && (temp < fan_lookup_tbl[fan_step_idx].temp -
-					CONFIG_THERMAL_MGMT_NEGATIVE_HYSTERESIS)) {
-			fan_step_idx--;
-		}
-		rampdown_window_cancel();
-		LOG_DBG("Ramp-down fired at %dC; step now %d", temp, fan_step_idx);
-		return fan_lookup_tbl[fan_step_idx].duty_cycle;
 	}
 
-	/* temp is back inside the current step's band: abandon any pending descent */
-	rampdown_window_cancel();
+	/* 
+	 * case where we are above next temp
+	 */
+	if (avg_temp >= (float)fan_lookup_tbl[idx+1].temp) {
+		if (increasing) {
+			if (k_uptime_get() - increasing_time >= 15000) {
+				/* find out what temp we have gotten to */
+				while (avg_temp >= fan_lookup_tbl[idx+1].temp)
+					idx++;
+				increasing = false;
+			}
+			return fan_lookup_tbl[idx].duty_cycle;
+		}
+		/* we just started going over */
+		else {
+			increasing = true;
+			decreasing = false;
+			increasing_time = k_uptime_get();
+			return fan_lookup_tbl[idx].duty_cycle;
+		}
+	}
 
-	return fan_lookup_tbl[fan_step_idx].duty_cycle;
-}
+	/*
+	 * case where we are below the lower temp
+	 */
+	if (avg_temp <= (float)fan_lookup_tbl[idx-1].temp) {
+		if (decreasing) {
+			if (k_uptime_get() - decreasing_time >= 55000) {
+				while (avg_temp <= fan_lookup_tbl[idx-1].temp)
+					idx--;
+				decreasing = false;
+			}
+			return fan_lookup_tbl[idx].duty_cycle;
+		}
+		/* we just started going down */
+		else {
+			decreasing = true;
+			increasing = false;
+			decreasing_time = k_uptime_get();
+			return fan_lookup_tbl[idx].duty_cycle;
+		}
+	}
 
-/* Read the Falcon (switch ASIC) temperature in whole degrees C. */
-static int read_falcon_temp(void)
-{
-	struct sensor_value t;
+	/* no change */
+	increasing = decreasing = false;
+	increasing_time = decreasing_time = k_uptime_get();
+	return fan_lookup_tbl[idx].duty_cycle;
 
-	sensor_sample_fetch_chan(temp_device, SENSOR_CHAN_DIE_TEMP);
-	sensor_channel_get(temp_device, SENSOR_CHAN_DIE_TEMP, &t);
-
-	return t.val1;
 }
 
 static void init_fans(void)
@@ -286,10 +301,8 @@ void host_set_bios_fan_override(bool en, uint8_t speed)
 
 static void manage_fan(void)
 {
+	struct sensor_value temp;
 	uint8_t fan_duty_cycle;
-	int temp, cur;
-	const int last = ARRAY_SIZE(fan_lookup_tbl) - 1;
-	bool hold = false;
 	int i;
 
 	/* Disable power to fan in S5/4/3 and in CS,
@@ -303,85 +316,15 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
-	temp = read_falcon_temp();
-	cur = fan_step_idx;
+	sensor_sample_fetch_chan(temp_device, SENSOR_CHAN_DIE_TEMP);
+	sensor_channel_get(temp_device, SENSOR_CHAN_DIE_TEMP, &temp);
 
-	/* Ramp-up change point? Confirm it with a second reading before raising
-	 * the fan (Beny's "2 consecutive readings" debounce on step entry) so a
-	 * single-sample sensor glitch cannot kick the fan up. Every upward step
-	 * (including 100% at >=64C) is confirmed, per Beny's table. Ramp-down is
-	 * not confirmed - the 60s rate limiter is its "hysteresis" instead.
-	 * CONFIRM_MS = 0 disables the re-read.
-	 *
-	 * Note: the confirm sleeps in the thermal thread, so at a change point the
-	 * following manage_cpu_thermal() crit-temp check is delayed by CONFIRM_MS.
-	 * Harmless (crit is 103C and the fan is already ramping).
-	 */
-	if (CONFIG_THERMAL_MGMT_CONFIRM_MS > 0 &&
-	    cur < last && temp >= fan_lookup_tbl[cur+1].temp) {
-		int t2;
-
-		k_msleep(CONFIG_THERMAL_MGMT_CONFIRM_MS);
-		t2 = read_falcon_temp();
-
-		if (t2 >= fan_lookup_tbl[cur+1].temp) {
-			/* both readings agree: commit using the fresh reading */
-			temp = t2;
-		} else {
-			/* second read disagrees -> glitch: hold this cycle */
-			hold = true;
-			LOG_DBG("Ramp-up unconfirmed (crossed %d, t2=%d); hold step %d",
-				fan_lookup_tbl[cur+1].temp, t2, cur);
-		}
-	}
-
-	if (hold)
-		fan_duty_cycle = fan_lookup_tbl[cur].duty_cycle;
-	else
-		fan_duty_cycle = get_fan_speed_for_temp(temp);
-
-	LOG_DBG("Temp read %d, fan state %d", temp, fan_duty_cycle);
+	fan_duty_cycle = get_fan_speed_for_temp(temp.val1);
+	LOG_DBG("Temp read %d, fan state %d", temp.val1, fan_duty_cycle);
 
 	for (i = 0; i < ARRAY_SIZE(fan_devices); i++)
 		fan_set_cycles(fan_devices[i], fan_duty_cycle);
 	
-#if !defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	if (!is_fan_controlled_by_host() || is_fan_controlled_by_ec()) {
-		/* EC Self control fan based on CPU thermal info */
-		uint8_t cpu_fan_speed = get_fan_speed_for_temp(cpu_temp);
-		LOG_INF("%s: board CPU temp: %d, setting duty cycle to %d", __func__,  cpu_temp, cpu_fan_speed);
-
-		if (fan_duty_cycle[FAN_CPU] != cpu_fan_speed) {
-			fan_duty_cycle[FAN_CPU] = cpu_fan_speed;
-			fan_duty_cycle_change = 1;
-		}
-
-		if (fan_duty_cycle[FAN_RIGHT] != cpu_fan_speed) {
-			fan_duty_cycle[FAN_RIGHT] = cpu_fan_speed;
-			fan_duty_cycle_change = 1;
-		}
-
-	}
-
-	/* HW/KConfig override takes precedence over every control method
-	 * This is mostly used for PO entry on PO team request
-	 */
-	if (fan_override) {
-		fan_duty_cycle[FAN_CPU] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
-#if defined(CONFIG_BOARD_MEC172X_AZBEACH) || defined(CONFIG_BOARD_MEC172X_ADL_N)
-		fan_duty_cycle[FAN_RIGHT] = CONFIG_THERMAL_FAN_OVERRIDE_VALUE;
-#endif
-		fan_duty_cycle_change = 1;
-	}
-
-	if (fan_duty_cycle_change) {
-		fan_duty_cycle_change = 0;
-
-		for (uint8_t idx = 0; idx < max_fan_dev; idx++) {
-			fan_set_duty_cycle(idx, fan_duty_cycle[idx]);
-		}
-	}
-#endif
 	fan_update();
 
 }
