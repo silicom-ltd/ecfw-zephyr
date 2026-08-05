@@ -1,0 +1,78 @@
+# Kconfig - Config options for EC FW
+#
+# Copyright (c) 2021 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "Thermal management"
+
+config THERMAL_MANAGEMENT_V5
+	bool "Enable thermal management"
+	help
+	  Indicate if EC supports management of fan, reading thermal
+	  sensors and cpu temperature.
+
+if THERMAL_MANAGEMENT_V5
+config THERMAL_FAN_OVERRIDE
+	bool "Enable fan override"
+	help
+	  Indicate if EC overrides fan control to pre-defined value. This
+	  to ensure fan is running before Si parts are fully calibrated.
+
+config THERMAL_FAN_OVERRIDE_VALUE
+	int "Fan override duty cycle"
+	default 70
+	help
+	  When EC overrides fan management via SW or HW strap, EC will
+	  use this pre-defined duty cycle to control the fan.
+
+config THERMAL_MGMT_NEGATIVE_HYSTERESIS
+	int "Negative hysteresis for fan control"
+	default 0
+	help
+	  Number of degrees of negative hysteresis to use for fan
+	  control.  To slow the fan down, the temperature must fall this
+	  many degrees below the entry temperature of the current fan step.
+	  Default 0 = no degree hysteresis (Beny profile): the fan tracks
+	  the table directly and the anti-chatter comes from the ramp-up
+	  debounce plus the 60s ramp-down rate limit. Set 1+ to add a
+	  temperature dead-band on top.
+
+config THERMAL_MGMT_CONFIRM_MS
+	int "Ramp-up change confirmation delay (ms)"
+	default 1500
+	help
+	  When a temperature reading first crosses a fan step upward, the EC
+	  waits this many milliseconds and takes a second reading before
+	  raising the fan; the step only changes if the second reading agrees.
+	  This is a debounce on step entry ("2 consecutive readings") that
+	  rejects single-sample sensor glitches. Applies to every upward step
+	  including 100%. Set 0 to disable the confirm read (act on a single
+	  reading).
+
+config EC_FAN_CONTROL
+	bool "Enable EC control"
+	help
+	  TBD
+
+config PECI_OVER_ESPI_ENABLE
+	bool "Enable PECI over ESPI OOB"
+	help
+	  Indicate if peci over espi oob enabled or not.
+
+config PECI_ACCESS_DISABLE_IN_CS
+	bool "Disable PECI access in connected standby"
+	help
+	  Indicate if PECI access disabled in connected standby to achieve
+	  infinite C10 residency.
+
+config THERMAL_MGMT_LOG_LEVEL
+	int "Thermal management log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for thermal management module.
+endif
+endmenu

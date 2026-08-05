@@ -190,8 +190,14 @@
 
 		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
 
-		fan-temp-device = <&switch_maestro_temp>;
+		fan-temp-devices = <&switch_temp0>, <&switch_temp1>;
 		fan-cooling-devices = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>,
 				      <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+
+		/* Parallel arrays, must stay the same length.
+		 * Index 0 is the idle-floor sentinel (see thermalmgmt.c).
+		 */
+		fan-curve-temps = <20 25 30 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50>;
+		fan-curve-duty-cycles = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
 	};
 };
