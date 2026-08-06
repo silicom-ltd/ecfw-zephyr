@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Standard Zephyr out-of-tree application build check, following the pattern
+# from zephyrproject-rtos/example-application: bootstrap the west workspace
+# (this repo's west.yml manifest) and Zephyr SDK via the official setup
+# action, then build.
+#
+# Scoped to mec172x_adl_n_cp (base + both Maestro switch-card snippets) since
+# that is the board configuration this repo currently builds and tests
+# against.
+
+name: Build
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.snippet == '' && 'no snippet' || matrix.snippet }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        snippet: ["", "mho-150", "mho-200"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: ecfw-zephyr
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Zephyr project
+        uses: zephyrproject-rtos/action-zephyr-setup@v1
+        with:
+          app-path: ecfw-zephyr
+          toolchains: arm-zephyr-eabi
+          ccache-cache-key: ubuntu-22.04
+
+      - name: Build firmware
+        working-directory: ecfw-zephyr
+        shell: bash
+        run: |
+          SNIPPET_ARGS=""
+          if [ -n "${{ matrix.snippet }}" ]; then
+            SNIPPET_ARGS="-S ${{ matrix.snippet }}"
+          fi
+          west build -p always -b mec172x_adl_n_cp $SNIPPET_ARGS
