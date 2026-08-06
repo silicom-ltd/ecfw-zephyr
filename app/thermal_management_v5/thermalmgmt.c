@@ -200,12 +200,12 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	if (avg_temp <= (float)fan_lookup_tbl[0].temp) {
 		/* if we are on downswing, check the time passed */
 		if (decreasing) {
-			/* if enough time has passed since going down, zero the index */
+			/* after the down debounce, zero the index */
 			if (k_uptime_get() - decreasing_time >= 55000) {
 				idx = 0;
 				decreasing = false;
 			}
-			/* either idx is now 0, or just return the current idx speed */
+			/* idx is now 0 (or unchanged); return its speed */
 			return fan_lookup_tbl[idx].duty_cycle;
 		}
 		/* first time below idx 0 and we were steady-state */
@@ -223,7 +223,7 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	if (avg_temp >=
 	    (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
 		if (increasing) {
-			/* if enough time has passed since going up, set idx to max */
+			/* after the up debounce, jump to the max index */
 			if (k_uptime_get() - increasing_time >= 15000) {
 				idx = ARRAY_SIZE(fan_lookup_tbl)-1;
 				increasing = false;
