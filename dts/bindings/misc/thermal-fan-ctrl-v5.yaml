@@ -1,0 +1,71 @@
+# Copyright (c) 2026, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Thermal management V5 fan-curve configuration (app/thermal_management_v5).
+
+  Groups the sensor/fan device references and the fan-curve lookup table
+  that app/thermal_management_v5/thermalmgmt.c reads out of the
+  devicetree, so a board adds one node instead of loose properties under
+  zephyr,user. There should be exactly one enabled node with this
+  compatible per board.
+
+  Example:
+
+    / {
+            thermal-fan-ctrl-v5 {
+                    compatible = "thermal-fan-ctrl-v5";
+
+                    fan-temp-devices = <&switch_temp0>, <&switch_temp1>;
+                    fan-cooling-devices = <&fan1_1>, <&fan1_2>;
+
+                    fan-curve-temps        = <20 25 30>;
+                    fan-curve-duty-cycles  = <40 45 50>;
+            };
+    };
+
+compatible: "thermal-fan-ctrl-v5"
+
+properties:
+  fan-temp-devices:
+    type: phandles
+    required: true
+    description: |
+      Temperature sensor devices read every cycle; the fan curve is
+      driven off the max SENSOR_CHAN_DIE_TEMP reading across all of them.
+
+  fan-cooling-devices:
+    type: phandles
+    required: true
+    description: |
+      Fan (PWM) devices driven to the duty cycle selected by the curve.
+
+  fan-curve-temps:
+    type: array
+    required: true
+    description: |
+      Fan curve temperature breakpoints in degrees Celsius, ascending.
+      Must be the same length as fan-curve-duty-cycles - enforced by a
+      BUILD_ASSERT in thermalmgmt.c, not by this binding. Index 0 is the
+      idle-floor sentinel, not a real threshold.
+
+  fan-curve-duty-cycles:
+    type: array
+    required: true
+    description: |
+      Fan duty cycle, in percent, for each entry in fan-curve-temps.
+
+  fan-temp-filter:
+    type: int
+    default: 5
+    description: |
+      Moving-average filter window width, in samples. This is the
+      default filter; ignored if fan-temp-ema-alpha is set instead.
+
+  fan-temp-ema-alpha:
+    type: int
+    description: |
+      Selects the exponential-moving-average filter instead of the
+      moving average. Value is the weight given to the newest sample,
+      as a percentage (1-100). Mutually exclusive with fan-temp-filter -
+      enforced by a BUILD_ASSERT in thermalmgmt.c, not by this binding.

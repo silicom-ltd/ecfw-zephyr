@@ -24,6 +24,12 @@
 
 LOG_MODULE_REGISTER(thermal, CONFIG_THERMAL_MGMT_LOG_LEVEL);
 
+/* The board's sensor/fan wiring and fan curve, described by a single
+ * "thermal-fan-ctrl-v5" node (see dts/bindings/misc/thermal-fan-ctrl-v5.yaml)
+ * instead of loose properties on zephyr,user.
+ */
+#define THERMAL_FAN_CTRL_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(thermal_fan_ctrl_v5)
+
 #define FAN_CPU FAN_LEFT
 /**
  * DTT threshold default values upon init in degree celsius:
@@ -100,19 +106,19 @@ struct fan_lookup {
  * threshold; its temp is a sentinel and is not itself a threshold.
  */
 static const struct fan_lookup fan_lookup_tbl[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_curve_temps,
+	DT_FOREACH_PROP_ELEM(THERMAL_FAN_CTRL_NODE, fan_curve_temps,
 			      FAN_LOOKUP_ENTRY_GET)
 };
 
-BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), fan_curve_temps) ==
-	     DT_PROP_LEN(DT_PATH(zephyr_user), fan_curve_duty_cycles),
+BUILD_ASSERT(DT_PROP_LEN(THERMAL_FAN_CTRL_NODE, fan_curve_temps) ==
+	     DT_PROP_LEN(THERMAL_FAN_CTRL_NODE, fan_curve_duty_cycles),
 	     "fan-curve-temps and fan-curve-duty-cycles must be the same length");
 
 #define FAN_DEVICE_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *fan_devices[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_cooling_devices,
+	DT_FOREACH_PROP_ELEM(THERMAL_FAN_CTRL_NODE, fan_cooling_devices,
 			      FAN_DEVICE_GET)
 };
 
@@ -120,11 +126,11 @@ const struct device *fan_devices[] = {
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *temp_devices[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_temp_devices,
+	DT_FOREACH_PROP_ELEM(THERMAL_FAN_CTRL_NODE, fan_temp_devices,
 			      TEMP_DEVICE_GET)
 };
 
-/* Temperature filter selection, via devicetree (zephyr,user node). Setting
+/* Temperature filter selection, via the thermal-fan-ctrl-v5 node. Setting
  * either property selects that filter; setting both is a build error:
  *   fan-temp-filter = <N>;      moving-average window width, in samples
  *                                (this is the default filter; N defaults to
@@ -133,16 +139,16 @@ const struct device *temp_devices[] = {
  *                                weight given to the newest sample, percent
  *                                (1-100)
  */
-BUILD_ASSERT(!(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), fan_temp_filter) &&
-	       DT_NODE_HAS_PROP(DT_PATH(zephyr_user), fan_temp_ema_alpha)),
+BUILD_ASSERT(!(DT_NODE_HAS_PROP(THERMAL_FAN_CTRL_NODE, fan_temp_filter) &&
+	       DT_NODE_HAS_PROP(THERMAL_FAN_CTRL_NODE, fan_temp_ema_alpha)),
 	     "fan-temp-filter and fan-temp-ema-alpha are mutually exclusive");
 
 #define FAN_TEMP_FILTER_WINDOW \
-	DT_PROP_OR(DT_PATH(zephyr_user), fan_temp_filter, 5)
+	DT_PROP_OR(THERMAL_FAN_CTRL_NODE, fan_temp_filter, 5)
 #define FAN_TEMP_EMA_ALPHA_PCT \
-	DT_PROP_OR(DT_PATH(zephyr_user), fan_temp_ema_alpha, 20)
+	DT_PROP_OR(THERMAL_FAN_CTRL_NODE, fan_temp_ema_alpha, 20)
 
-#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), fan_temp_ema_alpha)
+#if DT_NODE_HAS_PROP(THERMAL_FAN_CTRL_NODE, fan_temp_ema_alpha)
 
 static float filter_temp(uint16_t temp)
 {

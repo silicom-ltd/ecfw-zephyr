@@ -188,6 +188,10 @@
 				  <&mfd8_iout>;
 
 		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
+	};
+
+	thermal-fan-ctrl-v5 {
+		compatible = "thermal-fan-ctrl-v5";
 
 		fan-temp-devices = <&switch_temp0>, <&switch_temp1>;
 		fan-cooling-devices = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>,
