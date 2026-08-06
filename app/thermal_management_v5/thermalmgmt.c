@@ -100,7 +100,8 @@ struct fan_lookup {
  * threshold; its temp is a sentinel and is not itself a threshold.
  */
 static const struct fan_lookup fan_lookup_tbl[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_curve_temps, FAN_LOOKUP_ENTRY_GET)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_curve_temps,
+			      FAN_LOOKUP_ENTRY_GET)
 };
 
 BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), fan_curve_temps) ==
@@ -111,14 +112,16 @@ BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), fan_curve_temps) ==
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *fan_devices[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_cooling_devices, FAN_DEVICE_GET)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_cooling_devices,
+			      FAN_DEVICE_GET)
 };
 
 #define TEMP_DEVICE_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *temp_devices[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_temp_devices, TEMP_DEVICE_GET)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_temp_devices,
+			      TEMP_DEVICE_GET)
 };
 
 /* Temperature filter selection, via devicetree (zephyr,user node). Setting
@@ -146,15 +149,16 @@ static float filter_temp(uint16_t temp)
 	static float ema;
 	const float alpha = FAN_TEMP_EMA_ALPHA_PCT / 100.0f;
 
-	ema = (ema == 0) ? (float)temp : alpha * (float)temp + (1.0f - alpha) * ema;
+	ema = (ema == 0) ? (float)temp :
+		alpha * (float)temp + (1.0f - alpha) * ema;
 	return ema;
 }
 
 #else
 
 static float temp_buff[FAN_TEMP_FILTER_WINDOW] = {0};
-int buff_idx = 0;
-float sum = 0;
+int buff_idx;
+float sum;
 
 static float filter_temp(uint16_t temp)
 {
