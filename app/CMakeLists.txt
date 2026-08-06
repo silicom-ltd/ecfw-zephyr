@@ -23,6 +23,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/fan_sense)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/location)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management_v4)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management_v5)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/current_monitor)
 
@@ -127,6 +128,13 @@ target_sources_ifdef(CONFIG_THERMAL_MANAGEMENT_V4 app
     ${CMAKE_CURRENT_LIST_DIR}/thermal_management_v4/thermalmgmt.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/thermal_management_v4/thermalmgmt.h
+    )
+
+target_sources_ifdef(CONFIG_THERMAL_MANAGEMENT_V5 app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/thermal_management_v5/thermalmgmt.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/thermal_management_v5/thermalmgmt.h
     )
 
 target_sources_ifdef(CONFIG_LED_MANAGEMENT app

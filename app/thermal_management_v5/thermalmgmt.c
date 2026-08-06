@@ -90,45 +90,92 @@ struct fan_lookup {
 	uint8_t duty_cycle;
 };
 
-/* Maestro fan curve (Beny profile, confirmed 2026-07-27). Index 0 is the idle floor for
- * temperatures below 60 C; its .temp is a sentinel and is not a real threshold.
+#define FAN_LOOKUP_ENTRY_GET(node_id, prop, idx)	\
+	{ DT_PROP_BY_IDX(node_id, prop, idx),		\
+	  DT_PROP_BY_IDX(node_id, fan_curve_duty_cycles, idx) },
+
+/* Fan curve, sourced from the 'fan-curve-temps' / 'fan-curve-duty-cycles'
+ * devicetree properties (parallel arrays - must be kept the same length).
+ * Index 0 is the idle floor for temperatures below the first real
+ * threshold; its temp is a sentinel and is not itself a threshold.
  */
-static const struct fan_lookup fan_lookup_tbl[]= {
-	{59, 50},
-	{60, 60},
-	{61, 70},
-	{62, 80},
-	{63, 90},
-	{64, 100},
+static const struct fan_lookup fan_lookup_tbl[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_curve_temps,
+			      FAN_LOOKUP_ENTRY_GET)
 };
 
-const struct device *temp_device = DEVICE_DT_GET(DT_PHANDLE(DT_PATH(zephyr_user), fan_temp_device));
+BUILD_ASSERT(DT_PROP_LEN(DT_PATH(zephyr_user), fan_curve_temps) ==
+	     DT_PROP_LEN(DT_PATH(zephyr_user), fan_curve_duty_cycles),
+	     "fan-curve-temps and fan-curve-duty-cycles must be the same length");
 
 #define FAN_DEVICE_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *fan_devices[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_cooling_devices, FAN_DEVICE_GET)
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_cooling_devices,
+			      FAN_DEVICE_GET)
 };
 
-static float temp_buff[5] = {0};
-int buff_idx = 0;
-float sum = 0;
+#define TEMP_DEVICE_GET(node_id, prop, idx)		\
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
+
+const struct device *temp_devices[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_temp_devices,
+			      TEMP_DEVICE_GET)
+};
+
+/* Temperature filter selection, via devicetree (zephyr,user node). Setting
+ * either property selects that filter; setting both is a build error:
+ *   fan-temp-filter = <N>;      moving-average window width, in samples
+ *                                (this is the default filter; N defaults to
+ *                                5 if neither property is set)
+ *   fan-temp-ema-alpha = <N>;   selects the EMA filter instead; N is the
+ *                                weight given to the newest sample, percent
+ *                                (1-100)
+ */
+BUILD_ASSERT(!(DT_NODE_HAS_PROP(DT_PATH(zephyr_user), fan_temp_filter) &&
+	       DT_NODE_HAS_PROP(DT_PATH(zephyr_user), fan_temp_ema_alpha)),
+	     "fan-temp-filter and fan-temp-ema-alpha are mutually exclusive");
+
+#define FAN_TEMP_FILTER_WINDOW \
+	DT_PROP_OR(DT_PATH(zephyr_user), fan_temp_filter, 5)
+#define FAN_TEMP_EMA_ALPHA_PCT \
+	DT_PROP_OR(DT_PATH(zephyr_user), fan_temp_ema_alpha, 20)
+
+#if DT_NODE_HAS_PROP(DT_PATH(zephyr_user), fan_temp_ema_alpha)
+
+static float filter_temp(uint16_t temp)
+{
+	static float ema;
+	const float alpha = FAN_TEMP_EMA_ALPHA_PCT / 100.0f;
+
+	ema = (ema == 0) ? (float)temp :
+		alpha * (float)temp + (1.0f - alpha) * ema;
+	return ema;
+}
+
+#else
+
+static float temp_buff[FAN_TEMP_FILTER_WINDOW] = {0};
+int buff_idx;
+float sum;
 
 static float filter_temp(uint16_t temp)
 {
 	sum -= temp_buff[buff_idx];
 	temp_buff[buff_idx] = (float)temp;
 	sum += (float)temp;
-	buff_idx = (buff_idx +1) % 5;
-	return sum / 5;
+	buff_idx = (buff_idx + 1) % FAN_TEMP_FILTER_WINDOW;
+	return sum / FAN_TEMP_FILTER_WINDOW;
 }
+
+#endif
 
 static uint16_t get_fan_speed_for_temp(uint16_t temp)
 {
-	static float avg_temp = 0;
-	static int idx = 0;
-	static bool decreasing = false;
+	static float avg_temp;
+	static int idx;
+	static bool decreasing;
 	static bool increasing = true;
 	static uint64_t decreasing_time;
 	static uint64_t increasing_time;
@@ -138,29 +185,30 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	 */
 	if (avg_temp == 0) {
 		avg_temp = temp;
-		while (avg_temp >= fan_lookup_tbl[idx+1].temp)
+		while (idx < ARRAY_SIZE(fan_lookup_tbl) - 1 &&
+		       avg_temp >= fan_lookup_tbl[idx+1].temp)
 			idx++;
 		return fan_lookup_tbl[idx].duty_cycle;
 	}
 
 	avg_temp = filter_temp(temp);
 
-	LOG_DBG("filter_temp = %f",(double)avg_temp);	
+	LOG_DBG("filter_temp = %f", (double)avg_temp);
 	/*
 	 * case where avg_temp is <= lowest
 	 */
 	if (avg_temp <= (float)fan_lookup_tbl[0].temp) {
 		/* if we are on downswing, check the time passed */
 		if (decreasing) {
-			/* if the time has passed since we started going down, set idx to 0 */
+			/* after the down debounce, zero the index */
 			if (k_uptime_get() - decreasing_time >= 55000) {
 				idx = 0;
 				decreasing = false;
 			}
-			/* we either have set idx to 0 or we just return the current idx speed */
+			/* idx is now 0 (or unchanged); return its speed */
 			return fan_lookup_tbl[idx].duty_cycle;
 		}
-		/* this is the first time we are below idx 0 and were steady-state */
+		/* first time below idx 0 and we were steady-state */
 		else {
 			decreasing = true;
 			increasing = false;
@@ -172,17 +220,18 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	/*
 	 * case where avg_temp is >= max
 	 */
-	if (avg_temp >= (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+	if (avg_temp >=
+	    (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
 		if (increasing) {
-			/* if the time has passed since we started going up, set idx to max */
+			/* after the up debounce, jump to the max index */
 			if (k_uptime_get() - increasing_time >= 15000) {
 				idx = ARRAY_SIZE(fan_lookup_tbl)-1;
 				increasing = false;
 			}
-			/* we have either set to max, or just return the current speed */
+			/* idx is now max, or just return the current speed */
 			return fan_lookup_tbl[idx].duty_cycle;
 		}
-		/* this is the first time we are over max and were steady-state */
+		/* first time over max and we were steady-state */
 		else {
 			increasing = true;
 			decreasing = false;
@@ -191,10 +240,11 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 		}
 	}
 
-	/* 
+	/*
 	 * case where we are above next temp
 	 */
-	if (avg_temp >= (float)fan_lookup_tbl[idx+1].temp) {
+	if (idx < ARRAY_SIZE(fan_lookup_tbl) - 1 &&
+	    avg_temp >= (float)fan_lookup_tbl[idx+1].temp) {
 		if (increasing) {
 			if (k_uptime_get() - increasing_time >= 15000) {
 				/* find out what temp we have gotten to */
@@ -216,7 +266,7 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	/*
 	 * case where we are below the lower temp
 	 */
-	if (avg_temp <= (float)fan_lookup_tbl[idx-1].temp) {
+	if (idx > 0 && avg_temp <= (float)fan_lookup_tbl[idx-1].temp) {
 		if (decreasing) {
 			if (k_uptime_get() - decreasing_time >= 55000) {
 				while (avg_temp <= fan_lookup_tbl[idx-1].temp)
@@ -256,7 +306,7 @@ static void init_fans(void)
 
 #ifdef CONFIG_THERMAL_FAN_OVERRIDE
 	fan_override = true;
-	LOG_INF("#################  Fan SW override enable: %d ####################", fan_override);
+	LOG_INF("##### Fan SW override enable: %d #####", fan_override);
 #endif
 
 	max_fan_dev = fan_init();
@@ -302,6 +352,7 @@ void host_set_bios_fan_override(bool en, uint8_t speed)
 static void manage_fan(void)
 {
 	struct sensor_value temp;
+	struct sensor_value max_temp;
 	uint8_t fan_duty_cycle;
 	int i;
 
@@ -316,15 +367,24 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
-	sensor_sample_fetch_chan(temp_device, SENSOR_CHAN_DIE_TEMP);
-	sensor_channel_get(temp_device, SENSOR_CHAN_DIE_TEMP, &temp);
+	/* Drive the fan curve off the hottest sensor so no single zone can
+	 * be masked by cooler readings from the others.
+	 */
+	for (i = 0; i < ARRAY_SIZE(temp_devices); i++) {
+		sensor_sample_fetch_chan(temp_devices[i], SENSOR_CHAN_DIE_TEMP);
+		sensor_channel_get(temp_devices[i], SENSOR_CHAN_DIE_TEMP,
+				   &temp);
 
-	fan_duty_cycle = get_fan_speed_for_temp(temp.val1);
-	LOG_DBG("Temp read %d, fan state %d", temp.val1, fan_duty_cycle);
+		if (i == 0 || temp.val1 > max_temp.val1)
+			max_temp = temp;
+	}
+
+	fan_duty_cycle = get_fan_speed_for_temp(max_temp.val1);
+	LOG_DBG("Temp read %d, fan state %d", max_temp.val1, fan_duty_cycle);
 
 	for (i = 0; i < ARRAY_SIZE(fan_devices); i++)
 		fan_set_cycles(fan_devices[i], fan_duty_cycle);
-	
+
 	fan_update();
 
 }
@@ -391,8 +451,9 @@ void thermalmgmt_handle_cs_exit(void)
 void thermalmgmt_thread(void *p1, void *p2, void *p3)
 {
 	uint32_t normal_period = *(uint32_t *)p1;
-	g_acpi_tbl.acpi_crit_temp = THERM_SHTDWN_THRSD;
 	int err;
+
+	g_acpi_tbl.acpi_crit_temp = THERM_SHTDWN_THRSD;
 
 	init_fans();
 	init_therm_sensors();
@@ -404,7 +465,7 @@ void thermalmgmt_thread(void *p1, void *p2, void *p3)
 #ifdef CONFIG_EC_FAN_CONTROL
 	ec_fan_control = 1;
 #endif
-	
+
 	while (true) {
 		/* Each thread is aware of CS
 		 * Thread uses different sleep time during CS
@@ -432,4 +493,3 @@ void thermalmgmt_thread(void *p1, void *p2, void *p3)
 		manage_pch_temperature();
 	}
 }
-
