@@ -173,9 +173,9 @@ static float filter_temp(uint16_t temp)
 
 static uint16_t get_fan_speed_for_temp(uint16_t temp)
 {
-	static float avg_temp = 0;
-	static int idx = 0;
-	static bool decreasing = false;
+	static float avg_temp;
+	static int idx;
+	static bool decreasing;
 	static bool increasing = true;
 	static uint64_t decreasing_time;
 	static uint64_t increasing_time;
@@ -193,22 +193,22 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 
 	avg_temp = filter_temp(temp);
 
-	LOG_DBG("filter_temp = %f",(double)avg_temp);	
+	LOG_DBG("filter_temp = %f", (double)avg_temp);
 	/*
 	 * case where avg_temp is <= lowest
 	 */
 	if (avg_temp <= (float)fan_lookup_tbl[0].temp) {
 		/* if we are on downswing, check the time passed */
 		if (decreasing) {
-			/* if the time has passed since we started going down, set idx to 0 */
+			/* if enough time has passed since going down, zero the index */
 			if (k_uptime_get() - decreasing_time >= 55000) {
 				idx = 0;
 				decreasing = false;
 			}
-			/* we either have set idx to 0 or we just return the current idx speed */
+			/* either idx is now 0, or just return the current idx speed */
 			return fan_lookup_tbl[idx].duty_cycle;
 		}
-		/* this is the first time we are below idx 0 and were steady-state */
+		/* first time below idx 0 and we were steady-state */
 		else {
 			decreasing = true;
 			increasing = false;
@@ -220,17 +220,18 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	/*
 	 * case where avg_temp is >= max
 	 */
-	if (avg_temp >= (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+	if (avg_temp >=
+	    (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
 		if (increasing) {
-			/* if the time has passed since we started going up, set idx to max */
+			/* if enough time has passed since going up, set idx to max */
 			if (k_uptime_get() - increasing_time >= 15000) {
 				idx = ARRAY_SIZE(fan_lookup_tbl)-1;
 				increasing = false;
 			}
-			/* we have either set to max, or just return the current speed */
+			/* idx is now max, or just return the current speed */
 			return fan_lookup_tbl[idx].duty_cycle;
 		}
-		/* this is the first time we are over max and were steady-state */
+		/* first time over max and we were steady-state */
 		else {
 			increasing = true;
 			decreasing = false;
@@ -305,7 +306,7 @@ static void init_fans(void)
 
 #ifdef CONFIG_THERMAL_FAN_OVERRIDE
 	fan_override = true;
-	LOG_INF("#################  Fan SW override enable: %d ####################", fan_override);
+	LOG_INF("##### Fan SW override enable: %d #####", fan_override);
 #endif
 
 	max_fan_dev = fan_init();
@@ -371,7 +372,8 @@ static void manage_fan(void)
 	 */
 	for (i = 0; i < ARRAY_SIZE(temp_devices); i++) {
 		sensor_sample_fetch_chan(temp_devices[i], SENSOR_CHAN_DIE_TEMP);
-		sensor_channel_get(temp_devices[i], SENSOR_CHAN_DIE_TEMP, &temp);
+		sensor_channel_get(temp_devices[i], SENSOR_CHAN_DIE_TEMP,
+				   &temp);
 
 		if (i == 0 || temp.val1 > max_temp.val1)
 			max_temp = temp;
@@ -449,8 +451,9 @@ void thermalmgmt_handle_cs_exit(void)
 void thermalmgmt_thread(void *p1, void *p2, void *p3)
 {
 	uint32_t normal_period = *(uint32_t *)p1;
-	g_acpi_tbl.acpi_crit_temp = THERM_SHTDWN_THRSD;
 	int err;
+
+	g_acpi_tbl.acpi_crit_temp = THERM_SHTDWN_THRSD;
 
 	init_fans();
 	init_therm_sensors();
@@ -462,7 +465,7 @@ void thermalmgmt_thread(void *p1, void *p2, void *p3)
 #ifdef CONFIG_EC_FAN_CONTROL
 	ec_fan_control = 1;
 #endif
-	
+
 	while (true) {
 		/* Each thread is aware of CS
 		 * Thread uses different sleep time during CS
@@ -490,4 +493,3 @@ void thermalmgmt_thread(void *p1, void *p2, void *p3)
 		manage_pch_temperature();
 	}
 }
-

@@ -37,7 +37,8 @@ extern uint8_t boot_mode_maf;
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 #include "thermalmgmt.h"
 #include "board_thermal.h"
-#elif defined(CONFIG_THERMAL_MANAGEMENT_V4) || defined(CONFIG_THERMAL_MANAGEMENT_V5)
+#elif defined(CONFIG_THERMAL_MANAGEMENT_V4) || \
+	defined(CONFIG_THERMAL_MANAGEMENT_V5)
 /* V4 (and V5, copied from it) get their sensor and fan devices from the
  * devicetree, so they do not use the V1/V2 board table API in
  * board_thermal.h - and that header's prototypes reference struct
