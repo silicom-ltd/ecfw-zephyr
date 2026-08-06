@@ -91,28 +91,21 @@ static uint8_t bios_fan_speed;
 static bool fan_duty_cycle_change;
 static int cpu_temp = 30;
 
-struct fan_lookup {
-	int16_t temp;
-	uint8_t duty_cycle;
-};
-
-#define FAN_LOOKUP_ENTRY_GET(node_id, prop, idx)	\
-	{ DT_PROP_BY_IDX(node_id, prop, idx),		\
-	  DT_PROP_BY_IDX(node_id, fan_curve_duty_cycles, idx) },
-
-/* Fan curve, sourced from the 'fan-curve-temps' / 'fan-curve-duty-cycles'
- * devicetree properties (parallel arrays - must be kept the same length).
- * Index 0 is the idle floor for temperatures below the first real
- * threshold; its temp is a sentinel and is not itself a threshold.
+/* Fan curve, sourced from the 'fan-curve' devicetree property: a flat list
+ * of (temp, duty) pairs, e.g. <20 40>, <25 45>, ... - ascending temp, one
+ * pair per curve step. Index 0 is the idle floor for temperatures below
+ * the first real threshold; its temp is a sentinel and is not itself a
+ * threshold. FAN_TEMP(i)/FAN_DUTY(i) read pair i; FAN_CURVE_PAIRS is the
+ * number of pairs (half the raw cell count).
  */
-static const struct fan_lookup fan_lookup_tbl[] = {
-	DT_FOREACH_PROP_ELEM(THERMAL_FAN_CTRL_NODE, fan_curve_temps,
-			      FAN_LOOKUP_ENTRY_GET)
-};
+static const int16_t fan_curve[] = DT_PROP(THERMAL_FAN_CTRL_NODE, fan_curve);
 
-BUILD_ASSERT(DT_PROP_LEN(THERMAL_FAN_CTRL_NODE, fan_curve_temps) ==
-	     DT_PROP_LEN(THERMAL_FAN_CTRL_NODE, fan_curve_duty_cycles),
-	     "fan-curve-temps and fan-curve-duty-cycles must be the same length");
+BUILD_ASSERT(ARRAY_SIZE(fan_curve) % 2 == 0,
+	     "fan-curve must list an even number of cells (temp, duty pairs)");
+
+#define FAN_CURVE_PAIRS (ARRAY_SIZE(fan_curve) / 2)
+#define FAN_TEMP(i) fan_curve[2 * (i)]
+#define FAN_DUTY(i) ((uint8_t)fan_curve[2 * (i) + 1])
 
 #define FAN_DEVICE_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
@@ -191,10 +184,10 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	 */
 	if (avg_temp == 0) {
 		avg_temp = temp;
-		while (idx < ARRAY_SIZE(fan_lookup_tbl) - 1 &&
-		       avg_temp >= fan_lookup_tbl[idx+1].temp)
+		while (idx < FAN_CURVE_PAIRS - 1 &&
+		       avg_temp >= FAN_TEMP(idx+1))
 			idx++;
-		return fan_lookup_tbl[idx].duty_cycle;
+		return FAN_DUTY(idx);
 	}
 
 	avg_temp = filter_temp(temp);
@@ -203,7 +196,7 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	/*
 	 * case where avg_temp is <= lowest
 	 */
-	if (avg_temp <= (float)fan_lookup_tbl[0].temp) {
+	if (avg_temp <= (float)FAN_TEMP(0)) {
 		/* if we are on downswing, check the time passed */
 		if (decreasing) {
 			/* after the down debounce, zero the index */
@@ -212,14 +205,14 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 				decreasing = false;
 			}
 			/* idx is now 0 (or unchanged); return its speed */
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 		/* first time below idx 0 and we were steady-state */
 		else {
 			decreasing = true;
 			increasing = false;
 			decreasing_time = k_uptime_get();
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 	}
 
@@ -227,73 +220,73 @@ static uint16_t get_fan_speed_for_temp(uint16_t temp)
 	 * case where avg_temp is >= max
 	 */
 	if (avg_temp >=
-	    (float)fan_lookup_tbl[ARRAY_SIZE(fan_lookup_tbl)-1].temp) {
+	    (float)FAN_TEMP(FAN_CURVE_PAIRS-1)) {
 		if (increasing) {
 			/* after the up debounce, jump to the max index */
 			if (k_uptime_get() - increasing_time >= 15000) {
-				idx = ARRAY_SIZE(fan_lookup_tbl)-1;
+				idx = FAN_CURVE_PAIRS-1;
 				increasing = false;
 			}
 			/* idx is now max, or just return the current speed */
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 		/* first time over max and we were steady-state */
 		else {
 			increasing = true;
 			decreasing = false;
 			increasing_time = k_uptime_get();
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 	}
 
 	/*
 	 * case where we are above next temp
 	 */
-	if (idx < ARRAY_SIZE(fan_lookup_tbl) - 1 &&
-	    avg_temp >= (float)fan_lookup_tbl[idx+1].temp) {
+	if (idx < FAN_CURVE_PAIRS - 1 &&
+	    avg_temp >= (float)FAN_TEMP(idx+1)) {
 		if (increasing) {
 			if (k_uptime_get() - increasing_time >= 15000) {
 				/* find out what temp we have gotten to */
-				while (avg_temp >= fan_lookup_tbl[idx+1].temp)
+				while (avg_temp >= FAN_TEMP(idx+1))
 					idx++;
 				increasing = false;
 			}
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 		/* we just started going over */
 		else {
 			increasing = true;
 			decreasing = false;
 			increasing_time = k_uptime_get();
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 	}
 
 	/*
 	 * case where we are below the lower temp
 	 */
-	if (idx > 0 && avg_temp <= (float)fan_lookup_tbl[idx-1].temp) {
+	if (idx > 0 && avg_temp <= (float)FAN_TEMP(idx-1)) {
 		if (decreasing) {
 			if (k_uptime_get() - decreasing_time >= 55000) {
-				while (avg_temp <= fan_lookup_tbl[idx-1].temp)
+				while (avg_temp <= FAN_TEMP(idx-1))
 					idx--;
 				decreasing = false;
 			}
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 		/* we just started going down */
 		else {
 			decreasing = true;
 			increasing = false;
 			decreasing_time = k_uptime_get();
-			return fan_lookup_tbl[idx].duty_cycle;
+			return FAN_DUTY(idx);
 		}
 	}
 
 	/* no change */
 	increasing = decreasing = false;
 	increasing_time = decreasing_time = k_uptime_get();
-	return fan_lookup_tbl[idx].duty_cycle;
+	return FAN_DUTY(idx);
 
 }
 

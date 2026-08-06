@@ -19,8 +19,8 @@ description: |
                     fan-temp-devices = <&switch_temp0>, <&switch_temp1>;
                     fan-cooling-devices = <&fan1_1>, <&fan1_2>;
 
-                    fan-curve-temps        = <20 25 30>;
-                    fan-curve-duty-cycles  = <40 45 50>;
+                    /* <temp duty>, ascending by temp */
+                    fan-curve = <20 40>, <25 45>, <30 50>;
             };
     };
 
@@ -40,20 +40,16 @@ properties:
     description: |
       Fan (PWM) devices driven to the duty cycle selected by the curve.
 
-  fan-curve-temps:
+  fan-curve:
     type: array
     required: true
     description: |
-      Fan curve temperature breakpoints in degrees Celsius, ascending.
-      Must be the same length as fan-curve-duty-cycles - enforced by a
-      BUILD_ASSERT in thermalmgmt.c, not by this binding. Index 0 is the
-      idle-floor sentinel, not a real threshold.
-
-  fan-curve-duty-cycles:
-    type: array
-    required: true
-    description: |
-      Fan duty cycle, in percent, for each entry in fan-curve-temps.
+      Fan curve as a flat list of (temp, duty) pairs - degrees Celsius
+      ascending, then duty cycle in percent - one pair per curve step,
+      e.g. <20 40>, <25 45>, <30 50>. Must list an even number of cells -
+      enforced by a BUILD_ASSERT in thermalmgmt.c, not by this binding.
+      The first pair's temp is an idle-floor sentinel, not a real
+      threshold.
 
   fan-temp-filter:
     type: int
