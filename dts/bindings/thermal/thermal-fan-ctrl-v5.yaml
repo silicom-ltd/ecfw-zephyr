@@ -52,15 +52,22 @@ properties:
 
   fan-temp-filter:
     type: int
-    default: 5
     description: |
-      Moving-average filter window width, in samples. This is the
-      default filter; ignored if fan-temp-ema-alpha is set instead.
+      Moving-average filter window width, in samples; defaults to 5 if
+      unset (applied in thermalmgmt.c via DT_PROP_OR, not by this
+      binding - a binding-level "default" would make this property
+      synthesize as present even when unset in the devicetree, which
+      would break the fan-temp-ema-alpha mutual-exclusivity check
+      below). This is the default filter; ignored if fan-temp-ema-alpha
+      is set instead.
 
   fan-temp-ema-alpha:
     type: int
     description: |
       Selects the exponential-moving-average filter instead of the
       moving average. Value is the weight given to the newest sample,
-      as a percentage (1-100). Mutually exclusive with fan-temp-filter -
-      enforced by a BUILD_ASSERT in thermalmgmt.c, not by this binding.
+      as a percentage - must be between 1 and 100, and mutually
+      exclusive with fan-temp-filter; both are enforced by a
+      BUILD_ASSERT in thermalmgmt.c, not by this binding (the
+      devicetree binding schema has no numeric range/exclusivity
+      constraint of its own).

@@ -157,6 +157,9 @@ BUILD_ASSERT(!(DT_NODE_HAS_PROP(THERMAL_ZONE_NODE, fan_temp_filter) &&
 #define FAN_TEMP_EMA_ALPHA_PCT \
 	DT_PROP_OR(THERMAL_ZONE_NODE, fan_temp_ema_alpha, 20)
 
+BUILD_ASSERT(FAN_TEMP_EMA_ALPHA_PCT >= 1 && FAN_TEMP_EMA_ALPHA_PCT <= 100,
+	     "fan-temp-ema-alpha must be between 1 and 100");
+
 #if DT_NODE_HAS_PROP(THERMAL_ZONE_NODE, fan_temp_ema_alpha)
 
 static float filter_temp(uint16_t temp)
