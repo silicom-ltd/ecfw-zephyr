@@ -24,11 +24,22 @@
 
 LOG_MODULE_REGISTER(thermal, CONFIG_THERMAL_MGMT_LOG_LEVEL);
 
-/* The board's sensor/fan wiring and fan curve, described by a single
- * "thermal-fan-ctrl-v5" node (see dts/bindings/misc/thermal-fan-ctrl-v5.yaml)
- * instead of loose properties on zephyr,user.
+/* The board's sensor/fan wiring and fan curve, described by a
+ * Linux/Zephyr-thermal-zones-shaped devicetree node: a "thermal-fan-ctrl-v5"
+ * zone with child "trips" (one per fan-curve step) and child "cooling-maps"
+ * (trip -> fan devices). See dts/bindings/thermal/thermal-fan-ctrl-v5*.yaml.
+ *
+ * Trip order matters (ascending temperature) and DT_FOREACH_CHILD is used
+ * to get it, rather than DT_FOREACH_STATUS_OKAY, which makes no ordering
+ * guarantee across a whole-tree compatible scan.
  */
-#define THERMAL_FAN_CTRL_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(thermal_fan_ctrl_v5)
+#define THERMAL_ZONE_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(thermal_fan_ctrl_v5)
+#define TRIPS_NODE DT_CHILD(THERMAL_ZONE_NODE, trips)
+#define COOLING_MAPS_NODE DT_CHILD(THERMAL_ZONE_NODE, cooling_maps)
+/* All cooling-maps currently list the same fan devices (see
+ * thermal-fan-ctrl-v5-cooling-map.yaml) - read them from the first one.
+ */
+#define FIRST_COOLING_MAP DT_CHILD(COOLING_MAPS_NODE, map_0)
 
 #define FAN_CPU FAN_LEFT
 /**
@@ -91,27 +102,31 @@ static uint8_t bios_fan_speed;
 static bool fan_duty_cycle_change;
 static int cpu_temp = 30;
 
-/* Fan curve, sourced from the 'fan-curve' devicetree property: a flat list
- * of (temp, duty) pairs, e.g. <20 40>, <25 45>, ... - ascending temp, one
- * pair per curve step. Index 0 is the idle floor for temperatures below
- * the first real threshold; its temp is a sentinel and is not itself a
- * threshold. FAN_TEMP(i)/FAN_DUTY(i) read pair i; FAN_CURVE_PAIRS is the
- * number of pairs (half the raw cell count).
+/* Fan curve, sourced from the 'trips' children of the thermal-fan-ctrl-v5
+ * zone (ascending temperature, one trip per curve step - see TRIPS_NODE
+ * above). Index 0 is the idle floor for temperatures below the first real
+ * threshold; its temp is a sentinel and is not itself a threshold.
+ * FAN_TEMP(i)/FAN_DUTY(i) read trip i; FAN_CURVE_PAIRS is the trip count.
  */
-static const int16_t fan_curve[] = DT_PROP(THERMAL_FAN_CTRL_NODE, fan_curve);
+#define TRIP_TEMP_GET(node_id) DT_PROP(node_id, temperature),
+#define TRIP_DUTY_GET(node_id) DT_PROP(node_id, duty_cycle),
 
-BUILD_ASSERT(ARRAY_SIZE(fan_curve) % 2 == 0,
-	     "fan-curve must list an even number of cells (temp, duty pairs)");
+static const int16_t fan_curve_temps[] = {
+	DT_FOREACH_CHILD(TRIPS_NODE, TRIP_TEMP_GET)
+};
+static const uint8_t fan_curve_duties[] = {
+	DT_FOREACH_CHILD(TRIPS_NODE, TRIP_DUTY_GET)
+};
 
-#define FAN_CURVE_PAIRS (ARRAY_SIZE(fan_curve) / 2)
-#define FAN_TEMP(i) fan_curve[2 * (i)]
-#define FAN_DUTY(i) ((uint8_t)fan_curve[2 * (i) + 1])
+#define FAN_CURVE_PAIRS ARRAY_SIZE(fan_curve_temps)
+#define FAN_TEMP(i) fan_curve_temps[i]
+#define FAN_DUTY(i) fan_curve_duties[i]
 
 #define FAN_DEVICE_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *fan_devices[] = {
-	DT_FOREACH_PROP_ELEM(THERMAL_FAN_CTRL_NODE, fan_cooling_devices,
+	DT_FOREACH_PROP_ELEM(FIRST_COOLING_MAP, cooling_device,
 			      FAN_DEVICE_GET)
 };
 
@@ -119,12 +134,13 @@ const struct device *fan_devices[] = {
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 const struct device *temp_devices[] = {
-	DT_FOREACH_PROP_ELEM(THERMAL_FAN_CTRL_NODE, fan_temp_devices,
+	DT_FOREACH_PROP_ELEM(THERMAL_ZONE_NODE, thermal_sensors,
 			      TEMP_DEVICE_GET)
 };
 
-/* Temperature filter selection, via the thermal-fan-ctrl-v5 node. Setting
- * either property selects that filter; setting both is a build error:
+/* Temperature filter selection, via the thermal-fan-ctrl-v5 zone node.
+ * Setting either property selects that filter; setting both is a build
+ * error:
  *   fan-temp-filter = <N>;      moving-average window width, in samples
  *                                (this is the default filter; N defaults to
  *                                5 if neither property is set)
@@ -132,16 +148,16 @@ const struct device *temp_devices[] = {
  *                                weight given to the newest sample, percent
  *                                (1-100)
  */
-BUILD_ASSERT(!(DT_NODE_HAS_PROP(THERMAL_FAN_CTRL_NODE, fan_temp_filter) &&
-	       DT_NODE_HAS_PROP(THERMAL_FAN_CTRL_NODE, fan_temp_ema_alpha)),
+BUILD_ASSERT(!(DT_NODE_HAS_PROP(THERMAL_ZONE_NODE, fan_temp_filter) &&
+	       DT_NODE_HAS_PROP(THERMAL_ZONE_NODE, fan_temp_ema_alpha)),
 	     "fan-temp-filter and fan-temp-ema-alpha are mutually exclusive");
 
 #define FAN_TEMP_FILTER_WINDOW \
-	DT_PROP_OR(THERMAL_FAN_CTRL_NODE, fan_temp_filter, 5)
+	DT_PROP_OR(THERMAL_ZONE_NODE, fan_temp_filter, 5)
 #define FAN_TEMP_EMA_ALPHA_PCT \
-	DT_PROP_OR(THERMAL_FAN_CTRL_NODE, fan_temp_ema_alpha, 20)
+	DT_PROP_OR(THERMAL_ZONE_NODE, fan_temp_ema_alpha, 20)
 
-#if DT_NODE_HAS_PROP(THERMAL_FAN_CTRL_NODE, fan_temp_ema_alpha)
+#if DT_NODE_HAS_PROP(THERMAL_ZONE_NODE, fan_temp_ema_alpha)
 
 static float filter_temp(uint16_t temp)
 {

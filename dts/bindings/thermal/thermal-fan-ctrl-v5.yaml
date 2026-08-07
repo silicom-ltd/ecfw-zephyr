@@ -1,0 +1,66 @@
+# Copyright (c) 2026, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Thermal management V5 fan-curve zone (app/thermal_management_v5), shaped
+  like a Linux/Zephyr thermal-zones node: a zone with sensors, child "trips"
+  (one per fan-curve step) and child "cooling-maps" (trip -> fan devices).
+
+  There should be exactly one enabled node with this compatible per board,
+  normally placed under a plain (compatible-less) "thermal-zones" container
+  node, matching the upstream convention:
+
+    / {
+            thermal-zones {
+                    fan-ctrl-v5: fan-ctrl-v5 {
+                            compatible = "thermal-fan-ctrl-v5";
+                            thermal-sensors = <&switch_temp0>, <&switch_temp1>;
+
+                            trips {
+                                    trip_0: trip-0 {
+                                            compatible = "thermal-fan-ctrl-v5-trip";
+                                            temperature = <20>;
+                                            duty-cycle = <40>;
+                                    };
+                            };
+
+                            cooling-maps {
+                                    map_0: map-0 {
+                                            compatible = "thermal-fan-ctrl-v5-cooling-map";
+                                            trip = <&trip_0>;
+                                            cooling-device = <&fan1_1>, <&fan1_2>;
+                                    };
+                            };
+                    };
+            };
+    };
+
+  Trip nodes must appear under "trips" in ascending temperature order -
+  app/thermal_management_v5/thermalmgmt.c reads them via DT_FOREACH_CHILD,
+  which preserves devicetree source order (unlike a whole-tree compatible
+  scan), and its hysteresis/debounce logic assumes that ordering.
+
+compatible: "thermal-fan-ctrl-v5"
+
+properties:
+  thermal-sensors:
+    type: phandles
+    required: true
+    description: |
+      Temperature sensor devices read every cycle; the fan curve is
+      driven off the max SENSOR_CHAN_DIE_TEMP reading across all of them.
+
+  fan-temp-filter:
+    type: int
+    default: 5
+    description: |
+      Moving-average filter window width, in samples. This is the
+      default filter; ignored if fan-temp-ema-alpha is set instead.
+
+  fan-temp-ema-alpha:
+    type: int
+    description: |
+      Selects the exponential-moving-average filter instead of the
+      moving average. Value is the weight given to the newest sample,
+      as a percentage (1-100). Mutually exclusive with fan-temp-filter -
+      enforced by a BUILD_ASSERT in thermalmgmt.c, not by this binding.

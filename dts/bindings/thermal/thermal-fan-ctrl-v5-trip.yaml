@@ -1,0 +1,25 @@
+# Copyright (c) 2026, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  One fan-curve step, as a child of a "thermal-fan-ctrl-v5" zone's "trips"
+  container. Modeled on Linux/Zephyr thermal-zones trip points, plus a
+  duty-cycle value (generic thermal-zone trips don't carry one - that
+  normally lives on the cooling device's own state table, which our plain
+  PWM fan devices don't have).
+
+compatible: "thermal-fan-ctrl-v5-trip"
+
+properties:
+  temperature:
+    type: int
+    required: true
+    description: |
+      Trip temperature, in degrees Celsius. The first trip (in devicetree
+      order) is the idle-floor sentinel - see thermalmgmt.c.
+
+  duty-cycle:
+    type: int
+    required: true
+    description: |
+      Fan duty cycle, in percent, once this trip is reached.

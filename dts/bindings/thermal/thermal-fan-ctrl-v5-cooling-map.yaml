@@ -1,0 +1,28 @@
+# Copyright (c) 2026, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Links one trip (see thermal-fan-ctrl-v5-trip.yaml) to the fan devices it
+  drives, as a child of a "thermal-fan-ctrl-v5" zone's "cooling-maps"
+  container - modeled on Linux/Zephyr thermal-zones cooling-maps.
+
+  This module drives the same fan devices at every trip (just at a
+  different duty cycle each time), so in practice every cooling-map's
+  cooling-device list is identical; thermalmgmt.c reads the device list
+  from the first cooling-map only. The per-trip mapping is still declared
+  here, rather than as a single flat property on the zone, so a future
+  board that wants different devices per trip only has to change the
+  devicetree, not this binding.
+
+compatible: "thermal-fan-ctrl-v5-cooling-map"
+
+properties:
+  trip:
+    type: phandle
+    required: true
+    description: The trip (thermal-fan-ctrl-v5-trip node) this map applies to.
+
+  cooling-device:
+    type: phandles
+    required: true
+    description: Fan devices driven once the referenced trip is reached.
