@@ -1,0 +1,40 @@
+# Copyright (c) 2026, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  A single fan, modeled as an independent Linux/Zephyr-style cooling
+  device: wraps one physical fan device and gives it its own table of PWM
+  duty-cycle levels. Each physical fan gets its own node, so different
+  fans can have different level tables and respond to different trips.
+
+  cooling-levels[N] is the PWM duty cycle, in percent, for cooling state
+  N - referenced by index from a "thermal-fan-ctrl-v5-cooling-map" node's
+  cooling-device entries, e.g.:
+
+    fan1-1-cooling: fan1-1-cooling {
+            compatible = "thermal-fan-ctrl-v5-cooling-device";
+            #cooling-cells = <2>;
+            fan-devices = <&fan1_1>;
+            cooling-levels = <40 45 50>;
+    };
+    ...
+    cooling-device = <&fan1_1_cooling 0 2>;  /* state 0 (40%) .. state 2 (50%) */
+
+compatible: "thermal-fan-ctrl-v5-cooling-device"
+
+properties:
+  fan-devices:
+    type: phandles
+    required: true
+    description: The underlying fan (PWM) device(s) this cooling device drives.
+
+  cooling-levels:
+    type: array
+    required: true
+    description: |
+      PWM duty cycle, in percent, for each cooling state - state N is
+      cooling-levels[N]. Referenced by index from cooling-map entries.
+
+cooling-cells:
+  - min
+  - max

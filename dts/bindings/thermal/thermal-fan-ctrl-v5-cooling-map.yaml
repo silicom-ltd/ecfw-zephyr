@@ -2,17 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 description: |
-  Links one trip (see thermal-fan-ctrl-v5-trip.yaml) to the fan devices it
-  drives, as a child of a "thermal-fan-ctrl-v5" zone's "cooling-maps"
-  container - modeled on Linux/Zephyr thermal-zones cooling-maps.
+  Links one trip (see thermal-fan-ctrl-v5-trip.yaml) to the cooling
+  device(s) it drives, as a child of a "thermal-fan-ctrl-v5" zone's
+  "cooling-maps" container - modeled on Linux/Zephyr thermal-zones
+  cooling-maps.
 
-  This module drives the same fan devices at every trip (just at a
-  different duty cycle each time), so in practice every cooling-map's
-  cooling-device list is identical; thermalmgmt.c reads the device list
-  from the first cooling-map only. The per-trip mapping is still declared
-  here, rather than as a single flat property on the zone, so a future
-  board that wants different devices per trip only has to change the
-  devicetree, not this binding.
+  Each cooling-device entry is <&cooling_device min max> (see
+  thermal-fan-ctrl-v5-cooling-device.yaml): min/max are cooling-state
+  indices into that device's own cooling-levels array. thermalmgmt.c
+  applies "max" once the temperature crosses above this map's trip, and
+  "min" once it falls back below it (each direction independently
+  debounced). A map may list multiple cooling-device entries to drive
+  several fans off of the one trip.
 
 compatible: "thermal-fan-ctrl-v5-cooling-map"
 
@@ -23,6 +24,9 @@ properties:
     description: The trip (thermal-fan-ctrl-v5-trip node) this map applies to.
 
   cooling-device:
-    type: phandles
+    type: phandle-array
     required: true
-    description: Fan devices driven once the referenced trip is reached.
+    specifier-space: cooling
+    description: |
+      Cooling device(s) driven once the referenced trip is crossed, each
+      as <&device min-state max-state>.

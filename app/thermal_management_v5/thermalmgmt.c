@@ -24,22 +24,19 @@
 
 LOG_MODULE_REGISTER(thermal, CONFIG_THERMAL_MGMT_LOG_LEVEL);
 
-/* The board's sensor/fan wiring and fan curve, described by a
+/* The board's sensor/cooling wiring, described by a
  * Linux/Zephyr-thermal-zones-shaped devicetree node: a "thermal-fan-ctrl-v5"
- * zone with child "trips" (one per fan-curve step) and child "cooling-maps"
- * (trip -> fan devices). See dts/bindings/thermal/thermal-fan-ctrl-v5*.yaml.
+ * zone with child "trips" (temperature thresholds) and child "cooling-maps"
+ * (trip -> cooling device(s), each an independently-tabled fan). See
+ * dts/bindings/thermal/thermal-fan-ctrl-v5*.yaml.
  *
- * Trip order matters (ascending temperature) and DT_FOREACH_CHILD is used
- * to get it, rather than DT_FOREACH_STATUS_OKAY, which makes no ordering
- * guarantee across a whole-tree compatible scan.
+ * Trips are evaluated independently (see evaluate_trips()), not as one
+ * ordered curve, so unlike most other DT_FOREACH_CHILD uses in this file,
+ * cooling-map order doesn't matter here - each map resolves its own trip's
+ * temperature via that map's 'trip' phandle.
  */
 #define THERMAL_ZONE_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(thermal_fan_ctrl_v5)
-#define TRIPS_NODE DT_CHILD(THERMAL_ZONE_NODE, trips)
 #define COOLING_MAPS_NODE DT_CHILD(THERMAL_ZONE_NODE, cooling_maps)
-/* All cooling-maps currently list the same fan devices (see
- * thermal-fan-ctrl-v5-cooling-map.yaml) - read them from the first one.
- */
-#define FIRST_COOLING_MAP DT_CHILD(COOLING_MAPS_NODE, map_0)
 
 #define FAN_CPU FAN_LEFT
 /**
@@ -102,32 +99,54 @@ static uint8_t bios_fan_speed;
 static bool fan_duty_cycle_change;
 static int cpu_temp = 30;
 
-/* Fan curve, sourced from the 'trips' children of the thermal-fan-ctrl-v5
- * zone (ascending temperature, one trip per curve step - see TRIPS_NODE
- * above). Index 0 is the idle floor for temperatures below the first real
- * threshold; its temp is a sentinel and is not itself a threshold.
- * FAN_TEMP(i)/FAN_DUTY(i) read trip i; FAN_CURVE_PAIRS is the trip count.
+/* One (device, min duty, max duty) action per cooling-map cooling-device
+ * entry - min/max are cooling-state indices, resolved here into the
+ * device's own cooling-levels duty-cycle values at compile time.
  */
-#define TRIP_TEMP_GET(node_id) DT_PROP(node_id, temperature),
-#define TRIP_DUTY_GET(node_id) DT_PROP(node_id, duty_cycle),
-
-static const int16_t fan_curve_temps[] = {
-	DT_FOREACH_CHILD(TRIPS_NODE, TRIP_TEMP_GET)
-};
-static const uint8_t fan_curve_duties[] = {
-	DT_FOREACH_CHILD(TRIPS_NODE, TRIP_DUTY_GET)
+struct cooling_action {
+	const struct device *dev;
+	uint8_t min_duty;
+	uint8_t max_duty;
 };
 
-#define FAN_CURVE_PAIRS ARRAY_SIZE(fan_curve_temps)
-#define FAN_TEMP(i) fan_curve_temps[i]
-#define FAN_DUTY(i) fan_curve_duties[i]
+#define MAP_TEMP_GET(node_id) DT_PROP(DT_PHANDLE(node_id, trip), temperature),
+#define MAP_ACTION_COUNT_GET(node_id) DT_PROP_LEN(node_id, cooling_device),
 
-#define FAN_DEVICE_GET(node_id, prop, idx)		\
-	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
+#define COOLING_ACTION_GET(node_id, prop, idx)				\
+	{ DEVICE_DT_GET(DT_PHANDLE(				\
+		  DT_PHANDLE_BY_IDX(node_id, prop, idx), fan_devices)),	\
+	  DT_PROP_BY_IDX(DT_PHANDLE_BY_IDX(node_id, prop, idx),	\
+			  cooling_levels,				\
+			  DT_PHA_BY_IDX(node_id, prop, idx, min)),	\
+	  DT_PROP_BY_IDX(DT_PHANDLE_BY_IDX(node_id, prop, idx),	\
+			  cooling_levels,				\
+			  DT_PHA_BY_IDX(node_id, prop, idx, max)) },
 
-const struct device *fan_devices[] = {
-	DT_FOREACH_PROP_ELEM(FIRST_COOLING_MAP, cooling_device,
-			      FAN_DEVICE_GET)
+#define MAP_ACTIONS_GET(node_id) \
+	DT_FOREACH_PROP_ELEM(node_id, cooling_device, COOLING_ACTION_GET)
+
+/* Trip temperature for each cooling-map, resolved via that map's own
+ * 'trip' phandle - not the trip's position under the zone's 'trips'
+ * container, which this file never walks directly.
+ */
+static const int16_t map_temps[] = {
+	DT_FOREACH_CHILD(COOLING_MAPS_NODE, MAP_TEMP_GET)
+};
+
+#define NUM_MAPS ARRAY_SIZE(map_temps)
+
+/* Number of cooling_device entries in each map, and the flat, per-map-
+ * grouped list of actions those entries resolve to. A map's own slice of
+ * cooling_actions[] starts wherever the running total of earlier maps'
+ * counts lands (computed once in evaluate_trips()) and runs for
+ * map_action_count[m] entries.
+ */
+static const uint8_t map_action_count[] = {
+	DT_FOREACH_CHILD(COOLING_MAPS_NODE, MAP_ACTION_COUNT_GET)
+};
+
+static const struct cooling_action cooling_actions[] = {
+	DT_FOREACH_CHILD(COOLING_MAPS_NODE, MAP_ACTIONS_GET)
 };
 
 #define TEMP_DEVICE_GET(node_id, prop, idx)		\
@@ -189,124 +208,100 @@ static float filter_temp(uint16_t temp)
 
 #endif
 
-static uint16_t get_fan_speed_for_temp(uint16_t temp)
+/* Apply every cooling_actions[] entry belonging to map m: 'above' selects
+ * each action's max_duty (temperature at/above this map's trip) or
+ * min_duty (temperature below it).
+ */
+static void apply_map(const uint16_t *map_action_offset, int m, bool above)
 {
-	static float avg_temp;
-	static int idx;
-	static bool decreasing;
-	static bool increasing = true;
-	static uint64_t decreasing_time;
-	static uint64_t increasing_time;
+	int start = map_action_offset[m];
+	int end = start + map_action_count[m];
+	int k;
 
-	/*
-	 * start condition, pick speed and idx
-	 */
-	if (avg_temp == 0) {
-		avg_temp = temp;
-		while (idx < FAN_CURVE_PAIRS - 1 &&
-		       avg_temp >= FAN_TEMP(idx+1))
-			idx++;
-		return FAN_DUTY(idx);
+	for (k = start; k < end; k++) {
+		const struct cooling_action *action = &cooling_actions[k];
+		uint8_t duty = above ? action->max_duty : action->min_duty;
+
+		fan_set_cycles(action->dev, duty);
+	}
+}
+
+/* Every cooling-map's trip is evaluated independently against the current
+ * temperature, each with its own up/down debounce - there is no shared
+ * "current step" the way a single ordered curve would have. On the very
+ * first call, every map snaps directly to its correct state (no debounce,
+ * and the raw temperature is used instead of the filter, matching the
+ * cold-start handling the moving-average/EMA filters can't do on their
+ * own - see filter_temp()).
+ */
+static void evaluate_trips(uint16_t temp)
+{
+	static bool initialized;
+	static uint16_t map_action_offset[NUM_MAPS];
+	static bool map_active[NUM_MAPS];
+	static bool map_pending_up[NUM_MAPS];
+	static bool map_pending_down[NUM_MAPS];
+	static uint64_t map_pending_since[NUM_MAPS];
+	uint64_t now_ms = k_uptime_get();
+	float avg_temp;
+	int m;
+
+	if (!initialized) {
+		uint16_t offset = 0;
+
+		for (m = 0; m < NUM_MAPS; m++) {
+			map_action_offset[m] = offset;
+			offset += map_action_count[m];
+		}
 	}
 
-	avg_temp = filter_temp(temp);
+	avg_temp = initialized ? filter_temp(temp) : (float)temp;
 
 	LOG_DBG("filter_temp = %f", (double)avg_temp);
-	/*
-	 * case where avg_temp is <= lowest
-	 */
-	if (avg_temp <= (float)FAN_TEMP(0)) {
-		/* if we are on downswing, check the time passed */
-		if (decreasing) {
-			/* after the down debounce, zero the index */
-			if (k_uptime_get() - decreasing_time >= 55000) {
-				idx = 0;
-				decreasing = false;
-			}
-			/* idx is now 0 (or unchanged); return its speed */
-			return FAN_DUTY(idx);
+
+	for (m = 0; m < NUM_MAPS; m++) {
+		bool above = avg_temp >= (float)map_temps[m];
+
+		if (!initialized) {
+			map_active[m] = above;
+			apply_map(map_action_offset, m, above);
+			continue;
 		}
-		/* first time below idx 0 and we were steady-state */
-		else {
-			decreasing = true;
-			increasing = false;
-			decreasing_time = k_uptime_get();
-			return FAN_DUTY(idx);
+
+		if (above == map_active[m]) {
+			/* Steady relative to this trip - drop any pending
+			 * debounce so a brief wobble doesn't carry into the
+			 * next real crossing.
+			 */
+			map_pending_up[m] = false;
+			map_pending_down[m] = false;
+			continue;
+		}
+
+		if (above) {
+			if (!map_pending_up[m]) {
+				map_pending_up[m] = true;
+				map_pending_down[m] = false;
+				map_pending_since[m] = now_ms;
+			} else if (now_ms - map_pending_since[m] >= 15000) {
+				map_active[m] = true;
+				map_pending_up[m] = false;
+				apply_map(map_action_offset, m, true);
+			}
+		} else {
+			if (!map_pending_down[m]) {
+				map_pending_down[m] = true;
+				map_pending_up[m] = false;
+				map_pending_since[m] = now_ms;
+			} else if (now_ms - map_pending_since[m] >= 55000) {
+				map_active[m] = false;
+				map_pending_down[m] = false;
+				apply_map(map_action_offset, m, false);
+			}
 		}
 	}
 
-	/*
-	 * case where avg_temp is >= max
-	 */
-	if (avg_temp >=
-	    (float)FAN_TEMP(FAN_CURVE_PAIRS-1)) {
-		if (increasing) {
-			/* after the up debounce, jump to the max index */
-			if (k_uptime_get() - increasing_time >= 15000) {
-				idx = FAN_CURVE_PAIRS-1;
-				increasing = false;
-			}
-			/* idx is now max, or just return the current speed */
-			return FAN_DUTY(idx);
-		}
-		/* first time over max and we were steady-state */
-		else {
-			increasing = true;
-			decreasing = false;
-			increasing_time = k_uptime_get();
-			return FAN_DUTY(idx);
-		}
-	}
-
-	/*
-	 * case where we are above next temp
-	 */
-	if (idx < FAN_CURVE_PAIRS - 1 &&
-	    avg_temp >= (float)FAN_TEMP(idx+1)) {
-		if (increasing) {
-			if (k_uptime_get() - increasing_time >= 15000) {
-				/* find out what temp we have gotten to */
-				while (avg_temp >= FAN_TEMP(idx+1))
-					idx++;
-				increasing = false;
-			}
-			return FAN_DUTY(idx);
-		}
-		/* we just started going over */
-		else {
-			increasing = true;
-			decreasing = false;
-			increasing_time = k_uptime_get();
-			return FAN_DUTY(idx);
-		}
-	}
-
-	/*
-	 * case where we are below the lower temp
-	 */
-	if (idx > 0 && avg_temp <= (float)FAN_TEMP(idx-1)) {
-		if (decreasing) {
-			if (k_uptime_get() - decreasing_time >= 55000) {
-				while (avg_temp <= FAN_TEMP(idx-1))
-					idx--;
-				decreasing = false;
-			}
-			return FAN_DUTY(idx);
-		}
-		/* we just started going down */
-		else {
-			decreasing = true;
-			increasing = false;
-			decreasing_time = k_uptime_get();
-			return FAN_DUTY(idx);
-		}
-	}
-
-	/* no change */
-	increasing = decreasing = false;
-	increasing_time = decreasing_time = k_uptime_get();
-	return FAN_DUTY(idx);
-
+	initialized = true;
 }
 
 static void init_fans(void)
@@ -371,7 +366,6 @@ static void manage_fan(void)
 {
 	struct sensor_value temp;
 	struct sensor_value max_temp;
-	uint8_t fan_duty_cycle;
 	int i;
 
 	/* Disable power to fan in S5/4/3 and in CS,
@@ -385,8 +379,8 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
-	/* Drive the fan curve off the hottest sensor so no single zone can
-	 * be masked by cooler readings from the others.
+	/* Drive the trips off the hottest sensor so no single zone can be
+	 * masked by cooler readings from the others.
 	 */
 	for (i = 0; i < ARRAY_SIZE(temp_devices); i++) {
 		sensor_sample_fetch_chan(temp_devices[i], SENSOR_CHAN_DIE_TEMP);
@@ -397,11 +391,8 @@ static void manage_fan(void)
 			max_temp = temp;
 	}
 
-	fan_duty_cycle = get_fan_speed_for_temp(max_temp.val1);
-	LOG_DBG("Temp read %d, fan state %d", max_temp.val1, fan_duty_cycle);
-
-	for (i = 0; i < ARRAY_SIZE(fan_devices); i++)
-		fan_set_cycles(fan_devices[i], fan_duty_cycle);
+	LOG_DBG("Temp read %d", max_temp.val1);
+	evaluate_trips(max_temp.val1);
 
 	fan_update();
 

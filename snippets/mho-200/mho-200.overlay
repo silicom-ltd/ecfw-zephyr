@@ -190,6 +190,62 @@
 		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
 	};
 
+	fan1_1_cooling: fan1-1-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan1_1>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan1_2_cooling: fan1-2-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan1_2>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan1_3_cooling: fan1-3-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan1_3>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan1_4_cooling: fan1-4-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan1_4>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan2_1_cooling: fan2-1-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan2_1>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan2_2_cooling: fan2-2-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan2_2>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan2_3_cooling: fan2-3-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan2_3>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
+	fan2_4_cooling: fan2-4-cooling {
+		compatible = "thermal-fan-ctrl-v5-cooling-device";
+		#cooling-cells = <2>;
+		fan-devices = <&fan2_4>;
+		cooling-levels = <40 45 50 60 61 62 63 64 65 70 75 80 85 90 92 94 96 98 100>;
+	};
+
 	thermal-zones {
 		fan-ctrl-v5 {
 			compatible = "thermal-fan-ctrl-v5";
@@ -199,97 +255,78 @@
 				trip_0: trip-0 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <20>;
-					duty-cycle = <40>;
 				};
 				trip_1: trip-1 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <25>;
-					duty-cycle = <45>;
 				};
 				trip_2: trip-2 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <30>;
-					duty-cycle = <50>;
 				};
 				trip_3: trip-3 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <35>;
-					duty-cycle = <60>;
 				};
 				trip_4: trip-4 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <36>;
-					duty-cycle = <61>;
 				};
 				trip_5: trip-5 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <37>;
-					duty-cycle = <62>;
 				};
 				trip_6: trip-6 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <38>;
-					duty-cycle = <63>;
 				};
 				trip_7: trip-7 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <39>;
-					duty-cycle = <64>;
 				};
 				trip_8: trip-8 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <40>;
-					duty-cycle = <65>;
 				};
 				trip_9: trip-9 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <41>;
-					duty-cycle = <70>;
 				};
 				trip_10: trip-10 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <42>;
-					duty-cycle = <75>;
 				};
 				trip_11: trip-11 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <43>;
-					duty-cycle = <80>;
 				};
 				trip_12: trip-12 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <44>;
-					duty-cycle = <85>;
 				};
 				trip_13: trip-13 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <45>;
-					duty-cycle = <90>;
 				};
 				trip_14: trip-14 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <46>;
-					duty-cycle = <92>;
 				};
 				trip_15: trip-15 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <47>;
-					duty-cycle = <94>;
 				};
 				trip_16: trip-16 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <48>;
-					duty-cycle = <96>;
 				};
 				trip_17: trip-17 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <49>;
-					duty-cycle = <98>;
 				};
 				trip_18: trip-18 {
 					compatible = "thermal-fan-ctrl-v5-trip";
 					temperature = <50>;
-					duty-cycle = <100>;
 				};
 			};
 
@@ -297,97 +334,97 @@
 				map_0: map-0 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_0>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 0 0>, <&fan1_2_cooling 0 0>, <&fan1_3_cooling 0 0>, <&fan1_4_cooling 0 0>, <&fan2_1_cooling 0 0>, <&fan2_2_cooling 0 0>, <&fan2_3_cooling 0 0>, <&fan2_4_cooling 0 0>;
 				};
 				map_1: map-1 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_1>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 0 1>, <&fan1_2_cooling 0 1>, <&fan1_3_cooling 0 1>, <&fan1_4_cooling 0 1>, <&fan2_1_cooling 0 1>, <&fan2_2_cooling 0 1>, <&fan2_3_cooling 0 1>, <&fan2_4_cooling 0 1>;
 				};
 				map_2: map-2 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_2>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 1 2>, <&fan1_2_cooling 1 2>, <&fan1_3_cooling 1 2>, <&fan1_4_cooling 1 2>, <&fan2_1_cooling 1 2>, <&fan2_2_cooling 1 2>, <&fan2_3_cooling 1 2>, <&fan2_4_cooling 1 2>;
 				};
 				map_3: map-3 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_3>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 2 3>, <&fan1_2_cooling 2 3>, <&fan1_3_cooling 2 3>, <&fan1_4_cooling 2 3>, <&fan2_1_cooling 2 3>, <&fan2_2_cooling 2 3>, <&fan2_3_cooling 2 3>, <&fan2_4_cooling 2 3>;
 				};
 				map_4: map-4 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_4>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 3 4>, <&fan1_2_cooling 3 4>, <&fan1_3_cooling 3 4>, <&fan1_4_cooling 3 4>, <&fan2_1_cooling 3 4>, <&fan2_2_cooling 3 4>, <&fan2_3_cooling 3 4>, <&fan2_4_cooling 3 4>;
 				};
 				map_5: map-5 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_5>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 4 5>, <&fan1_2_cooling 4 5>, <&fan1_3_cooling 4 5>, <&fan1_4_cooling 4 5>, <&fan2_1_cooling 4 5>, <&fan2_2_cooling 4 5>, <&fan2_3_cooling 4 5>, <&fan2_4_cooling 4 5>;
 				};
 				map_6: map-6 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_6>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 5 6>, <&fan1_2_cooling 5 6>, <&fan1_3_cooling 5 6>, <&fan1_4_cooling 5 6>, <&fan2_1_cooling 5 6>, <&fan2_2_cooling 5 6>, <&fan2_3_cooling 5 6>, <&fan2_4_cooling 5 6>;
 				};
 				map_7: map-7 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_7>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 6 7>, <&fan1_2_cooling 6 7>, <&fan1_3_cooling 6 7>, <&fan1_4_cooling 6 7>, <&fan2_1_cooling 6 7>, <&fan2_2_cooling 6 7>, <&fan2_3_cooling 6 7>, <&fan2_4_cooling 6 7>;
 				};
 				map_8: map-8 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_8>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 7 8>, <&fan1_2_cooling 7 8>, <&fan1_3_cooling 7 8>, <&fan1_4_cooling 7 8>, <&fan2_1_cooling 7 8>, <&fan2_2_cooling 7 8>, <&fan2_3_cooling 7 8>, <&fan2_4_cooling 7 8>;
 				};
 				map_9: map-9 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_9>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 8 9>, <&fan1_2_cooling 8 9>, <&fan1_3_cooling 8 9>, <&fan1_4_cooling 8 9>, <&fan2_1_cooling 8 9>, <&fan2_2_cooling 8 9>, <&fan2_3_cooling 8 9>, <&fan2_4_cooling 8 9>;
 				};
 				map_10: map-10 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_10>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 9 10>, <&fan1_2_cooling 9 10>, <&fan1_3_cooling 9 10>, <&fan1_4_cooling 9 10>, <&fan2_1_cooling 9 10>, <&fan2_2_cooling 9 10>, <&fan2_3_cooling 9 10>, <&fan2_4_cooling 9 10>;
 				};
 				map_11: map-11 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_11>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 10 11>, <&fan1_2_cooling 10 11>, <&fan1_3_cooling 10 11>, <&fan1_4_cooling 10 11>, <&fan2_1_cooling 10 11>, <&fan2_2_cooling 10 11>, <&fan2_3_cooling 10 11>, <&fan2_4_cooling 10 11>;
 				};
 				map_12: map-12 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_12>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 11 12>, <&fan1_2_cooling 11 12>, <&fan1_3_cooling 11 12>, <&fan1_4_cooling 11 12>, <&fan2_1_cooling 11 12>, <&fan2_2_cooling 11 12>, <&fan2_3_cooling 11 12>, <&fan2_4_cooling 11 12>;
 				};
 				map_13: map-13 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_13>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 12 13>, <&fan1_2_cooling 12 13>, <&fan1_3_cooling 12 13>, <&fan1_4_cooling 12 13>, <&fan2_1_cooling 12 13>, <&fan2_2_cooling 12 13>, <&fan2_3_cooling 12 13>, <&fan2_4_cooling 12 13>;
 				};
 				map_14: map-14 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_14>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 13 14>, <&fan1_2_cooling 13 14>, <&fan1_3_cooling 13 14>, <&fan1_4_cooling 13 14>, <&fan2_1_cooling 13 14>, <&fan2_2_cooling 13 14>, <&fan2_3_cooling 13 14>, <&fan2_4_cooling 13 14>;
 				};
 				map_15: map-15 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_15>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 14 15>, <&fan1_2_cooling 14 15>, <&fan1_3_cooling 14 15>, <&fan1_4_cooling 14 15>, <&fan2_1_cooling 14 15>, <&fan2_2_cooling 14 15>, <&fan2_3_cooling 14 15>, <&fan2_4_cooling 14 15>;
 				};
 				map_16: map-16 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_16>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 15 16>, <&fan1_2_cooling 15 16>, <&fan1_3_cooling 15 16>, <&fan1_4_cooling 15 16>, <&fan2_1_cooling 15 16>, <&fan2_2_cooling 15 16>, <&fan2_3_cooling 15 16>, <&fan2_4_cooling 15 16>;
 				};
 				map_17: map-17 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_17>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 16 17>, <&fan1_2_cooling 16 17>, <&fan1_3_cooling 16 17>, <&fan1_4_cooling 16 17>, <&fan2_1_cooling 16 17>, <&fan2_2_cooling 16 17>, <&fan2_3_cooling 16 17>, <&fan2_4_cooling 16 17>;
 				};
 				map_18: map-18 {
 					compatible = "thermal-fan-ctrl-v5-cooling-map";
 					trip = <&trip_18>;
-					cooling-device = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>, <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+					cooling-device = <&fan1_1_cooling 17 18>, <&fan1_2_cooling 17 18>, <&fan1_3_cooling 17 18>, <&fan1_4_cooling 17 18>, <&fan2_1_cooling 17 18>, <&fan2_2_cooling 17 18>, <&fan2_3_cooling 17 18>, <&fan2_4_cooling 17 18>;
 				};
 			};
 		};
