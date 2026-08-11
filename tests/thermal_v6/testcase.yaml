@@ -1,0 +1,10 @@
+tests:
+  ecfw.thermal.v6:
+    platform_allow:
+      - native_sim
+      - native_posix
+    integration_platforms:
+      - native_sim
+    tags:
+      - thermal
+      - fan
