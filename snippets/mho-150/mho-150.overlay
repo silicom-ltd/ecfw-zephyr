@@ -204,6 +204,12 @@
 
 		sw-amb-temp-sensors = <&switch_temp0>, <&switch_temp1>;
 
+		/* Fan control inputs (thermal management V6): the profile drives
+		 * the fans from the maximum of these. Separate from
+		 * sw-amb-temp-sensors above, which is the hwmon reporting list.
+		 */
+		fan-temp-devices = <&switch_temp0>, <&switch_temp1>, <&therm0>;
+
 		sw-volt-sensors = <&mfd3_vout>,
 				  <&mfd4_vout>,
 				  <&mfd5_vout>,

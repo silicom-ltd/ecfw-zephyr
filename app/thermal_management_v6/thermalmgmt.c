@@ -56,27 +56,25 @@ static int cpu_temp = 30;
  */
 static struct fan_profile_v6 fan_profile;
 
-/* SW ambient thermistors, left and right. The two LM75s on the switch card,
- * taken from the devicetree in the order they are listed there.
+/* Fan control inputs: every sensor whose maximum drives the profile, listed on
+ * the zephyr,user node as 'fan-temp-devices'. For MHO200 that is the two SW
+ * ambient LM75s plus the CPU-side ambient thermistor - the CPU sensor
+ * participates in the maximum despite the fan table being labelled SW Ambient.
+ *
+ * Deliberately a separate property from 'sw-amb-temp-sensors', which is the
+ * hwmon reporting list: what the host is shown and what drives the fans are
+ * different concerns, and coupling them means a reporting change silently
+ * retunes the thermals. All entries are read on SENSOR_CHAN_AMBIENT_TEMP.
  */
-#define AMB_TEMP_SENSOR_GET(node_id, prop, idx)		\
+#define FAN_TEMP_SENSOR_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
-static const struct device *sw_amb_devices[] = {
-	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), sw_amb_temp_sensors,
-			     AMB_TEMP_SENSOR_GET)
+static const struct device *fan_temp_devices[] = {
+	DT_FOREACH_PROP_ELEM(DT_PATH(zephyr_user), fan_temp_devices, FAN_TEMP_SENSOR_GET)
 };
 
-BUILD_ASSERT(ARRAY_SIZE(sw_amb_devices) == 2,
-	"Fan profile expects exactly two SW ambient thermistors, left and right");
-
-/* CPU-side ambient thermistor, on the ADC. It participates in the maximum
- * despite the fan table being labelled SW Ambient.
- */
-#if !DT_NODE_EXISTS(DT_NODELABEL(therm0))
-#error "Thermal management V6 needs the CPU ambient thermistor (therm0)"
-#endif
-static const struct device *cpu_amb_device = DEVICE_DT_GET(DT_NODELABEL(therm0));
+BUILD_ASSERT(ARRAY_SIZE(fan_temp_devices) > 0,
+	"fan-temp-devices must list at least one ambient sensor");
 
 #define FAN_DEVICE_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
@@ -126,17 +124,10 @@ static int read_max_ambient(int *max_sw)
 	int i;
 	bool valid = false;
 
-	for (i = 0; i < ARRAY_SIZE(sw_amb_devices); i++) {
-		if (read_amb_temp(sw_amb_devices[i], &temp)) {
+	for (i = 0; i < ARRAY_SIZE(fan_temp_devices); i++) {
+		if (read_amb_temp(fan_temp_devices[i], &temp)) {
 			continue;
 		}
-		if (!valid || temp > max) {
-			max = temp;
-		}
-		valid = true;
-	}
-
-	if (!read_amb_temp(cpu_amb_device, &temp)) {
 		if (!valid || temp > max) {
 			max = temp;
 		}
@@ -180,6 +171,8 @@ static void init_fans(void)
 #endif
 
 	fan_init();
+
+	LOG_INF("Fan control inputs: %d ambient sensors", (int)ARRAY_SIZE(fan_temp_devices));
 
 	fan_profile_v6_reset(&fan_profile);
 }
