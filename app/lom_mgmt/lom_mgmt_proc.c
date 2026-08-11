@@ -28,6 +28,7 @@
 #include "lom_mgmt_proc_inc.h"
 #include "host_event.h"
 #include "postcode.h"
+#include "pwrctrl.h"
 
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
@@ -199,33 +200,6 @@ struct func_ret_info
 #if defined(CONFIG_LOM_MGMT_FUNC_POWER_CTRL) || defined(CONFIG_LOM_MGMT_FUNC_HOST_EVENT) || \
 	defined(CONFIG_LOM_MGMT_FUNC_POSTCODE)
 static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
-
-#endif
-
-#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-
-static int slp_sig_PLTRST;
-static int in_force_down;
-
-struct pwrctrl_work_data
-{
-	struct k_work work_item;
-        uint8_t act;
-	int     sec;
-};
-
-#define HOST_NORMALDOWN_WAIT_TIME_MS CONFIG_HOST_GRACEFUL_SHUTDOWN_WAIT_TIME
-#define HOST_FORCEDOWN_WAIT_TIME_MS 7200
-
-#define WAIT_SIG_SLEEP_TIME_MS 10
-#define MS_TIMEOUT_TO_CNT(t)						\
-	(((t) + WAIT_SIG_SLEEP_TIME_MS - 1) / WAIT_SIG_SLEEP_TIME_MS)
-
-#define WORK_RET_OK      0
-#define WORK_RET_TIMEOUT 1
-#define WORK_RET_QUIT    2
-
-static struct pwrctrl_work_data pwrctrl_work_data;
 
 #endif
 
@@ -472,159 +446,15 @@ static int do_get_fru_cache(uint8_t *data, struct func_ret_info* fri)
 	return 0;
 }
 
-#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-static void pwrctrl_do_up(void)
-{
-	LOG_DBG_APP(">> Do UP");
-
-	gpio_write_pin(PM_PWRBTN, 0);
-	k_msleep(150);
-	gpio_write_pin(PM_PWRBTN, 1);
-
-	LOG_DBG_APP(">> Do UP end");
-}
-
-static void pwrctrl_do_shutdown(void)
-{
-	LOG_DBG_APP(">> Do Normal Down");
-
-	gpio_write_pin(PM_PWRBTN, 0);
-	k_msleep(150);
-	gpio_write_pin(PM_PWRBTN, 1);
-
-	LOG_DBG_APP(">> Do Normal Down end");
-}
-
-static int wait_sig_value(volatile int *sig, int exp_val, uint32_t timeout)
-{
-	uint16_t loop_cnt = MS_TIMEOUT_TO_CNT(timeout);
-
-	while (loop_cnt && *sig != exp_val) {
-		k_msleep(WAIT_SIG_SLEEP_TIME_MS);
-		loop_cnt--;
-	}
-
-	return ((*sig == exp_val) ? WORK_RET_OK : WORK_RET_TIMEOUT);
-}
-
-static int wait_sig_value_with_init(volatile int *sig, int set_val, int exp_val,
-	uint32_t timeout)
-{
-	*sig = set_val;
-
-	return wait_sig_value(sig, exp_val, timeout);
-}
-
-static inline void pwrctrl_forcedown_post(void)
-{
-	if (in_force_down) {
-		gpio_write_pin(PM_PWRBTN, 1);
-		in_force_down = 0;
-	}
-}
-
-static void pwrctrl_do_force_down(void)
-{
-	int ret;
-
-	LOG_DBG_APP(">> Do Force Down");
-
-#ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
-	slp_sig_PLTRST = -1;
-
-	pwrctrl_do_shutdown();
-
-	ret = wait_sig_value(&slp_sig_PLTRST, 0, HOST_NORMALDOWN_WAIT_TIME_MS);
-	if (ret == WORK_RET_QUIT) {
-		LOG_DBG_APP(">> Normal Down wait quit");
-		return;
-	}
-
-	if (ret == WORK_RET_TIMEOUT) {
-		LOG_DBG_APP(">> Normal Down failed, try Force Down");
-#endif
-
-		gpio_write_pin(PM_PWRBTN, 0);
-
-		ret = wait_sig_value_with_init(&in_force_down, 1, 0, HOST_FORCEDOWN_WAIT_TIME_MS);
-		if (ret == WORK_RET_QUIT) {
-			LOG_DBG_APP(">> Force Down Wait quit");
-			pwrctrl_forcedown_post();
-			return;
-		}
-
-		if (ret == WORK_RET_TIMEOUT) {
-			LOG_ERR(">> Do Force Down Failed");
-			pwrctrl_forcedown_post();
-			return;
-		}
-#ifdef CONFIG_ATTEMPT_GRACEFUL_SHUTDOWN
-	}
-#endif
-
-	LOG_DBG_APP(">> Do Force Down end");
-}
-
-static void pwrctrl_do_hard_reset(void)
-{
-	LOG_DBG_APP(">> Do Hard Reset");
-
-	gpio_write_pin(SOC_RSTBTN_N, 0);
-	k_msleep(20);
-	gpio_write_pin(SOC_RSTBTN_N, 1);
-
-	LOG_DBG_APP(">> Do Hard Reset end");
-}
-
-static void pwrctrl_do_power_cycle(void)
-{
-	LOG_DBG_APP(">> Do Power Cycle");
-
-	pwrctrl_do_force_down();
-
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	switch_card_power_control(0);
-#endif
-
-	k_msleep(2000); /* 2 seconds */
-
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP)
-	switch_card_power_control(1);
-#endif
-
-	pwrctrl_do_up();
-
-	LOG_DBG_APP(">> Do Power Cycle End");
-}
-
-/*
- * The array index must match the 'enum lom_mgmt_power_ctrl_act'.
- */
-static void (*pwrctrl_funcs[])(void) = {
-	NULL,
-	pwrctrl_do_up,
-	pwrctrl_do_shutdown,
-	pwrctrl_do_hard_reset,
-	pwrctrl_do_force_down,
-	pwrctrl_do_power_cycle,
-};
-
-static void pwrctrl_worker(struct k_work *work)
-{
-	struct pwrctrl_work_data *data = CONTAINER_OF(work, struct pwrctrl_work_data, work_item);
-
-	if (pwrctrl_funcs[data->act]) {
-		pwrctrl_funcs[data->act]();
-	}
-	else {
-		LOG_WRN("pwrctrl_worker fail quit");
-	}
-}
-#endif
-
-static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
+static int do_power_ctrl(uint8_t* req, uint8_t req_dlen, struct func_ret_info* fri)
 {
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+	if (req_dlen < 1) {
+		LOG_ERR("Malformed PwrCtrl request");
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
 	uint8_t pwr_state = pwrseq_system_state();
 	int valid_request = 0;
 
@@ -643,29 +473,23 @@ static int do_power_ctrl(uint8_t* req, struct func_ret_info* fri)
 		}
 		break;
 	default:
-		LOG_ERR("Unsupported PWC action %d", req[0]);
+		LOG_ERR("Unsupported PwrCtrl action %d", req[0]);
 		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENOTSUP);
 		return -1;
 	}
 
 	if (!valid_request) {
-		LOG_ERR("Invalid PWC action <%d> on pwr_stat %d. Ignore", req[0],
-			pwr_state);
-		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		LOG_ERR("PwrCtrl request ignored: act <%d>, pwr_stat %d", req[0], pwr_state);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EALREADY);
 		return -1;
 	}
 
-	uint32_t status = k_work_busy_get(&pwrctrl_work_data.work_item);
-	if (status & K_WORK_RUNNING) {
-		LOG_DBG_APP("PwrCtrl worker is busy");
-		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EBUSY);
+	int ret = lom_pwrctrl_request(req[0], &req[1], req_dlen - 1);
+	if (ret) {
+		LOG_ERR("Submit PwrCtrl request failed: %d", ret);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
 		return -1;
 	}
-
-	pwrctrl_work_data.act = req[0];
-	pwrctrl_work_data.sec = req[1] * 10;
-
-	k_work_submit(&pwrctrl_work_data.work_item);
 #else
 	fri->code = EC_RET_ERR_NOT_IMPL;
 #endif
@@ -782,7 +606,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_ids(res_data, &fri);
 		break;
 	case FUNC_POWER_CTRL:
-		do_power_ctrl(req_data, &fri);
+		do_power_ctrl(req_data, task->req->dlen, &fri);
 		break;
 	case FUNC_GET_ACPI_POWER_STATE:
 		do_get_acpi(res_data, &fri);
@@ -834,7 +658,7 @@ static void wait_hwdata_ready(uint32_t normal_period)
 		}
 
 		if (hwmon_data != NULL) {
-			LOG_INF("hwmon_data is available at %p\n", hwmon_data);
+			LOG_INF("hwmon_data is available at %p", hwmon_data);
 			break;
 		}
 	}
@@ -896,7 +720,6 @@ static struct vwi_signal_info vwi_managed_sigs[] =
 };
 #endif
 
-
 /*
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 1 : System Power UP
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 0 : System Power Down
@@ -922,13 +745,11 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		vwi_managed_sigs[event.evt_details].name, event.evt_data, pwr_sta);
 
 	switch (event.evt_details) {
-	case ESPI_VWIRE_SIGNAL_SLP_WLAN:
-		if (event.evt_data == 0) {
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-			pwrctrl_forcedown_post();
-#endif
-		}
+	case ESPI_VWIRE_SIGNAL_SLP_WLAN:
+		lom_pwrctrl_on_signal(event.evt_details, event.evt_data);
 		break;
+#endif
 	case ESPI_VWIRE_SIGNAL_SLP_S5:
 		if (event.evt_data == 0) { /* power off sequence */
 			if (pwr_sta == SYSTEM_S0_STATE) {
@@ -957,7 +778,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		break;
 	case ESPI_VWIRE_SIGNAL_PLTRST:
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-		slp_sig_PLTRST = event.evt_data;
+		lom_pwrctrl_on_signal(event.evt_details, event.evt_data);
 #endif
 		if (event.evt_data) {
 			if (pwr_sta == SYSTEM_S0_STATE) {
@@ -968,21 +789,12 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 #endif
 			}
 		}
-		else {
-			/*
-			 * Some systems take a long time to shut down,
-			 * causing the process to enter a forced shutdown procedure.
-			 * The power button needs to be released(cancel the forcedown) to
-			 * prevent the host from restarting.
-			 */
-#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-			if (in_force_down) {
-				LOG_WRN(">> Normal shutdown occurs in ForceDown!");
-				pwrctrl_forcedown_post();
-			}
-#endif
-		}
 		break;
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+	case ESPI_VWIRE_SIGNAL_SUS_PWRDN_ACK:
+		lom_pwrctrl_on_signal(event.evt_details, event.evt_data);
+		break;
+#endif
 	case ESPI_VWIRE_SIGNAL_HOST_RST_WARN:
 		if (event.evt_data == 1) {
 			LOG_DBG_EVENT(">> [HOST RST]");
@@ -1074,6 +886,9 @@ void init_postcode_disp_event_monitor(void)
 
 void lom_mgmt_thread(void *p1, void *p2, void *p3)
 {
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+
 	uint32_t normal_period = *(uint32_t *)p1;
 
 #if defined(CONFIG_LOM_MGMT_FUNC_POWER_CTRL) || defined(CONFIG_LOM_MGMT_FUNC_HOST_EVENT) || \
@@ -1088,12 +903,12 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 	wait_hwdata_ready(normal_period);
 
-#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
-	k_work_init(&pwrctrl_work_data.work_item, pwrctrl_worker);
-#endif
-
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	lom_mgmt_sw_sensor_table_init();
+#endif
+
+#ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
+	lom_pwrctrl_thread_start();
 #endif
 
 #ifdef CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE

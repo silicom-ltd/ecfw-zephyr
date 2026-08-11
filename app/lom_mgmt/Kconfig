@@ -61,6 +61,22 @@ config ATTEMPT_GRACEFUL_SHUTDOWN
 	  If enabled, the system will attempt to perform a graceful
 	  shutdown before a forced shutdown is executed
 
+config ATTEMPT_CONSUME_RESUME_SIGNALS
+	bool "Consume BIOS Resume signal sequence after real force down"
+	depends on LOM_MGMT_FUNC_POWER_CTRL
+	default y
+	help
+	  If enabled, the system will attempt to consume the Resume
+	  signal sequence after real force down.
+
+config HOST_FORCE_DOWN_WAIT_TIME
+	int "Host force shutdown timeout"
+	depends on LOM_MGMT_FUNC_POWER_CTRL
+	default 10000
+	help
+	  The amount of time, in miliseconds, to wait for the host to
+	  perform a force down before proceeding.
+
 config HOST_GRACEFUL_SHUTDOWN_WAIT_TIME
 	int "Host graceful shutdown timeout"
 	depends on LOM_MGMT_FUNC_POWER_CTRL && ATTEMPT_GRACEFUL_SHUTDOWN
@@ -101,6 +117,14 @@ config LOM_MGMT_PROC_DBG_APP
 	default n
 	help
 	  Enable debug logging for the LOM-MGMT protocol at the application level
+
+config LOM_MGMT_PROC_DBG_PWRCTRL
+	bool "LOM-MGMT Protocol' power control processing debugging"
+	depends on LOG
+	depends on LOM_MGMT_PROC_LOG_LEVEL >= 4
+	default n
+	help
+	  Enable debug logging for the LOM-MGMT protocol's power control processing
 
 config LOM_MGMT_PROC_DBG_PCODE
 	bool "LOM-MGMT protocol's postcode processing debugging"
