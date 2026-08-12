@@ -107,6 +107,9 @@ static int read_amb_temp(const struct device *dev, int *temp)
 
 	*temp = val.val1;
 
+	LOG_DBG("  input %-16s %d.%03dC -> floored %dC", dev->name,
+		val.val1, val.val2 / 1000, *temp);
+
 	return 0;
 }
 
@@ -122,20 +125,34 @@ static int read_max_ambient(int *max_sw)
 	int max = 0;
 	int temp;
 	int i;
-	bool valid = false;
+	int read_ok = 0;
+
+	LOG_DBG("Fan control inputs, %d sensor(s):", (int)ARRAY_SIZE(fan_temp_devices));
 
 	for (i = 0; i < ARRAY_SIZE(fan_temp_devices); i++) {
 		if (read_amb_temp(fan_temp_devices[i], &temp)) {
 			continue;
 		}
-		if (!valid || temp > max) {
+		if (!read_ok || temp > max) {
 			max = temp;
 		}
-		valid = true;
+		read_ok++;
 	}
 
-	if (!valid) {
+	if (!read_ok) {
 		return -EIO;
+	}
+
+	/* The single number the whole profile keys off. Logged every cycle so a
+	 * bench run can tell "the controller never saw the heat" apart from
+	 * "the controller saw it and decided not to act".
+	 */
+	LOG_INF("Fan control input (max of %d/%d sensors): %dC", read_ok,
+		(int)ARRAY_SIZE(fan_temp_devices), max);
+
+	if (read_ok < ARRAY_SIZE(fan_temp_devices)) {
+		LOG_WRN("Only %d of %d ambient sensors read this cycle", read_ok,
+			(int)ARRAY_SIZE(fan_temp_devices));
 	}
 
 	/* The window average relies on integer division truncating the way
