@@ -58,8 +58,9 @@ static struct fan_profile_v6 fan_profile;
 
 /* Fan control inputs: every sensor whose maximum drives the profile, listed on
  * the zephyr,user node as 'fan-temp-devices'. For MHO200 that is the two SW
- * ambient LM75s plus the CPU-side ambient thermistor - the CPU sensor
- * participates in the maximum despite the fan table being labelled SW Ambient.
+ * ambient LM75s - which the platform driver reports as "ambient" - plus the
+ * thermistor it reports as "CPU". That third sensor participates in the
+ * maximum despite the fan table being labelled SW Ambient.
  *
  * Deliberately a separate property from 'sw-amb-temp-sensors', which is the
  * hwmon reporting list: what the host is shown and what drives the fans are

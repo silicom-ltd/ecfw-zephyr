@@ -175,8 +175,15 @@
 		/* Fan control inputs (thermal management V6): the profile drives
 		 * the fans from the maximum of these. Separate from
 		 * sw-amb-temp-sensors above, which is the hwmon reporting list.
+		 *
+		 * These are the profile's sw_amb_left, sw_amb_right and ambient.
+		 * The third is therm3 - the thermistor the platform driver reports
+		 * as "CPU" - not therm0, which the platform driver reports as
+		 * "Ambient". The MHO200 profile calls its third input "ambient"
+		 * but qualifies it as the CPU-side sensor, and the platform
+		 * driver's labelling is what settles which node that is.
 		 */
-		fan-temp-devices = <&switch_temp0>, <&switch_temp1>, <&therm0>;
+		fan-temp-devices = <&switch_temp0>, <&switch_temp1>, <&therm3>;
 
 		sw-volt-sensors = <&mfd9_vout_2>,
 				  <&mfd10_vout_2>,
