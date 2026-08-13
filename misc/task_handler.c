@@ -16,7 +16,8 @@
 #include "kbchost.h"
 #include "task_handler.h"
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2) || \
-	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4)
+	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4) || \
+	defined(CONFIG_THERMAL_MANAGEMENT_V6)
 #include "thermalmgmt.h"
 #endif
 #ifdef CONFIG_LED_MANAGEMENT
@@ -80,8 +81,9 @@ K_THREAD_DEFINE(smchost_thrd_id, EC_TASK_STACK_SIZE, smchost_thread,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
 
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2) || \
-	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4)
-const uint32_t thermal_thrd_period = 20000;	 /* 20s: tuned for V4; shared by V/V2/V3, add a per-version period config in future */
+	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4) || \
+	defined(CONFIG_THERMAL_MANAGEMENT_V6)
+const uint32_t thermal_thrd_period = 20000;	 /* 20s: tuned for V4, and the cycle time of the V6 fan profile; shared by V/V2/V3, add a per-version period config in future */
 K_THREAD_DEFINE(thermal_thrd_id, EC_TASK_STACK_SIZE, thermalmgmt_thread,
 		&thermal_thrd_period, NULL, NULL, EC_TASK_PRIORITY,
 		K_INHERIT_PERMS, EC_WAIT_FOREVER);
@@ -159,7 +161,8 @@ static struct task_info tasks[] = {
 	  .tagname = "SMC" },
 
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2) || \
-	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4)
+	defined(CONFIG_THERMAL_MANAGEMENT_V3) || defined(CONFIG_THERMAL_MANAGEMENT_V4) || \
+	defined(CONFIG_THERMAL_MANAGEMENT_V6)
 	{ .thread_id = thermal_thrd_id, .can_suspend = false,
 	  .tagname = THRML_MGMT_TASK_NAME },
 #endif
