@@ -170,20 +170,28 @@
 				      <&mfd8_temp_hot>,
 				      <&switch_maestro_temp>;
 
-		sw-amb-temp-sensors = <&switch_temp0>, <&switch_temp1>;
+		/* Host reporting order. The host labels these two slots "SW Amb
+		 * Left" and "SW Amb Right". Per Beny, the LM75 at 0x49 is the
+		 * left-hand sensor and the one at 0x48 is the right-hand, so
+		 * switch_temp1 takes the first slot.
+		 */
+		sw-amb-temp-sensors = <&switch_temp1>, <&switch_temp0>;
 
 		/* Fan control inputs (thermal management V6): the profile drives
 		 * the fans from the maximum of these. Separate from
-		 * sw-amb-temp-sensors above, which is the hwmon reporting list.
+		 * sw-amb-temp-sensors above, which is the hwmon reporting list -
+		 * a maximum is order-independent, so the left/right swap there
+		 * does not reach the fan control.
 		 *
 		 * These are the profile's sw_amb_left, sw_amb_right and ambient.
-		 * The third is therm3 - the thermistor the platform driver reports
-		 * as "CPU" - not therm0, which the platform driver reports as
-		 * "Ambient". The MHO200 profile calls its third input "ambient"
-		 * but qualifies it as the CPU-side sensor, and the platform
-		 * driver's labelling is what settles which node that is.
+		 * The third is therm0 - ADC channel 4, friendly-name "Ambient" -
+		 * confirmed by Beny as the sensor the MHO200 profile was
+		 * characterised against. It is not therm3 (ADC channel 10), which
+		 * the platform driver reports as "CPU": the fan table's 46-50C
+		 * buckets are intake-air thresholds, and a CPU-side reading sits
+		 * inside them under ordinary load.
 		 */
-		fan-temp-devices = <&switch_temp0>, <&switch_temp1>, <&therm3>;
+		fan-temp-devices = <&switch_temp0>, <&switch_temp1>, <&therm0>;
 
 		sw-volt-sensors = <&mfd9_vout_2>,
 				  <&mfd10_vout_2>,
