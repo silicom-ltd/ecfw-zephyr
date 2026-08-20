@@ -189,6 +189,31 @@
 				page = <0>;
 			};
 		};
+		mfd9: mpq8655@34 {
+			compatible = "mps,mpq8655";
+			reg = <0x34>;
+
+			mfd9_vin: vddh_vin {
+				compatible = "mps,mpq8655-vin";
+				page = <0>;
+				coefficients = <4 0 1>;
+			};
+			mfd9_vout: vddh_vout {
+				compatible = "mps,mpq8655-vout";
+				page = <0>;
+				coefficients = <8 0 2>;
+			};
+			mfd9_iout: vddh_iout {
+				compatible = "mps,mpq8655-iout";
+				page = <0>;
+				coefficients = <16 0 0>;
+			};
+			mfd9_temp: vddh_temp {
+				compatible = "mps,mpq8655-temp";
+				page = <0>;
+				coefficients = <1 0 0>;
+			};
+		};
 	};
 
 	zephyr,user {
@@ -200,7 +225,8 @@
 				      <&mfd7_temp>,
 				      <&mfd8_temp_amb>,
 				      <&mfd8_temp_hot>,
-				      <&switch_maestro_temp>;
+				      <&switch_maestro_temp>,
+				      <&mfd9_temp>;
 
 		/* Host reporting order. The host labels these two slots "SW Amb
 		 * Left" and "SW Amb Right". Per Beny, the LM75 at 0x49 is the
@@ -230,7 +256,8 @@
 				  <&mfd5_vout>,
 				  <&mfd7_r0_vout>,
 				  <&mfd7_r1_vout>,
-				  <&mfd7_r2_vout>;
+				  <&mfd7_r2_vout>,
+				  <&mfd9_vout>;
 
 		sw-curr-sensors = <&mfd3_iout>,
 				  <&mfd4_iout>,
@@ -239,7 +266,8 @@
 				  <&mfd7_r0_iout>,
 				  <&mfd7_r1_iout>,
 				  <&mfd7_r2_iout>,
-				  <&mfd8_iout>;
+				  <&mfd8_iout>,
+				  <&mfd9_iout>;
 
 		sw-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
 
