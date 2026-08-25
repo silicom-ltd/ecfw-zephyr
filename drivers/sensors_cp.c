@@ -29,6 +29,7 @@ struct sw_sens_info {
 	const struct device * dev;
 	enum sensor_channel   chan; /* param2: get channel */
 	char                * name;
+	bool                  valid; /* set by _sw_sensors_probe(): device responds on the bus */
 };
 
 static struct sw_sens_info sw_thermal_sensors[] = {
@@ -76,6 +77,42 @@ static void hwmon_sdata_update(struct hwmon_sdata *sdata, struct sensor_value *s
 		sdata->mon_min = sdata->mon_in;
 }
 
+/*
+ * Not every devicetree-declared sensor is populated on every board revision
+ * (e.g. R200 MHO-150/180 swaps some MPQ8785 rails for an MPQ8655). Probe each
+ * declared sensor once so absent ones are skipped by later periodic updates
+ * instead of spamming a fetch error every cycle.
+ */
+static void _sw_sensors_probe(struct sw_sens_info * sens_info, int num_sensors,
+	const char * label)
+{
+	int i, err, present = 0;
+	struct sensor_value sens_val;
+
+	for (i = 0; i < num_sensors; i++) {
+		if (!device_is_ready(sens_info[i].dev)) {
+			LOG_WRN("SW Sensor %s: device not ready, marking absent",
+				sens_info[i].name);
+			sens_info[i].valid = false;
+			continue;
+		}
+
+		err = sensor_sample_fetch(sens_info[i].dev);
+		if (!err)
+			err = sensor_channel_get(sens_info[i].dev, sens_info[i].chan, &sens_val);
+
+		sens_info[i].valid = (err == 0);
+		if (sens_info[i].valid) {
+			present++;
+		} else {
+			LOG_WRN("SW Sensor %s: not responding (err %d), marking absent",
+				sens_info[i].name, err);
+		}
+	}
+
+	LOG_INF("SW %s sensors: %d/%d present", label, present, num_sensors);
+}
+
 static void _sw_sensors_update(struct sw_sens_info * sens_info, int num_sensors,
 	struct hwmon_sdata * hwmon)
 {
@@ -83,6 +120,9 @@ static void _sw_sensors_update(struct sw_sens_info * sens_info, int num_sensors,
 	struct sensor_value sens_val;
 
 	for (i = 0; i < num_sensors; i++) {
+		if (!sens_info[i].valid)
+			continue;
+
 		err = sensor_sample_fetch(sens_info[i].dev);
 		if (err) {
 			LOG_ERR("SW Sensor %s sample failed: %d", sens_info[i].name, err);
@@ -121,13 +161,19 @@ void sw_sensors_hwmon_setting(void)
 	LOG_INF("The number of SW current sensors is %d", SW_CURRENT_SENSOR_NUM);
 	LOG_INF("The number of SW power sensors is %d", SW_POWER_SENSOR_NUM);
 
+	_sw_sensors_probe(sw_thermal_sensors, ARRAY_SIZE(sw_thermal_sensors), "thermal");
+	_sw_sensors_probe(sw_voltage_sensors, ARRAY_SIZE(sw_voltage_sensors), "voltage");
+	_sw_sensors_probe(sw_current_sensors, ARRAY_SIZE(sw_current_sensors), "current");
+	_sw_sensors_probe(sw_power_sensors, ARRAY_SIZE(sw_power_sensors), "power");
+
 	num_sensors = ARRAY_SIZE(sw_thermal_sensors);
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_thermal[i], hwmon_temp);
-		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s%s",
 			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_thermal[i], hwmon_data),
-			sw_thermal_sensors[i].name);
+			sw_thermal_sensors[i].name,
+			sw_thermal_sensors[i].valid ? "" : " (absent)");
 	}
 
 	num_sensors = ARRAY_SIZE(sw_voltage_sensors);
@@ -135,9 +181,10 @@ void sw_sensors_hwmon_setting(void)
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_voltage[i], hwmon_in);
 
-		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s%s",
 			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_voltage[i], hwmon_data),
-			sw_voltage_sensors[i].name);
+			sw_voltage_sensors[i].name,
+			sw_voltage_sensors[i].valid ? "" : " (absent)");
 	}
 
 	num_sensors = ARRAY_SIZE(sw_current_sensors);
@@ -145,9 +192,10 @@ void sw_sensors_hwmon_setting(void)
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_current[i], hwmon_curr);
 
-		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s%s",
 			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_current[i], hwmon_data),
-			sw_current_sensors[i].name);
+			sw_current_sensors[i].name,
+			sw_current_sensors[i].valid ? "" : " (absent)");
 	}
 
 	num_sensors = ARRAY_SIZE(sw_power_sensors);
@@ -155,9 +203,10 @@ void sw_sensors_hwmon_setting(void)
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->sw_mon_power[i], hwmon_power);
 
-		LOG_INF("SW SENS MAP: hwmon[%02ld] %s",
+		LOG_INF("SW SENS MAP: hwmon[%02ld] %s%s",
 			HWMON_SRAM_ENTRY_IDX(&hwmon_data->sw_mon_power[i], hwmon_data),
-			sw_power_sensors[i].name);
+			sw_power_sensors[i].name,
+			sw_power_sensors[i].valid ? "" : " (absent)");
 	}
 }
 
