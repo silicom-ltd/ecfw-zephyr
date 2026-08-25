@@ -72,7 +72,7 @@ void thermal_sensors_update(void)
 	}
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	sw_thermal_sensors_update();
+	board_thermal_sensors_update();
 #endif
 
 	for (i = 0; i < num_sensors; i++) {
@@ -173,7 +173,7 @@ void voltage_monitor_update(void)
 	}
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	sw_voltage_sensors_update();
+	board_voltage_sensors_update();
 #endif
 
 	for (i = 0; i < num_sensors; i++) {
@@ -248,8 +248,8 @@ void current_sense_update(void)
 	}
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	sw_current_sensors_update();
-	sw_power_sensors_update();
+	board_current_sensors_update();
+	board_power_sensors_update();
 #endif
 
 	for (i = 0; i < num_sensors; i++) {
@@ -309,7 +309,7 @@ static void init_hwmon_data(const struct device *dev, struct espi_callback *cb,
 				hwmon_data = (struct hwmon_sram *)hwmon_d;
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-				sw_sensors_hwmon_setting();
+				board_sensors_hwmon_setting();
 #endif
 			}
 		}

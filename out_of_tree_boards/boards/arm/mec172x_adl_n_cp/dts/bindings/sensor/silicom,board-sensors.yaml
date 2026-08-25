@@ -1,0 +1,47 @@
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Add-on board hwmon sensor aggregation node for the Checkpoint EC board.
+
+  This node carries no hardware of its own: it just lists, per hwmon class,
+  which already-declared sensor channels the add-on card wires up and in
+  what order the host should see them. Each add-on card overlay (see
+  snippets/mho-150/mho-150.overlay and snippets/mho-200/mho-200.overlay)
+  instantiates one of these with its own phandle lists, since the two cards
+  use different PMBus/LM75/CPLD parts for the same rails. drivers/sensors_cp.c
+  reads it via silicom_board_sensors instead of hard-coding a sensor list, or
+  reaching into the catch-all zephyr,user node, per board/card.
+
+compatible: "silicom,board-sensors"
+
+properties:
+  board-die-temp-sensors:
+    type: phandles
+    description: |
+      Switch/VRM die temperature sensor channels (hwmon "temp" class),
+      reported to the host in this order.
+
+  board-amb-temp-sensors:
+    type: phandles
+    description: |
+      Board-ambient temperature sensor channels (hwmon "temp" class),
+      reported to the host in this order.
+
+  board-volt-sensors:
+    type: phandles
+    description: |
+      Rail voltage sensor channels (hwmon "in" class), reported to the host
+      in this order.
+
+  board-curr-sensors:
+    type: phandles
+    description: |
+      Rail current sensor channels (hwmon "curr" class), reported to the
+      host in this order.
+
+  board-powr-sensors:
+    type: phandles
+    description: |
+      PSU input power sensor channels (hwmon "power" class), reported to
+      the host in this order.
