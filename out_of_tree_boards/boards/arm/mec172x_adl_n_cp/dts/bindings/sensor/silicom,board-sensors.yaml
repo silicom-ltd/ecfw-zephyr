@@ -2,46 +2,89 @@
 # SPDX-License-Identifier: Apache-2.0
 
 description: |
-  Add-on board hwmon sensor aggregation node for the Checkpoint EC board.
+  Hwmon sensor and fan aggregation node for the Checkpoint EC board.
 
   This node carries no hardware of its own: it just lists, per hwmon class,
-  which already-declared sensor channels the add-on card wires up and in
-  what order the host should see them. Each add-on card overlay (see
-  snippets/mho-150/mho-150.overlay and snippets/mho-200/mho-200.overlay)
-  instantiates one of these with its own phandle lists, since the two cards
-  use different PMBus/LM75/CPLD parts for the same rails. drivers/sensors_cp.c
-  reads it via silicom_board_sensors instead of hard-coding a sensor list, or
-  reaching into the catch-all zephyr,user node, per board/card.
+  which already-declared sensor/fan devices the hwmon app module should poll
+  and in what order the host should see them - so hwmon looks only at the
+  specific set declared here, instead of sweeping every device of a given
+  compatible anywhere in the tree.
+
+  It has two kinds of properties:
+
+  - adc-*-sensors, fan-devices and cpu-peci describe the main board's own
+    ADC-based sensors, fan tach/pwm channels and CPU PECI controller. These
+    are the same regardless of add-on card, so they belong on this node's
+    declaration in the board .dts.
+
+  - board-*-sensors describe the add-on card's own sensors (PMBus/LM75/CPLD
+    parts). Each add-on card overlay (see snippets/mho-150/mho-150.overlay
+    and snippets/mho-200/mho-200.overlay) extends this node with its own
+    phandle lists for these, since the two cards use different parts for the
+    same rails.
 
 compatible: "silicom,board-sensors"
 
 properties:
+  adc-temp-sensors:
+    type: phandles
+    description: |
+      Main board ADC/NTC-thermistor temperature sensor channels (hwmon
+      "temp" class, reported into hwmon_sram's fixed mon[] array), reported
+      to the host in this order.
+
+  adc-volt-sensors:
+    type: phandles
+    description: |
+      Main board ADC voltage-divider rail sensor channels (hwmon "in" class,
+      reported into hwmon_sram's fixed mon[] array), reported to the host in
+      this order.
+
+  adc-curr-sensors:
+    type: phandles
+    description: |
+      Main board ADC current-sense-amplifier rail sensor channels (hwmon
+      "curr" class, reported into hwmon_sram's fixed mon[] array), reported
+      to the host in this order.
+
+  fan-devices:
+    type: phandles
+    description: |
+      Fan tach/pwm channels hwmon should poll for RPM (hwmon "fan" class),
+      reported to the host in this order.
+
+  cpu-peci:
+    type: phandle
+    description: |
+      The PECI controller used to read the CPU die temperature (hwmon "temp"
+      class). Omit on boards that don't report CPU PECI temperature to hwmon.
+
   board-die-temp-sensors:
     type: phandles
     description: |
-      Switch/VRM die temperature sensor channels (hwmon "temp" class),
-      reported to the host in this order.
+      Add-on card switch/VRM die temperature sensor channels (hwmon "temp"
+      class), reported to the host in this order.
 
   board-amb-temp-sensors:
     type: phandles
     description: |
-      Board-ambient temperature sensor channels (hwmon "temp" class),
-      reported to the host in this order.
+      Add-on card board-ambient temperature sensor channels (hwmon "temp"
+      class), reported to the host in this order.
 
   board-volt-sensors:
     type: phandles
     description: |
-      Rail voltage sensor channels (hwmon "in" class), reported to the host
-      in this order.
+      Add-on card rail voltage sensor channels (hwmon "in" class), reported
+      to the host in this order.
 
   board-curr-sensors:
     type: phandles
     description: |
-      Rail current sensor channels (hwmon "curr" class), reported to the
-      host in this order.
+      Add-on card rail current sensor channels (hwmon "curr" class),
+      reported to the host in this order.
 
   board-powr-sensors:
     type: phandles
     description: |
-      PSU input power sensor channels (hwmon "power" class), reported to
-      the host in this order.
+      Add-on card PSU input power sensor channels (hwmon "power" class),
+      reported to the host in this order.

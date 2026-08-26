@@ -4,8 +4,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef __FAN_H__
-#define __FAN_H__
+/*
+ * NOTE: not built (see app/hwmon/CMakeLists.txt) - superseded by
+ * emc230x_fan.c. Kept for reference. Uses its own include guard, distinct
+ * from emc230x_fan.h's, since consumers reach this file's declarations via
+ * "fan.h" while emc230x_fan.c's are declared in "emc230x_fan.h" - the two
+ * must never silently shadow each other if both get included transitively
+ * in the same translation unit.
+ */
+#ifndef __FAN_RPM2PWM_H__
+#define __FAN_RPM2PWM_H__
 
 enum pwm_ch_num {
 	PWM_CH_00,
@@ -105,4 +113,4 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm);
 
 int fan_update(void);
 
-#endif	/* __FAN_H__ */
+#endif	/* __FAN_RPM2PWM_H__ */

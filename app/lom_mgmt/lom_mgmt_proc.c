@@ -15,8 +15,12 @@
 #include "board_config.h"
 #include "smchost.h"
 #include "hwmon.h"
+#include "sensors.h"
 #ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 #include "hwmon_cp.h"
+#endif
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#include "emc230x_fan.h"
 #endif
 
 #include "pwrplane.h"
@@ -95,78 +99,13 @@ struct sensor_record {
 
 #define LOM_SENSOR_MAX 256
 
-#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
-
-#define DYN_SENSOR_HWMON_IDX_BASE 43
-
 /*
-  The new added sensors always be stored in contiguous memory locations and at the end,
-  so the sensor_id could be calculated by sequence
-*/
-static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
-	/* hwmon_sdata[16]: 0x100 */
-	{  8/*0x100*/, hwmon_in,    6 }, /* 12V */
-	{  9/*0x120*/, hwmon_in,    7 }, /* 5V */
-	{ 10/*0x140*/, hwmon_in,    8 }, /* 3.3V Always On */
-	{ 11/*0x160*/, hwmon_in,    9 }, /* 1.8V Always On */
-	{ 12/*0x180*/, hwmon_temp,  1 }, /* Ambient */
-	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* Core VR */
-	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR */
-	{ 17/*0x220*/, hwmon_in,   10 }, /* 1.8V */
-	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU */
-	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX */
-	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2 */
-	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM */
-	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* Board Power */
-
-	/* hwmon_peci:      0x300 */
-	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU PECI */
-
-	/*
-	 * !! new sens_id should start from 18 !!
-	 */
-
-	/* hwmon.emc230x_fan@33, 8 entries*/
-	{ 33/*0x420*/, hwmon_fan,  18 }, /* Fan1_RPM    */
-	{ 34/*0x440*/, hwmon_fan,  19 }, /* Fan2_RPM    */
-	{ 35/*0x460*/, hwmon_fan,  20 }, /* Fan3_RPM    */
-	{ 36/*0x480*/, hwmon_fan,  21 }, /* Fan4_RPM    */
-	{ 37/*0x4a0*/, hwmon_fan,  22 }, /* Fan5_RPM    */
-	{ 38/*0x4c0*/, hwmon_fan,  23 }, /* Fan6_RPM    */
-	{ 39/*0x4e0*/, hwmon_fan,  24 }, /* Fan7_RPM    */
-	{ 40/*0x500*/, hwmon_fan,  25 }, /* Fan8_RPM    */
-
-	{ 0xFFFF, 0, 0 },
-};
-#else
-static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
-	/* hwmon_sdata[16]: 0x100 */
-	{  8/*0x100*/, hwmon_in,    6 }, /* P12V0A        */
-	{  9/*0x120*/, hwmon_in,    7 }, /* P5V0A         */
-	{ 10/*0x140*/, hwmon_in,    8 }, /* P3V3_ALW_ON   */
-	{ 11/*0x160*/, hwmon_in,    9 }, /* P1V8_ALW_ON   */
-	{ 12/*0x180*/, hwmon_temp,  1 }, /* AmbientTemp   */
-	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* VR_Temp       */
-	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR_Temp      */
-	{ 17/*0x220*/, hwmon_in,   10 }, /* P1V8A         */
-	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU_Temp      */
-	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX     */
-	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2     */
-	{ 21/*0x2a0*/, hwmon_in,   13 }, /* P0V95S        */
-	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM    */
-
-	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* PWR_MON       */
-
-	/* hwmon_peci:      0x300 */
-	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU_PECI_Temp */
-
-	/* hwmon_fdata[4]:  0x320 */
-	{ 25/*0x320*/, hwmon_fan,  15 }, /* Fan1_Speed    */
-	{ 26/*0x340*/, hwmon_fan,  16 }, /* Fan2_Speed    */
-
-	{ 0xFFFF, 0, 0 },
-};
-#endif
+ * Populated at runtime by lom_mgmt_hwmon_table_init(), once hwmon_data is
+ * available - every entry_idx below is computed from the live hwmon_sram
+ * layout (HWMON_SRAM_ENTRY_IDX) rather than a hand-computed constant, so it
+ * tracks hwmon_sram automatically if that layout ever changes.
+ */
+static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX];
 
 
 static const struct device *lom_mgmt_dev = DEVICE_DT_GET(DT_NODELABEL(lom_mgmt));
@@ -278,79 +217,123 @@ void avail_resource_set(int bit, int val)
 	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, bit, val);
 }
 
-#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
-static void lom_mgmt_sw_sensor_table_init(void)
+/*
+ * Builds hwmon_entries[] from scratch once hwmon_data is available. Every
+ * entry_idx is computed via HWMON_SRAM_ENTRY_IDX against the actual
+ * hwmon_sram field it reports, instead of a hand-computed constant, so the
+ * table tracks hwmon_sram's real layout (which fields are even present
+ * depends on board/config - see hwmon.h) rather than assuming it.
+ *
+ * sens_type and sens_id are the LOM-MGMT wire-protocol identifiers and are
+ * unchanged from before; only the memory location each one reports on is
+ * now derived rather than hard-coded.
+ */
+static void lom_mgmt_hwmon_table_init(void)
 {
-	int start_idx;
-	int used_max_sens_id = 0;
-	int entry_idx = DYN_SENSOR_HWMON_IDX_BASE;
+	int idx = 0;
+	int sens_id = 0;
 	int i;
 
-	for (i = 0; i < LOM_SENSOR_MAX; i++) {
-		if (hwmon_entries[i].entry_idx == 0xFFFF) {
-			break;
-		}
-		if (hwmon_entries[i].sens_id > used_max_sens_id) {
-			used_max_sens_id = hwmon_entries[i].sens_id;
-		}
-	}
-	start_idx = i;
+#define ADD_ENTRY(_hwmon_idx, _type, _id)				\
+	do {								\
+		hwmon_entries[idx].entry_idx = (_hwmon_idx);		\
+		hwmon_entries[idx].sens_type = (_type);		\
+		hwmon_entries[idx].sens_id   = (_id);			\
+		LOG_DBG_SENS("SENS[%02d]: { %d, %d, %3d }", idx,	\
+			hwmon_entries[idx].entry_idx,			\
+			hwmon_entries[idx].sens_type,			\
+			hwmon_entries[idx].sens_id);			\
+		if ((_id) > sens_id)					\
+			sens_id = (_id);				\
+		idx++;							\
+	} while (0)
 
-	for (i = 0; i < BOARD_THERMAL_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_temp;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[0], hwmon_data), hwmon_in, 6); /* 12V */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[1], hwmon_data), hwmon_in, 7); /* 5V */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[2], hwmon_data), hwmon_in, 8); /* 3.3V Always On */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[3], hwmon_data), hwmon_in, 9); /* 1.8V Always On */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[4], hwmon_data), hwmon_temp, 1); /* Ambient */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[5], hwmon_data), hwmon_temp, 2); /* Core VR */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[6], hwmon_data), hwmon_temp, 3); /* DDR */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[9], hwmon_data), hwmon_in, 10); /* 1.8V */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[10], hwmon_data), hwmon_temp, 4); /* CPU */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[11], hwmon_data), hwmon_in, 11); /* VCCIN_AUX */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[12], hwmon_data), hwmon_in, 12); /* 1.2V_VDD2 */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[14], hwmon_data), hwmon_in, 14); /* VTT_SODIMM */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[15], hwmon_data), hwmon_curr, 17); /* Board Power */
 
-		LOG_DBG_SENS("<TEMP> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += BOARD_THERMAL_SENSOR_NUM;
-
-	for (i = 0; i < BOARD_VOLTAGE_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_in;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<VOLT> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += BOARD_VOLTAGE_SENSOR_NUM;
-
-	for (i = 0; i < BOARD_CURRENT_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_curr;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<CURR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += BOARD_CURRENT_SENSOR_NUM;
-
-	for (i = 0; i < BOARD_POWER_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_power;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<POWR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += BOARD_POWER_SENSOR_NUM;
-
-	hwmon_entries[start_idx].entry_idx = 0xFFFF;
-
-	LOG_DBG_SENS("<LAST> SENS[%02d]: { -1, %d, %3d }", start_idx,
-		hwmon_entries[start_idx].sens_type,
-		hwmon_entries[start_idx].sens_id);
-}
+#if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, cpu_peci)
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->peci, hwmon_data), hwmon_temp, 5); /* CPU PECI */
 #endif
+
+	/*
+	 * !! new sens_id should start from 18 !!
+	 */
+
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+	for (i = 0; i < fan_count(); i++)
+		ADD_ENTRY(fan_hwmon_idx(i), hwmon_fan, 18 + i); /* Fan%d_RPM */
+#endif
+
+	/*
+	 * The board sensors are always stored in contiguous memory locations
+	 * and at the end, so the sensor_id could be calculated by sequence.
+	 * (sens_id is incremented before each ADD_ENTRY() call, rather than
+	 * passing "++sens_id" as its argument, since ADD_ENTRY() expands _id
+	 * more than once - a pre-increment there would apply more than once.)
+	 */
+	for (i = 0; i < BOARD_THERMAL_SENSOR_NUM; i++) {
+		sens_id++;
+		ADD_ENTRY(board_thermal_sensor_hwmon_idx(i), hwmon_temp, sens_id);
+	}
+
+	for (i = 0; i < BOARD_VOLTAGE_SENSOR_NUM; i++) {
+		sens_id++;
+		ADD_ENTRY(board_voltage_sensor_hwmon_idx(i), hwmon_in, sens_id);
+	}
+
+	for (i = 0; i < BOARD_CURRENT_SENSOR_NUM; i++) {
+		sens_id++;
+		ADD_ENTRY(board_current_sensor_hwmon_idx(i), hwmon_curr, sens_id);
+	}
+
+	for (i = 0; i < BOARD_POWER_SENSOR_NUM; i++) {
+		sens_id++;
+		ADD_ENTRY(board_power_sensor_hwmon_idx(i), hwmon_power, sens_id);
+	}
+#else
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[0], hwmon_data), hwmon_in, 6); /* P12V0A */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[1], hwmon_data), hwmon_in, 7); /* P5V0A */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[2], hwmon_data), hwmon_in, 8); /* P3V3_ALW_ON */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[3], hwmon_data), hwmon_in, 9); /* P1V8_ALW_ON */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[4], hwmon_data), hwmon_temp, 1); /* AmbientTemp */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[5], hwmon_data), hwmon_temp, 2); /* VR_Temp */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[6], hwmon_data), hwmon_temp, 3); /* DDR_Temp */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[9], hwmon_data), hwmon_in, 10); /* P1V8A */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[10], hwmon_data), hwmon_temp, 4); /* CPU_Temp */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[11], hwmon_data), hwmon_in, 11); /* VCCIN_AUX */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[12], hwmon_data), hwmon_in, 12); /* 1.2V_VDD2 */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[13], hwmon_data), hwmon_in, 13); /* P0V95S */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[14], hwmon_data), hwmon_in, 14); /* VTT_SODIMM */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[15], hwmon_data), hwmon_curr, 17); /* PWR_MON */
+
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->peci, hwmon_data), hwmon_temp, 5); /* CPU_PECI_Temp */
+
+	/* hwmon_fdata[4], 2 entries populated */
+	for (i = 0; i < 2; i++)
+		ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->fan[i], hwmon_data),
+			hwmon_fan, 15 + i); /* Fan%d_Speed */
+#endif
+
+	hwmon_entries[idx].entry_idx = 0xFFFF;
+
+	LOG_DBG_SENS("<LAST> SENS[%02d]: { -1, %d, %3d }", idx,
+		hwmon_entries[idx].sens_type,
+		hwmon_entries[idx].sens_id);
+
+#undef ADD_ENTRY
+}
 
 static inline void fill_one_sensor(struct sensor_record *srd,
 	const struct hwmon_sram_entry_desc * ent)
@@ -820,10 +803,24 @@ static void wait_hwdata_ready(uint32_t normal_period)
 			k_msleep(normal_period);
 		}
 
-		if (hwmon_data != NULL) {
-			LOG_INF("hwmon_data is available at %p\n", hwmon_data);
-			break;
+		if (hwmon_data == NULL) {
+			continue;
 		}
+
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+		/*
+		 * board_sensors_hwmon_setting() runs on the eSPI callback thread
+		 * and computes each board sensor's hwmon_idx after hwmon_data is
+		 * already non-NULL; lom_mgmt_hwmon_table_init() below reads
+		 * those indices, so wait for them too.
+		 */
+		if (!board_sensors_hwmon_ready()) {
+			continue;
+		}
+#endif
+
+		LOG_INF("hwmon_data is available at %p\n", hwmon_data);
+		break;
 	}
 }
 
@@ -1079,9 +1076,7 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 	k_work_init(&pwrctrl_work_data.work_item, pwrctrl_worker);
 #endif
 
-#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
-	lom_mgmt_sw_sensor_table_init();
-#endif
+	lom_mgmt_hwmon_table_init();
 
 #ifdef CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE
 	LOG_INF("Use wide data-type layout for high-range sensor data.");
