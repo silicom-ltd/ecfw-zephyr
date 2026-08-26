@@ -1,0 +1,34 @@
+# Kconfig - Config options for the hwmon app module
+#
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "hwmon drivers logging control"
+
+config PECIHUB_LOG_LEVEL
+	int "peci hub log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for peci hub interface.
+
+config FAN_LOG_LEVEL
+	int "Fan driver log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for fan driver.
+
+config BOARD_SENSOR_LOG_LEVEL
+	int "set board sensor driver log level"
+	depends on LOG
+	default 2
+	default 4 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for board sensor driver.
+
+endmenu

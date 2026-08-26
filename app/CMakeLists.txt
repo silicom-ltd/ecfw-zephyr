@@ -24,10 +24,13 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/location)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management_v4)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_management_v6)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/hwmon)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/current_monitor)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/lom_mgmt)
+
+include(${CMAKE_CURRENT_LIST_DIR}/hwmon/CMakeLists.txt)
 
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE

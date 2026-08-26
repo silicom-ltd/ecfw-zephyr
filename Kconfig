@@ -19,6 +19,7 @@ rsource "app/thermal_management_v2/Kconfig"
 rsource "app/thermal_management_v3/Kconfig"
 rsource "app/thermal_management_v4/Kconfig"
 rsource "app/thermal_management_v6/Kconfig"
+rsource "app/hwmon/Kconfig"
 rsource "app/voltage_monitor/Kconfig"
 rsource "app/current_monitor/Kconfig"
 

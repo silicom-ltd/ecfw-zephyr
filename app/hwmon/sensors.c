@@ -71,7 +71,7 @@ void thermal_sensors_update(void)
 		return; // espi emi not configured yet
 	}
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 	board_thermal_sensors_update();
 #endif
 
@@ -172,7 +172,7 @@ void voltage_monitor_update(void)
 		LOG_INF("ESPI EC1_SRAM: 0x%08x\n",(uint32_t)hwmon_data);
 	}
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 	board_voltage_sensors_update();
 #endif
 
@@ -247,7 +247,7 @@ void current_sense_update(void)
 		return; // espi emi not configured yet
 	}
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 	board_current_sensors_update();
 	board_power_sensors_update();
 #endif
@@ -308,7 +308,7 @@ static void init_hwmon_data(const struct device *dev, struct espi_callback *cb,
 					LOG_INF("Error %d returned from read_lpc_request", ret);
 				hwmon_data = (struct hwmon_sram *)hwmon_d;
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 				board_sensors_hwmon_setting();
 #endif
 			}
