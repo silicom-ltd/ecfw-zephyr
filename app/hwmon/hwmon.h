@@ -8,7 +8,7 @@
 #define __HWMON_H__
 
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 #include <hwmon_cp.h>
 #endif
 
@@ -132,6 +132,8 @@ struct hwmon_sram {
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	struct hwmon_fdata emc230x_fan[10];
+#endif
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 	struct hwmon_sdata board_mon_thermal[BOARD_THERMAL_SENSOR_NUM];
 	struct hwmon_sdata board_mon_voltage[BOARD_VOLTAGE_SENSOR_NUM];
 	struct hwmon_sdata board_mon_current[BOARD_CURRENT_SENSOR_NUM];

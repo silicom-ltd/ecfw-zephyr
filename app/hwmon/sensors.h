@@ -30,7 +30,7 @@ int voltage_sensors_init(void);
 void thermal_sensors_update(void);
 void voltage_sensors_update(void);
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 void board_sensors_hwmon_setting(void);
 void board_thermal_sensors_update(void);
 void board_voltage_sensors_update(void);

@@ -15,7 +15,7 @@
 #include "board_config.h"
 #include "smchost.h"
 #include "hwmon.h"
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 #include "hwmon_cp.h"
 #endif
 
@@ -37,7 +37,7 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP) && !defined(CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE)
+#if defined(CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED) && !defined(CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE)
 #error "Error: CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE must be enabled"
 #endif
 
@@ -95,7 +95,7 @@ struct sensor_record {
 
 #define LOM_SENSOR_MAX 256
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 
 #define DYN_SENSOR_HWMON_IDX_BASE 43
 
@@ -278,7 +278,7 @@ void avail_resource_set(int bit, int val)
 	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, bit, val);
 }
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 static void lom_mgmt_sw_sensor_table_init(void)
 {
 	int start_idx;
@@ -1079,7 +1079,7 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 	k_work_init(&pwrctrl_work_data.work_item, pwrctrl_worker);
 #endif
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 	lom_mgmt_sw_sensor_table_init();
 #endif
 

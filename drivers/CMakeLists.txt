@@ -43,32 +43,17 @@ target_sources_ifdef(CONFIG_POSTCODE_MANAGEMENT app
 
 if (CONFIG_BOARD_MEC172X_AZBEACH OR CONFIG_BOARD_MEC172X_ADL_N OR
     CONFIG_BOARD_MEC172X_ADL_N_CP)
-    if (CONFIG_THERMAL_MANAGEMENT OR CONFIG_THERMAL_MANAGEMENT_V3 OR CONFIG_THERMAL_MANAGEMENT_V4 OR
-        CONFIG_THERMAL_MANAGEMENT_V6)
-        target_sources(app
-            PRIVATE
-            ${CMAKE_CURRENT_LIST_DIR}/sensors.c
-	          ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
-	          PUBLIC
-	          ${CMAKE_CURRENT_LIST_DIR}/hwmon.h
-	          ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
-        )
-        if (CONFIG_BOARD_MEC172X_ADL_N_CP)
-            target_sources(app
-                PRIVATE
-                ${CMAKE_CURRENT_LIST_DIR}/sensors_cp.c
-                PUBLIC
-                ${CMAKE_CURRENT_LIST_DIR}/hwmon_cp.h
-            )
-        endif()
-    else()
+    if (NOT (CONFIG_THERMAL_MANAGEMENT OR CONFIG_THERMAL_MANAGEMENT_V3 OR CONFIG_THERMAL_MANAGEMENT_V4 OR
+        CONFIG_THERMAL_MANAGEMENT_V6))
+        # The hwmon-style thermal sensor path (sensors.c) and its sensors_cp.c
+        # Checkpoint-EC extension live in app/hwmon; see app/CMakeLists.txt.
+        # peci_hub.c is also owned by app/hwmon, and is added there for both
+        # paths since it is not specific to either thermal sensor style.
         target_sources(app
             PRIVATE
             ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.c
-            ${CMAKE_CURRENT_LIST_DIR}/peci_hub.c
             PUBLIC
             ${CMAKE_CURRENT_LIST_DIR}/thermal_sensor.h
-            ${CMAKE_CURRENT_LIST_DIR}/peci_hub.h
         )
     endif()
 endif()
@@ -86,7 +71,6 @@ target_sources(app
     ${CMAKE_CURRENT_LIST_DIR}/espioob_mngr.h
     ${CMAKE_CURRENT_LIST_DIR}/gpio_ec.h
     #    ${CMAKE_CURRENT_LIST_DIR}/rpmfan.h
-    ${CMAKE_CURRENT_LIST_DIR}/fan.h
     #    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.h
     ${CMAKE_CURRENT_LIST_DIR}/acpi.h
     )
@@ -112,7 +96,6 @@ target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
     ${CMAKE_CURRENT_LIST_DIR}/gpio_mec172x.c
     # ${CMAKE_CURRENT_LIST_DIR}/rpm2pwm_mec172x.c
     #    ${CMAKE_CURRENT_LIST_DIR}/fan_mec15xx.c
-    ${CMAKE_CURRENT_LIST_DIR}/emc230x_fan.c
     ${CMAKE_CURRENT_LIST_DIR}/led_mec172x.c
     # Require Soc-HW access via device tree
     #    ${CMAKE_CURRENT_LIST_DIR}/vci_mec172x.c

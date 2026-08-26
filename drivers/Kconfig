@@ -110,22 +110,6 @@ config ESPIOOB_MNGR_LOG_LEVEL
 	help
 	  Set log level for eSPI OOB manager.
 
-config PECIHUB_LOG_LEVEL
-	int "peci hub log level"
-	depends on LOG
-	default 0
-	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
-	help
-	  Set log level for peci hub interface.
-
-config FAN_LOG_LEVEL
-	int "Fan driver log level"
-	depends on LOG
-	default 0
-	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
-	help
-	  Set log level for fan driver.
-
 config LED_LOG_LEVEL
 	int "Led driver log level"
 	depends on LOG
@@ -166,14 +150,6 @@ config THERMAL_SENSOR_LOG_LEVEL
 	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
 	help
 	  Set log level for thermal sensor driver.
-
-config BOARD_SENSOR_LOG_LEVEL
-	int "set board sensor driver log level"
-	depends on LOG
-	default 2
-	default 4 if CONFIG_EC_DEBUG_LOG_LEVEL
-	help
-	  Set log level for board sensor driver.
 
 endmenu
 
