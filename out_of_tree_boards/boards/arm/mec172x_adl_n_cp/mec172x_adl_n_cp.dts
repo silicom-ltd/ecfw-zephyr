@@ -247,6 +247,27 @@
 		sense-gain-mult = <50>;
 	};
 
+	/*
+	 * Main-board-level hwmon inputs, common to every add-on card. Each
+	 * card's snippet overlay (snippets/mho-150, snippets/mho-200) extends
+	 * this same node with its own board-*-sensors properties.
+	 */
+	board_sensors: board-sensors {
+		compatible = "silicom,board-sensors";
+
+		adc-temp-sensors = <&therm0>, <&therm1>, <&therm2>, <&therm3>;
+
+		adc-volt-sensors = <&voltage0>, <&voltage1>, <&voltage2>, <&voltage3>,
+				   <&voltage4>, <&voltage5>, <&voltage6>, <&voltage7>;
+
+		adc-curr-sensors = <&current0>;
+
+		fan-devices = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>,
+			      <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
+
+		cpu-peci = <&peci0>;
+	};
+
 	zephyr,user {
 //		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;

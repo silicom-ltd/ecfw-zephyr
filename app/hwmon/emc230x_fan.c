@@ -23,8 +23,19 @@ extern struct hwmon_sram *hwmon_data;
 #define MAX_DUTY_CYCLE		100u
 #define EMC230X_FAN_DEFAULT_DUTY_CYCLE 50u
 
-#define DT_FAN_INST(x)		DEVICE_DT_GET(DT_ALIAS(fan##x)),
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+/*
+ * hwmon only polls the fan channels explicitly listed on the
+ * "silicom,board-sensors" node's fan-devices property, instead of assuming
+ * aliases fan0..fan7 all exist.
+ */
+#define FAN_DEV_DECLARE(node_id, prop, idx)				\
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
+static const struct device *emc230x_fan_dev[] = {
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, fan_devices, FAN_DEV_DECLARE)
+};
+#else
 static const struct device *emc230x_fan_dev[] = {
 	DEVICE_DT_GET(DT_ALIAS(fan0)),
 	DEVICE_DT_GET(DT_ALIAS(fan1)),
@@ -35,6 +46,7 @@ static const struct device *emc230x_fan_dev[] = {
 	DEVICE_DT_GET(DT_ALIAS(fan6)),
 	DEVICE_DT_GET(DT_ALIAS(fan7)),
 };
+#endif
 
 int fan_init(void)
 {
@@ -123,6 +135,18 @@ void fans_set_default(void)
 		fan_set_duty_cycle(i, EMC230X_FAN_DEFAULT_DUTY_CYCLE);
 }
 
+
+int fan_count(void)
+{
+	return ARRAY_SIZE(emc230x_fan_dev);
+}
+
+uint16_t fan_hwmon_idx(int fan_idx)
+{
+	__ASSERT(fan_idx >= 0 && fan_idx < ARRAY_SIZE(emc230x_fan_dev),
+		"index %d out of range", fan_idx);
+	return HWMON_SRAM_ENTRY_IDX(&hwmon_data->emc230x_fan[fan_idx], hwmon_data);
+}
 
 int fan_update(void)
 {

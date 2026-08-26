@@ -191,45 +191,6 @@
 		};
 	};
 
-	board_sensors: board-sensors {
-		compatible = "silicom,board-sensors";
-
-		board-die-temp-sensors = <&mfd3_temp>,
-					 <&mfd4_temp>,
-					 <&mfd5_temp>,
-					 <&mfd6_temp_amb>,
-					 <&mfd6_temp_hot>,
-					 <&mfd7_temp>,
-					 <&mfd8_temp_amb>,
-					 <&mfd8_temp_hot>,
-					 <&switch_maestro_temp>;
-
-		/* Host reporting order. The host labels these two slots "SW Amb
-		 * Left" and "SW Amb Right". Per Beny, the LM75 at 0x49 is the
-		 * left-hand sensor and the one at 0x48 is the right-hand, so
-		 * switch_temp1 takes the first slot.
-		 */
-		board-amb-temp-sensors = <&switch_temp1>, <&switch_temp0>;
-
-		board-volt-sensors = <&mfd3_vout>,
-				      <&mfd4_vout>,
-				      <&mfd5_vout>,
-				      <&mfd7_r0_vout>,
-				      <&mfd7_r1_vout>,
-				      <&mfd7_r2_vout>;
-
-		board-curr-sensors = <&mfd3_iout>,
-				      <&mfd4_iout>,
-				      <&mfd5_iout>,
-				      <&mfd6_iout>,
-				      <&mfd7_r0_iout>,
-				      <&mfd7_r1_iout>,
-				      <&mfd7_r2_iout>,
-				      <&mfd8_iout>;
-
-		board-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
-	};
-
 	zephyr,user {
 		/* Fan control inputs (thermal management V6): the profile drives
 		 * the fans from the maximum of these. Separate from the
@@ -252,4 +213,46 @@
 				      <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
 	};
 
+};
+
+/*
+ * Extends the board_sensors node declared in mec172x_adl_n_cp.dts with this
+ * add-on card's own sensors, on top of that node's main-board adc-*-sensors,
+ * fan-devices and cpu-peci properties.
+ */
+&board_sensors {
+	board-die-temp-sensors = <&mfd3_temp>,
+				 <&mfd4_temp>,
+				 <&mfd5_temp>,
+				 <&mfd6_temp_amb>,
+				 <&mfd6_temp_hot>,
+				 <&mfd7_temp>,
+				 <&mfd8_temp_amb>,
+				 <&mfd8_temp_hot>,
+				 <&switch_maestro_temp>;
+
+	/* Host reporting order. The host labels these two slots "SW Amb
+	 * Left" and "SW Amb Right". Per Beny, the LM75 at 0x49 is the
+	 * left-hand sensor and the one at 0x48 is the right-hand, so
+	 * switch_temp1 takes the first slot.
+	 */
+	board-amb-temp-sensors = <&switch_temp1>, <&switch_temp0>;
+
+	board-volt-sensors = <&mfd3_vout>,
+			      <&mfd4_vout>,
+			      <&mfd5_vout>,
+			      <&mfd7_r0_vout>,
+			      <&mfd7_r1_vout>,
+			      <&mfd7_r2_vout>;
+
+	board-curr-sensors = <&mfd3_iout>,
+			      <&mfd4_iout>,
+			      <&mfd5_iout>,
+			      <&mfd6_iout>,
+			      <&mfd7_r0_iout>,
+			      <&mfd7_r1_iout>,
+			      <&mfd7_r2_iout>,
+			      <&mfd8_iout>;
+
+	board-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
 };

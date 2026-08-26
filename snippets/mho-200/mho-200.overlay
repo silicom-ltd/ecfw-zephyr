@@ -157,46 +157,6 @@
 			};
 		};
 	};
-	board_sensors: board-sensors {
-		compatible = "silicom,board-sensors";
-
-		board-die-temp-sensors = <&mfd9_temp_2>,
-					 <&mfd10_temp_2>,
-					 <&mfd3_temp_2>,
-					 <&mfd6_temp_amb>,
-					 <&mfd6_temp_hot>,
-					 <&mfd3_temp_1>,
-					 <&mfd9_temp_1>,
-					 <&mfd10_temp_1>,
-					 <&mfd8_temp_amb>,
-					 <&mfd8_temp_hot>,
-					 <&switch_maestro_temp>;
-
-		/* Host reporting order. The host labels these two slots "SW Amb
-		 * Left" and "SW Amb Right". Per Beny, the LM75 at 0x49 is the
-		 * left-hand sensor and the one at 0x48 is the right-hand, so
-		 * switch_temp1 takes the first slot.
-		 */
-		board-amb-temp-sensors = <&switch_temp1>, <&switch_temp0>;
-
-		board-volt-sensors = <&mfd9_vout_2>,
-				      <&mfd10_vout_2>,
-				      <&mfd3_vout_2>,
-				      <&mfd3_vout_1>,
-				      <&mfd9_vout_1>,
-				      <&mfd10_vout_1>;
-
-		board-curr-sensors = <&mfd9_iout_2>,
-				      <&mfd10_iout_2>,
-				      <&mfd3_iout_2>,
-				      <&mfd6_iout>,
-				      <&mfd3_iout_1>,
-				      <&mfd9_iout_1>,
-				      <&mfd10_iout_1>,
-				      <&mfd8_iout>;
-
-		board-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
-	};
 
 	zephyr,user {
 		/* Fan control inputs (thermal management V6): the profile drives
@@ -219,4 +179,48 @@
 		fan-cooling-devices = <&fan1_1>, <&fan1_2>, <&fan1_3>, <&fan1_4>,
 				      <&fan2_1>, <&fan2_2>, <&fan2_3>, <&fan2_4>;
 	};
+};
+
+/*
+ * Extends the board_sensors node declared in mec172x_adl_n_cp.dts with this
+ * add-on card's own sensors, on top of that node's main-board adc-*-sensors,
+ * fan-devices and cpu-peci properties.
+ */
+&board_sensors {
+	board-die-temp-sensors = <&mfd9_temp_2>,
+				 <&mfd10_temp_2>,
+				 <&mfd3_temp_2>,
+				 <&mfd6_temp_amb>,
+				 <&mfd6_temp_hot>,
+				 <&mfd3_temp_1>,
+				 <&mfd9_temp_1>,
+				 <&mfd10_temp_1>,
+				 <&mfd8_temp_amb>,
+				 <&mfd8_temp_hot>,
+				 <&switch_maestro_temp>;
+
+	/* Host reporting order. The host labels these two slots "SW Amb
+	 * Left" and "SW Amb Right". Per Beny, the LM75 at 0x49 is the
+	 * left-hand sensor and the one at 0x48 is the right-hand, so
+	 * switch_temp1 takes the first slot.
+	 */
+	board-amb-temp-sensors = <&switch_temp1>, <&switch_temp0>;
+
+	board-volt-sensors = <&mfd9_vout_2>,
+			      <&mfd10_vout_2>,
+			      <&mfd3_vout_2>,
+			      <&mfd3_vout_1>,
+			      <&mfd9_vout_1>,
+			      <&mfd10_vout_1>;
+
+	board-curr-sensors = <&mfd9_iout_2>,
+			      <&mfd10_iout_2>,
+			      <&mfd3_iout_2>,
+			      <&mfd6_iout>,
+			      <&mfd3_iout_1>,
+			      <&mfd9_iout_1>,
+			      <&mfd10_iout_1>,
+			      <&mfd8_iout>;
+
+	board-powr-sensors = <&mfd6_pin>, <&mfd8_pin>;
 };

@@ -24,6 +24,19 @@ struct hwmon_sram *hwmon_data;
 
 LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+/*
+ * hwmon only polls the ADC thermistors explicitly listed on the
+ * "silicom,board-sensors" node's adc-temp-sensors property, instead of
+ * sweeping every murata,ncp15xh103-compatible node in the tree.
+ */
+#define ADC_TEMP_SENSOR_DECLARE(node_id, prop, idx)			\
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
+
+static const struct device *ntc_thermal_sensors[] = {
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_temp_sensors, ADC_TEMP_SENSOR_DECLARE)
+};
+#else
 #define DT_DRV_COMPAT murata_ncp15xh103
 
 #define THERMAL_SENSOR(inst) \
@@ -32,6 +45,9 @@ LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 static const struct device *ntc_thermal_sensors[] = {
 	DT_INST_FOREACH_STATUS_OKAY(THERMAL_SENSOR)
 };
+
+#undef DT_DRV_COMPAT
+#endif
 
 static void maestro_ddr5_vtt_sodimm(struct sensor_value *volts);
 
@@ -119,15 +135,27 @@ void thermal_sensors_update(void)
 	}
 }
 
-#undef DT_DRV_COMPAT
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+/*
+ * hwmon only polls the ADC voltage dividers explicitly listed on the
+ * "silicom,board-sensors" node's adc-volt-sensors property, instead of
+ * sweeping every voltage-divider-compatible node in the tree. Both arrays
+ * are built from that same list, so they stay paired by construction.
+ */
+#define ADC_VOLT_SENSOR_DEV_DECLARE(node_id, prop, idx)		\
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
+#define ADC_VOLT_SENSOR_SPEC_DECLARE(node_id, prop, idx)		\
+	VOLTAGE_DIVIDER_DT_SPEC_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
+static const struct device *voltage_sensors[] = {
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_volt_sensors, ADC_VOLT_SENSOR_DEV_DECLARE)
+};
+
+static struct voltage_divider_dt_spec data[] = {
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_volt_sensors, ADC_VOLT_SENSOR_SPEC_DECLARE)
+};
+#else
 #define DT_DRV_COMPAT voltage_divider
-
-#define VOLTAGE_MONITOR(inst)				\
-       DEVICE_DT_GET(DT_NODELABEL(voltage##inst)),
-
-#define VMON(inst)	\
-	DEVICE_DT_GET_OR_NULL(DT_ALIAS(vmon##inst)),
 
 #define VOLTAGE_MONITOR_DT(inst)			\
 	VOLTAGE_DIVIDER_DT_SPEC_GET(DT_NODELABEL(voltage##inst)),
@@ -140,6 +168,9 @@ static const struct device *voltage_sensors[] = {
 static struct voltage_divider_dt_spec data[] = {
 	DT_INST_FOREACH_STATUS_OKAY(VOLTAGE_MONITOR_DT)
 };
+
+#undef DT_DRV_COMPAT
+#endif
 
 int voltage_monitor_init(void)
 {
@@ -216,8 +247,26 @@ void voltage_monitor_update(void)
 	}
 }
 
-#undef DT_DRV_COMPAT
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+/*
+ * hwmon only polls the ADC current-sense amplifiers explicitly listed on the
+ * "silicom,board-sensors" node's adc-curr-sensors property, instead of
+ * sweeping every current-sense-amplifier-compatible node in the tree. Both
+ * arrays are built from that same list, so they stay paired by construction.
+ */
+#define ADC_CURR_SENSOR_DEV_DECLARE(node_id, prop, idx)		\
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
+#define ADC_CURR_SENSOR_SPEC_DECLARE(node_id, prop, idx)		\
+	CURRENT_SENSE_AMPLIFIER_DT_SPEC_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
+static const struct device *current_sensors[] = {
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_curr_sensors, ADC_CURR_SENSOR_DEV_DECLARE)
+};
+
+static struct current_sense_amplifier_dt_spec current_data[] = {
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_curr_sensors, ADC_CURR_SENSOR_SPEC_DECLARE)
+};
+#else
 #define DT_DRV_COMPAT current_sense_amplifier
 #define CURRENT_SENSOR(inst)	\
        DEVICE_DT_GET(DT_NODELABEL(current##inst))
@@ -232,6 +281,9 @@ static const struct device *current_sensors[] = {
 static struct current_sense_amplifier_dt_spec current_data[] = {
 	DT_INST_FOREACH_STATUS_OKAY(CURRENT_SENSE_DT)
 };
+
+#undef DT_DRV_COMPAT
+#endif
 
 void current_sense_update(void)
 {
@@ -354,5 +406,3 @@ static void maestro_ddr5_vtt_sodimm (struct sensor_value *volts)
     volts->val1 = v_mv / 1000;
     volts->val2 = (v_mv * 1000) % 1000000;
 }
-
-#undef DT_DRV_COMPAT

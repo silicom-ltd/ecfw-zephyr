@@ -4,109 +4,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifndef __FAN_H__
-#define __FAN_H__
+#ifndef __EMC230X_FAN_H__
+#define __EMC230X_FAN_H__
 
-enum pwm_ch_num {
-	PWM_CH_00,
-	PWM_CH_01,
-	PWM_CH_02,
-	PWM_CH_03,
-	PWM_CH_04,
-	PWM_CH_05,
-	PWM_CH_06,
-	PWM_CH_07,
-	PWM_CH_08,
-	PWM_CH_TOTAL,
-	PWM_CH_UNDEF = 0xFF,
-};
-
-enum tach_ch_num {
-	TACH_CH_00,
-	TACH_CH_01,
-	TACH_CH_02,
-	TACH_CH_03,
-	TACH_CH_TOTAL,
-	TACH_CH_UNDEF = 0xFF,
-};
-
-#if 1
-enum fan_type {
-	FAN_LEFT,
-	FAN_RIGHT,
-	FAN_DEV_TOTAL,
-	FAND_DEV_UNDEF = 0xFF,
-};
-#else
-enum fan_type {
-	FAN_CPU,
-	FAN_REAR,
-	FAN_GFX,
-	FAN_PCH,
-	FAN_DEV_TOTAL,
-	FAN_DEV_UNDEF = 0xFF,
-};
-#endif
-
-struct fan_dev {
-	enum pwm_ch_num pwm_ch;
-	enum tach_ch_num tach_ch;
-};
-
-/**
- * @brief Perform the the fan initialization.
- *
- * Initialize and configure below for each fan device instance:
- * - PWM channel to drive the fan.
- * - Tach channel to read the fan speed.
- *
- * @param size size of table for number of supported fan devices.
- * @param fan_tbl pointer to array of fan_dev instances.
- *
- * @return 0 if success, otherwise error code.
+/*
+ * enum pwm_ch_num, enum tach_ch_num, enum fan_type, struct fan_dev, and the
+ * fan_init()/fan_power_set()/fan_set_duty_cycle()/fan_read_rpm()/fan_update()
+ * declarations are shared with the MEC1501 fan_mec15xx.c implementation -
+ * see fan.h. Only the EMC230x-specific additions below are declared here.
  */
-//int fan_init(int size, struct fan_dev *fan_tbl);
-int fan_init(void);
-
-/**
- * @brief Set fan supply power on / off.
- *
- * Call this function when fan power supply needs to be removed like in
- * connected standby low power mode.
- *
- * @param power_state 1 - to set fan power on, else 0.
- *
- * @return 0 if success, otherwise error code.
- */
-int fan_power_set(bool power_state);
-
-/**
- * @brief  Set the fan pwm channel duty cycle percent.
- *
- * @param fan_idx fan type.
- * @param duty_cycle Fan pwm duty_cycle in % value can be between 0 to 100.
- *
- * @return 0 if success, otherwise error code.
- */
-int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t duty_cycle);
-
-/**
- * @brief  read fan rpm value using tach.
- *
- * The updated fan speed i.e. rotation per minute (rpm) value is stored in the
- * fan_dev struct parameter fan->rpm.
- *
- * @param fan_idx fan type.
- * @param rpm pointer to update rpm value.
- *
- * @return 0 if success, otherwise error code.
- */
-int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm);
-
-int fan_update(void);
+#include "fan.h"
 
 void fans_spin_down(void);
 
 void fans_set_default(void);
 
-#endif	/* __FAN_H__ */
+/**
+ * @brief  Number of EMC230x fan channels actually wired up via devicetree.
+ *
+ * hwmon_sram's emc230x_fan[] array is sized for the max the SoC/EMC230x pair
+ * support; only this many of its slots correspond to a real fan device.
+ */
+int fan_count(void);
+
+/**
+ * @brief  Look up a fan's slot index in hwmon_sram.
+ *
+ * Mirrors board_thermal_sensor_hwmon_idx() and friends in sensors.h: the
+ * offset is computed from the live hwmon_sram layout rather than assumed by
+ * the caller, so LOM-MGMT can report it without hard-coding hwmon_sram.
+ *
+ * @param fan_idx index of the fan, 0..fan_count()-1.
+ *
+ * @return the fan's slot index in hwmon_sram.
+ */
+uint16_t fan_hwmon_idx(int fan_idx);
+
+#endif	/* __EMC230X_FAN_H__ */

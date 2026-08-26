@@ -25,11 +25,25 @@ LOG_MODULE_REGISTER(boardsens_cp, CONFIG_BOARD_SENSOR_LOG_LEVEL);
 
 extern struct hwmon_sram *hwmon_data;
 
+/*
+ * board_sensors_hwmon_setting() computes each sensor's hwmon_idx at runtime,
+ * on the eSPI callback thread. Consumers on other threads (e.g. LOM-MGMT) that
+ * read hwmon_idx via the accessors below must wait for
+ * board_sensors_hwmon_ready() rather than just hwmon_data being non-NULL,
+ * which is set before hwmon_idx is populated.
+ */
+static bool hwmon_setting_done;
+
 struct board_sens_info {
 	const struct device * dev;
 	enum sensor_channel   chan; /* param2: get channel */
 	char                * name;
 	bool                  valid; /* set by _board_sensors_probe(): device responds on the bus */
+	uint16_t              hwmon_idx; /* set by board_sensors_hwmon_setting(): this
+					   * sensor's slot index in hwmon_sram, so
+					   * consumers (e.g. LOM-MGMT) can report it
+					   * without hard-coding hwmon_sram's layout.
+					   */
 };
 
 static struct board_sens_info board_thermal_sensors[] = {
@@ -170,8 +184,10 @@ void board_sensors_hwmon_setting(void)
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->board_mon_thermal[i], hwmon_temp);
-		LOG_INF("BOARD SENS MAP: hwmon[%02ld] %s%s",
-			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_thermal[i], hwmon_data),
+		board_thermal_sensors[i].hwmon_idx =
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_thermal[i], hwmon_data);
+		LOG_INF("BOARD SENS MAP: hwmon[%02d] %s%s",
+			board_thermal_sensors[i].hwmon_idx,
 			board_thermal_sensors[i].name,
 			board_thermal_sensors[i].valid ? "" : " (absent)");
 	}
@@ -180,9 +196,11 @@ void board_sensors_hwmon_setting(void)
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->board_mon_voltage[i], hwmon_in);
+		board_voltage_sensors[i].hwmon_idx =
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_voltage[i], hwmon_data);
 
-		LOG_INF("BOARD SENS MAP: hwmon[%02ld] %s%s",
-			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_voltage[i], hwmon_data),
+		LOG_INF("BOARD SENS MAP: hwmon[%02d] %s%s",
+			board_voltage_sensors[i].hwmon_idx,
 			board_voltage_sensors[i].name,
 			board_voltage_sensors[i].valid ? "" : " (absent)");
 	}
@@ -191,9 +209,11 @@ void board_sensors_hwmon_setting(void)
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->board_mon_current[i], hwmon_curr);
+		board_current_sensors[i].hwmon_idx =
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_current[i], hwmon_data);
 
-		LOG_INF("BOARD SENS MAP: hwmon[%02ld] %s%s",
-			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_current[i], hwmon_data),
+		LOG_INF("BOARD SENS MAP: hwmon[%02d] %s%s",
+			board_current_sensors[i].hwmon_idx,
 			board_current_sensors[i].name,
 			board_current_sensors[i].valid ? "" : " (absent)");
 	}
@@ -202,12 +222,45 @@ void board_sensors_hwmon_setting(void)
 	for (i = 0; i < num_sensors; i++) {
 		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data,
 			&hwmon_data->board_mon_power[i], hwmon_power);
+		board_power_sensors[i].hwmon_idx =
+			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_power[i], hwmon_data);
 
-		LOG_INF("BOARD SENS MAP: hwmon[%02ld] %s%s",
-			HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_mon_power[i], hwmon_data),
+		LOG_INF("BOARD SENS MAP: hwmon[%02d] %s%s",
+			board_power_sensors[i].hwmon_idx,
 			board_power_sensors[i].name,
 			board_power_sensors[i].valid ? "" : " (absent)");
 	}
+
+	hwmon_setting_done = true;
+}
+
+bool board_sensors_hwmon_ready(void)
+{
+	return hwmon_setting_done;
+}
+
+uint16_t board_thermal_sensor_hwmon_idx(int i)
+{
+	__ASSERT(i >= 0 && i < ARRAY_SIZE(board_thermal_sensors), "index %d out of range", i);
+	return board_thermal_sensors[i].hwmon_idx;
+}
+
+uint16_t board_voltage_sensor_hwmon_idx(int i)
+{
+	__ASSERT(i >= 0 && i < ARRAY_SIZE(board_voltage_sensors), "index %d out of range", i);
+	return board_voltage_sensors[i].hwmon_idx;
+}
+
+uint16_t board_current_sensor_hwmon_idx(int i)
+{
+	__ASSERT(i >= 0 && i < ARRAY_SIZE(board_current_sensors), "index %d out of range", i);
+	return board_current_sensors[i].hwmon_idx;
+}
+
+uint16_t board_power_sensor_hwmon_idx(int i)
+{
+	__ASSERT(i >= 0 && i < ARRAY_SIZE(board_power_sensors), "index %d out of range", i);
+	return board_power_sensors[i].hwmon_idx;
 }
 
 void board_thermal_sensors_update(void)
