@@ -33,6 +33,18 @@
 #define BOARD_POWER_SENSOR_NUM						\
 	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, board_powr_sensors, 0)
 
+#define BOARD_FAN_NUM							\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, fan_devices, 0)
+
+#define ADC_TEMP_SENSOR_NUM						\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, adc_temp_sensors, 0)
+
+#define ADC_VOLT_SENSOR_NUM						\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, adc_volt_sensors, 0)
+
+#define ADC_CURR_SENSOR_NUM						\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, adc_curr_sensors, 0)
+
 #define BOARD_THERMAL_SENSOR_NUM (BOARD_DIE_THERMAL_SENSOR_NUM + BOARD_AMB_THERMAL_SENSOR_NUM)
 
 #endif	/* __HWMON_CP_H__ */

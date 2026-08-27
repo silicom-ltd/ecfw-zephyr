@@ -18,9 +18,7 @@
 #include "sensors.h"
 #ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 #include "hwmon_cp.h"
-#endif
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-#include "emc230x_fan.h"
+#include "hwmon_fan.h"
 #endif
 
 #include "pwrplane.h"
@@ -249,19 +247,24 @@ static void lom_mgmt_hwmon_table_init(void)
 	} while (0)
 
 #ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[0], hwmon_data), hwmon_in, 6); /* 12V */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[1], hwmon_data), hwmon_in, 7); /* 5V */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[2], hwmon_data), hwmon_in, 8); /* 3.3V Always On */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[3], hwmon_data), hwmon_in, 9); /* 1.8V Always On */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[4], hwmon_data), hwmon_temp, 1); /* Ambient */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[5], hwmon_data), hwmon_temp, 2); /* Core VR */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[6], hwmon_data), hwmon_temp, 3); /* DDR */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[9], hwmon_data), hwmon_in, 10); /* 1.8V */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[10], hwmon_data), hwmon_temp, 4); /* CPU */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[11], hwmon_data), hwmon_in, 11); /* VCCIN_AUX */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[12], hwmon_data), hwmon_in, 12); /* 1.2V_VDD2 */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[14], hwmon_data), hwmon_in, 14); /* VTT_SODIMM */
-	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->mon[15], hwmon_data), hwmon_curr, 17); /* Board Power */
+	/*
+	 * adc_mon_thermal/voltage/current[] are indexed 0..N-1 in
+	 * adc-*-sensors declaration order (see hwmon.h), not by raw ADC
+	 * channel number the way the fixed mon[] fallback below is.
+	 */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[0], hwmon_data), hwmon_in, 6); /* 12V */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[1], hwmon_data), hwmon_in, 7); /* 5V */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[2], hwmon_data), hwmon_in, 8); /* 3.3V Always On */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[3], hwmon_data), hwmon_in, 9); /* 1.8V Always On */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_thermal[0], hwmon_data), hwmon_temp, 1); /* Ambient */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_thermal[1], hwmon_data), hwmon_temp, 2); /* Core VR */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_thermal[2], hwmon_data), hwmon_temp, 3); /* DDR */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[4], hwmon_data), hwmon_in, 10); /* 1.8V */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_thermal[3], hwmon_data), hwmon_temp, 4); /* CPU */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[5], hwmon_data), hwmon_in, 11); /* VCCIN_AUX */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[6], hwmon_data), hwmon_in, 12); /* 1.2V_VDD2 */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_voltage[7], hwmon_data), hwmon_in, 14); /* VTT_SODIMM */
+	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->adc_mon_current[0], hwmon_data), hwmon_curr, 17); /* Board Power */
 
 #if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, cpu_peci)
 	ADD_ENTRY(HWMON_SRAM_ENTRY_IDX(&hwmon_data->peci, hwmon_data), hwmon_temp, 5); /* CPU PECI */
@@ -271,10 +274,8 @@ static void lom_mgmt_hwmon_table_init(void)
 	 * !! new sens_id should start from 18 !!
 	 */
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
 	for (i = 0; i < fan_count(); i++)
 		ADD_ENTRY(fan_hwmon_idx(i), hwmon_fan, 18 + i); /* Fan%d_RPM */
-#endif
 
 	/*
 	 * The board sensors are always stored in contiguous memory locations

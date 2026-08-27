@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # hwmon: consolidates the EC's board/thermal sensor and fan driver
-# mechanisms - sensors.c, sensors_cp.c, fan.c, emc230x_fan.c, peci_hub.c -
+# mechanisms - sensors.c, sensors_cp.c, fan.c, hwmon_fan.c, peci_hub.c -
 # that were previously scattered across drivers/. Kept as one module since
 # they share the hwmon SRAM layout (see hwmon.h) and the per-board sensor
 # wiring (see hwmon_cp.h and the "silicom,board-sensors" devicetree binding).
@@ -45,18 +45,22 @@ endif()
 
 target_sources(app
     PUBLIC
-    #    fan.c is superseded by emc230x_fan.c below (EMC2301x controls the
+    #    fan.c is superseded by hwmon_fan.c below (EMC2301x controls the
     #    fans over I2C instead of the SoC's own rpm2pwm hardware) and isn't
     #    built; kept for reference, matching drivers/CMakeLists.txt's
     #    convention for other superseded files.
     ${CMAKE_CURRENT_LIST_DIR}/fan.h
     )
 
-target_sources_ifdef(CONFIG_SOC_SERIES_MEC172X app
+# hwmon_fan.c reads whichever fan devices the "silicom,board-sensors" node's
+# fan-devices property lists, and is built only when that node is present -
+# same convention Zephyr's own drivers use to build only when their
+# devicetree compatible is present.
+target_sources_ifdef(CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED app
     PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/emc230x_fan.c
+    ${CMAKE_CURRENT_LIST_DIR}/hwmon_fan.c
     PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/emc230x_fan.h
+    ${CMAKE_CURRENT_LIST_DIR}/hwmon_fan.h
     )
 
 target_include_directories(app

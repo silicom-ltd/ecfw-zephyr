@@ -36,6 +36,9 @@ LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 static const struct device *ntc_thermal_sensors[] = {
 	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_temp_sensors, ADC_TEMP_SENSOR_DECLARE)
 };
+
+BUILD_ASSERT(ARRAY_SIZE(ntc_thermal_sensors) == ADC_TEMP_SENSOR_NUM,
+	"Invalid size of ntc_thermal_sensors");
 #else
 #define DT_DRV_COMPAT murata_ncp15xh103
 
@@ -94,7 +97,12 @@ void thermal_sensors_update(void)
 	for (i = 0; i < num_sensors; i++) {
 		adc_dt = (struct adc_dt_spec *)ntc_thermal_sensors[i]->config;
 
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+		/* Sized/indexed from adc-temp-sensors; see hwmon.h. */
+		sdata = &hwmon_data->adc_mon_thermal[i];
+#else
 		sdata = &hwmon_data->mon[adc_dt->channel_cfg.channel_id];
+#endif
 
 		err = sensor_sample_fetch_chan(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP);
 		if (err) {
@@ -154,6 +162,9 @@ static const struct device *voltage_sensors[] = {
 static struct voltage_divider_dt_spec data[] = {
 	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_volt_sensors, ADC_VOLT_SENSOR_SPEC_DECLARE)
 };
+
+BUILD_ASSERT(ARRAY_SIZE(voltage_sensors) == ADC_VOLT_SENSOR_NUM,
+	"Invalid size of voltage_sensors");
 #else
 #define DT_DRV_COMPAT voltage_divider
 
@@ -210,7 +221,12 @@ void voltage_monitor_update(void)
 	for (i = 0; i < num_sensors; i++) {
 		voltage = &data[i];
 
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+		/* Sized/indexed from adc-volt-sensors; see hwmon.h. */
+		sdata = &hwmon_data->adc_mon_voltage[i];
+#else
 		sdata = &hwmon_data->mon[voltage->port.channel_id];
+#endif
 
 		err = sensor_sample_fetch_chan(voltage_sensors[i], SENSOR_CHAN_VOLTAGE);
 		if (err) {
@@ -266,6 +282,9 @@ static const struct device *current_sensors[] = {
 static struct current_sense_amplifier_dt_spec current_data[] = {
 	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, adc_curr_sensors, ADC_CURR_SENSOR_SPEC_DECLARE)
 };
+
+BUILD_ASSERT(ARRAY_SIZE(current_sensors) == ADC_CURR_SENSOR_NUM,
+	"Invalid size of current_sensors");
 #else
 #define DT_DRV_COMPAT current_sense_amplifier
 #define CURRENT_SENSOR(inst)	\
@@ -307,7 +326,12 @@ void current_sense_update(void)
 	for (i = 0; i < num_sensors; i++) {
 		current = &current_data[i];
 
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+		/* Sized/indexed from adc-curr-sensors; see hwmon.h. */
+		sdata = &hwmon_data->adc_mon_current[i];
+#else
 		sdata = &hwmon_data->mon[current->port.channel_id];
+#endif
 
 		err = sensor_sample_fetch_chan(current_sensors[i], SENSOR_CHAN_CURRENT);
 		if (err) {

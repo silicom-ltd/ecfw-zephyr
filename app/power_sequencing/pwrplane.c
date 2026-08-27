@@ -34,7 +34,7 @@
 #include "errcodes.h"
 #include "vci.h"
 #ifdef CONFIG_THERMAL_MANAGEMENT
-#include "emc230x_fan.h"
+#include "hwmon_fan.h"
 #endif
 #ifdef CONFIG_THERMAL_MANAGEMENT_V2
 #include "rpmfan.h"

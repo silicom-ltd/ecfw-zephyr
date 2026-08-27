@@ -126,14 +126,24 @@ struct hwmon_pdata {
 
 struct hwmon_sram {
 	uint8_t rsvd[0x100];
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+	/*
+	 * Sized and indexed (0..N-1, declaration order) from the
+	 * "silicom,board-sensors" node's adc-*-sensors properties, rather
+	 * than the SoC's fixed 16-channel ADC and raw channel-number
+	 * addressing mon[] below uses for boards without that node.
+	 */
+	struct hwmon_sdata adc_mon_thermal[ADC_TEMP_SENSOR_NUM];
+	struct hwmon_sdata adc_mon_voltage[ADC_VOLT_SENSOR_NUM];
+	struct hwmon_sdata adc_mon_current[ADC_CURR_SENSOR_NUM];
+#else
 	struct hwmon_sdata mon[16];
+#endif
 	struct hwmon_peci peci;
 	struct hwmon_fdata fan[4];
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	struct hwmon_fdata emc230x_fan[10];
-#endif
 #ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+	struct hwmon_fdata board_fan[BOARD_FAN_NUM];
 	struct hwmon_sdata board_mon_thermal[BOARD_THERMAL_SENSOR_NUM];
 	struct hwmon_sdata board_mon_voltage[BOARD_VOLTAGE_SENSOR_NUM];
 	struct hwmon_sdata board_mon_current[BOARD_CURRENT_SENSOR_NUM];

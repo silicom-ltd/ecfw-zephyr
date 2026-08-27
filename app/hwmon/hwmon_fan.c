@@ -14,44 +14,41 @@
 #include "hwmon.h"
 #include "gpio_ec.h"
 #include "board_config.h"
-#include "emc230x_fan.h"
+#include "hwmon_fan.h"
 
+/*
+ * Generic fan reader/driver: every fan here is addressed only as a Zephyr
+ * "fan" class device (fan_get_speed()/fan_set_cycles(), <zephyr/drivers/fan.h>),
+ * never by a specific fan controller chip - any driver that implements that
+ * class works here unmodified.
+ */
 LOG_MODULE_REGISTER(fan, CONFIG_FAN_LOG_LEVEL);
 
 extern struct hwmon_sram *hwmon_data;
 
 #define MAX_DUTY_CYCLE		100u
-#define EMC230X_FAN_DEFAULT_DUTY_CYCLE 50u
+#define FAN_DEFAULT_DUTY_CYCLE	50u
 
-#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 /*
  * hwmon only polls the fan channels explicitly listed on the
- * "silicom,board-sensors" node's fan-devices property, instead of assuming
- * aliases fan0..fan7 all exist.
+ * "silicom,board-sensors" node's fan-devices property. This file is only
+ * built when that node is present (CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED,
+ * see app/hwmon/CMakeLists.txt) - same convention Zephyr's own drivers use
+ * to build only when their devicetree compatible is present.
  */
 #define FAN_DEV_DECLARE(node_id, prop, idx)				\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
-static const struct device *emc230x_fan_dev[] = {
+static const struct device *fan_dev[] = {
 	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, fan_devices, FAN_DEV_DECLARE)
 };
-#else
-static const struct device *emc230x_fan_dev[] = {
-	DEVICE_DT_GET(DT_ALIAS(fan0)),
-	DEVICE_DT_GET(DT_ALIAS(fan1)),
-	DEVICE_DT_GET(DT_ALIAS(fan2)),
-	DEVICE_DT_GET(DT_ALIAS(fan3)),
-	DEVICE_DT_GET(DT_ALIAS(fan4)),
-	DEVICE_DT_GET(DT_ALIAS(fan5)),
-	DEVICE_DT_GET(DT_ALIAS(fan6)),
-	DEVICE_DT_GET(DT_ALIAS(fan7)),
-};
-#endif
+
+BUILD_ASSERT(ARRAY_SIZE(fan_dev) == BOARD_FAN_NUM, "Invalid size of fan_dev");
 
 int fan_init(void)
 {
-	LOG_WRN("Emc20x_fan_dev size %d", ARRAY_SIZE(emc230x_fan_dev));	
-	return ARRAY_SIZE(emc230x_fan_dev);
+	LOG_WRN("fan_dev size %d", ARRAY_SIZE(fan_dev));
+	return ARRAY_SIZE(fan_dev);
 }
 
 int fan_power_set(bool power_state)
@@ -65,7 +62,7 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 	int ret;
 	struct hwmon_fdata *fdata;
 
-	if (fan_idx > ARRAY_SIZE(emc230x_fan_dev)) {
+	if (fan_idx > ARRAY_SIZE(fan_dev)) {
 		return -EINVAL;
 	}
 
@@ -73,7 +70,7 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 		rpm = MAX_DUTY_CYCLE;
 	}
 
-	const struct device *fan = emc230x_fan_dev[fan_idx];
+	const struct device *fan = fan_dev[fan_idx];
 
 	LOG_WRN("Fan %d setting duty cycle %d", fan_idx, rpm);
 	ret = fan_set_cycles(fan, (uint32_t)rpm);
@@ -86,7 +83,7 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 	if (hwmon_data == NULL)
 		return 0;
 
-	fdata = &hwmon_data->emc230x_fan[fan_idx];
+	fdata = &hwmon_data->board_fan[fan_idx];
 	fdata->fan_target = rpm;
 
 	return 0;
@@ -95,11 +92,11 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm)
 {
 	struct hwmon_fdata *fdata;
-       
-	if (fan_idx > ARRAY_SIZE(emc230x_fan_dev))
+
+	if (fan_idx > ARRAY_SIZE(fan_dev))
 		return -ENODEV;
 
-	fdata = &hwmon_data->emc230x_fan[fan_idx];
+	fdata = &hwmon_data->board_fan[fan_idx];
 
 	*rpm = fdata->fan_rpm;
 
@@ -109,7 +106,7 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm)
 void fans_turn_off(struct k_timer *timer_id)
 {
 	int i;
-	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++)
+	for (i = 0; i < ARRAY_SIZE(fan_dev); i++)
 		fan_set_duty_cycle(i, 0);
 }
 
@@ -119,7 +116,7 @@ void fans_spin_down(void)
 {
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++) {
+	for (i = 0; i < ARRAY_SIZE(fan_dev); i++) {
 		fan_set_duty_cycle(i, 15);
 	}
 	k_timer_start(&fan_off_timer, K_SECONDS(30), K_NO_WAIT);
@@ -131,21 +128,21 @@ void fans_set_default(void)
 
 	k_timer_stop(&fan_off_timer);
 
-	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++)
-		fan_set_duty_cycle(i, EMC230X_FAN_DEFAULT_DUTY_CYCLE);
+	for (i = 0; i < ARRAY_SIZE(fan_dev); i++)
+		fan_set_duty_cycle(i, FAN_DEFAULT_DUTY_CYCLE);
 }
 
 
 int fan_count(void)
 {
-	return ARRAY_SIZE(emc230x_fan_dev);
+	return ARRAY_SIZE(fan_dev);
 }
 
 uint16_t fan_hwmon_idx(int fan_idx)
 {
-	__ASSERT(fan_idx >= 0 && fan_idx < ARRAY_SIZE(emc230x_fan_dev),
+	__ASSERT(fan_idx >= 0 && fan_idx < ARRAY_SIZE(fan_dev),
 		"index %d out of range", fan_idx);
-	return HWMON_SRAM_ENTRY_IDX(&hwmon_data->emc230x_fan[fan_idx], hwmon_data);
+	return HWMON_SRAM_ENTRY_IDX(&hwmon_data->board_fan[fan_idx], hwmon_data);
 }
 
 int fan_update(void)
@@ -155,10 +152,10 @@ int fan_update(void)
 	struct sensor_value val;
 	struct hwmon_fdata *fdata;
 
-	for (i = 0; i < ARRAY_SIZE(emc230x_fan_dev); i++) {
+	for (i = 0; i < ARRAY_SIZE(fan_dev); i++) {
 
-		ret = fan_get_speed(emc230x_fan_dev[i], &val);
-		LOG_DBG("fan index %d, name: %s, speed: %d",i, emc230x_fan_dev[i]->name, val.val1);
+		ret = fan_get_speed(fan_dev[i], &val);
+		LOG_DBG("fan index %d, name: %s, speed: %d",i, fan_dev[i]->name, val.val1);
 
 		if (ret != 0)
 			return ret;
@@ -166,7 +163,7 @@ int fan_update(void)
 		if (hwmon_data == NULL)
 			return 0;
 
-		fdata = &hwmon_data->emc230x_fan[i];
+		fdata = &hwmon_data->board_fan[i];
 		fdata->fan_rpm = val.val1;
 #if 0
 		if ((fdata->fan_target != 0) && (fdata->fan_target <= 100))

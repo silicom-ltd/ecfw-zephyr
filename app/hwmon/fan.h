@@ -6,9 +6,9 @@
 
 /*
  * NOTE: not built (see app/hwmon/CMakeLists.txt) - superseded by
- * emc230x_fan.c. Kept for reference. Uses its own include guard, distinct
- * from emc230x_fan.h's, since consumers reach this file's declarations via
- * "fan.h" while emc230x_fan.c's are declared in "emc230x_fan.h" - the two
+ * hwmon_fan.c. Kept for reference. Uses its own include guard, distinct
+ * from hwmon_fan.h's, since consumers reach this file's declarations via
+ * "fan.h" while hwmon_fan.c's are declared in "hwmon_fan.h" - the two
  * must never silently shadow each other if both get included transitively
  * in the same translation unit.
  */
