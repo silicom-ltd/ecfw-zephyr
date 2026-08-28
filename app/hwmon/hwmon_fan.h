@@ -21,6 +21,13 @@ void fans_spin_down(void);
 void fans_set_default(void);
 
 /**
+ * @brief  Tag each board_fan[] slot's hwmon class in hwmon_data->rsvd[].
+ *
+ * Call once hwmon_data is available, before board_fan[] is read/written.
+ */
+void fan_hwmon_setting(void);
+
+/**
  * @brief  Number of fan channels actually wired up via devicetree.
  *
  * hwmon_sram's board_fan[] array is sized for the max any supported fan

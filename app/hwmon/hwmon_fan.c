@@ -45,6 +45,19 @@ static const struct device *fan_dev[] = {
 
 BUILD_ASSERT(ARRAY_SIZE(fan_dev) == BOARD_FAN_NUM, "Invalid size of fan_dev");
 
+/*
+ * Tags each board_fan[] slot as hwmon_fan in hwmon_data->rsvd[], the same way
+ * board_sensors_hwmon_setting() (sensors_cp.c) tags board_mon_*[]: a reader
+ * walking hwmon_sram can tell a slot is a fan without hard-coding indices.
+ */
+void fan_hwmon_setting(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(fan_dev); i++)
+		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data, &hwmon_data->board_fan[i], hwmon_fan);
+}
+
 int fan_init(void)
 {
 	LOG_WRN("fan_dev size %d", ARRAY_SIZE(fan_dev));

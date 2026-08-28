@@ -140,8 +140,17 @@ struct hwmon_sram {
 	struct hwmon_sdata mon[16];
 #endif
 	struct hwmon_peci peci;
+#ifndef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+	/*
+	 * Boards with a "silicom,board-sensors" node report fan RPM through
+	 * board_fan[] below (sized from fan-devices) instead: these fixed
+	 * slots are only written by the legacy rpm2pwm fan.c (superseded,
+	 * not built - see app/hwmon/CMakeLists.txt), so they'd otherwise sit
+	 * unused dead weight in every board-sensors build.
+	 */
 	struct hwmon_fdata fan[4];
 	struct hwmon_pdata pwm[4];	/* only for pwm-controlled fan */
+#endif
 #ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
 	struct hwmon_fdata board_fan[BOARD_FAN_NUM];
 	struct hwmon_sdata board_mon_thermal[BOARD_THERMAL_SENSOR_NUM];

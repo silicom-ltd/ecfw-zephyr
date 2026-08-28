@@ -17,6 +17,9 @@
 #include <zephyr/drivers/adc/current_sense_amplifier.h>
 #include "hwmon.h"
 #include "board_config.h"
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+#include "hwmon_fan.h"
+#endif
 
 #include "sensors.h"
 
@@ -366,6 +369,28 @@ void current_sense_update(void)
 
 #undef DT_DRV_COMPAT
 
+#ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+/*
+ * Tags each adc_mon_*[] slot with its hwmon class in hwmon_data->rsvd[], the
+ * same way board_sensors_hwmon_setting() (sensors_cp.c) tags board_mon_*[]:
+ * a reader walking hwmon_sram can tell what a slot is without hard-coding
+ * which indices are thermal/voltage/current.
+ */
+static void adc_sensors_hwmon_setting(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(ntc_thermal_sensors); i++)
+		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data, &hwmon_data->adc_mon_thermal[i], hwmon_temp);
+
+	for (i = 0; i < ARRAY_SIZE(voltage_sensors); i++)
+		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data, &hwmon_data->adc_mon_voltage[i], hwmon_in);
+
+	for (i = 0; i < ARRAY_SIZE(current_sensors); i++)
+		SET_HWMON_SRAM_ENTRY_TYPE(hwmon_data, &hwmon_data->adc_mon_current[i], hwmon_curr);
+}
+#endif
+
 static const struct device *espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 
 struct espi_callback pltrst_cb;
@@ -385,6 +410,8 @@ static void init_hwmon_data(const struct device *dev, struct espi_callback *cb,
 				hwmon_data = (struct hwmon_sram *)hwmon_d;
 
 #ifdef CONFIG_DT_HAS_SILICOM_BOARD_SENSORS_ENABLED
+				adc_sensors_hwmon_setting();
+				fan_hwmon_setting();
 				board_sensors_hwmon_setting();
 #endif
 			}
