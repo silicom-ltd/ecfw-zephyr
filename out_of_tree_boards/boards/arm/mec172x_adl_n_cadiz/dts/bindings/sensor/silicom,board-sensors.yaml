@@ -1,0 +1,46 @@
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Board hwmon sensor aggregation node for mec172x_adl_n_cadiz.
+
+  This node carries no hardware of its own: it just lists, per hwmon class,
+  which already-declared sensor channels are reported to the host and in
+  what order. drivers/sensors.c reads it via silicom_board_sensors instead
+  of enumerating every enabled node of a given compatible (voltage-divider,
+  current-sense-amplifier, ntc-thermistor) directly, so board membership and
+  host reporting order are explicit here rather than implied by devicetree
+  node order.
+
+compatible: "silicom,board-sensors"
+
+properties:
+  board-die-temp-sensors:
+    type: phandles
+    description: |
+      Switch/VRM die temperature sensor channels (hwmon "temp" class),
+      reported to the host in this order.
+
+  board-amb-temp-sensors:
+    type: phandles
+    description: |
+      Board-ambient temperature sensor channels (hwmon "temp" class),
+      reported to the host in this order.
+
+  board-volt-sensors:
+    type: phandles
+    description: |
+      Rail voltage sensor channels (hwmon "in" class), reported to the host
+      in this order.
+
+  board-curr-sensors:
+    type: phandles
+    description: |
+      Rail current sensor channels (hwmon "curr" class), reported to the
+      host in this order.
+
+  board-powr-sensors:
+    type: phandles
+    description: |
+      PSU input power sensor channels (hwmon "power" class), reported to
+      the host in this order.

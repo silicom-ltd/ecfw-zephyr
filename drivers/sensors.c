@@ -24,28 +24,86 @@ struct hwmon_sram *hwmon_data;
 //LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 LOG_MODULE_REGISTER(thrmsens, 3);
 
-#define DT_DRV_COMPAT murata_ncp15xh103
+/*
+ * Not every declared sensor is populated on every board revision (e.g. an
+ * optional rail monitor left unpopulated, or a part swapped between revs).
+ * Probe each one once at init so an absent sensor is skipped by the periodic
+ * update paths below instead of logging a fetch error every cycle.
+ */
+static bool probe_sensor(const struct device *dev, enum sensor_channel chan,
+			  const char *name)
+{
+	struct sensor_value val;
+	int err;
 
-#define THERMAL_SENSOR(inst) \
-	DEVICE_DT_GET(DT_NODELABEL(therm##inst)),	
+	if (!device_is_ready(dev)) {
+		LOG_WRN("Sensor %s: device not ready, marking absent", name);
+		return false;
+	}
+
+	err = sensor_sample_fetch_chan(dev, chan);
+	if (!err)
+		err = sensor_channel_get(dev, chan, &val);
+
+	if (err)
+		LOG_WRN("Sensor %s: not responding (err %d), marking absent", name, err);
+
+	return err == 0;
+}
+
+/*
+ * The board-sensors node (out_of_tree_boards/.../mec172x_adl_n_cadiz.dts)
+ * curates, per hwmon class, which already-declared sensor channels are
+ * reported to the host and in what order. Reading it here instead of
+ * enumerating every enabled node of a given compatible (voltage-divider,
+ * current-sense-amplifier, ntc-thermistor) keeps board membership and
+ * reporting order explicit rather than implied by devicetree node order.
+ * See out_of_tree_boards/.../dts/bindings/sensor/silicom,board-sensors.yaml
+ */
+#define BOARD_SENSORS_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(silicom_board_sensors)
+
+#define THERMAL_SENSOR_DECLARE(node_id, prop, idx) \
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
+
+#if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, board_die_temp_sensors)
+#define BOARD_DIE_TEMP_SENSORS_INIT \
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, board_die_temp_sensors, THERMAL_SENSOR_DECLARE)
+#else
+#define BOARD_DIE_TEMP_SENSORS_INIT
+#endif
+
+#if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, board_amb_temp_sensors)
+#define BOARD_AMB_TEMP_SENSORS_INIT \
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, board_amb_temp_sensors, THERMAL_SENSOR_DECLARE)
+#else
+#define BOARD_AMB_TEMP_SENSORS_INIT
+#endif
 
 static const struct device *ntc_thermal_sensors[] = {
-	DT_INST_FOREACH_STATUS_OKAY(THERMAL_SENSOR)
+	BOARD_DIE_TEMP_SENSORS_INIT
+	BOARD_AMB_TEMP_SENSORS_INIT
 };
 
-int thermal_sensors_init()
+static bool thermal_sensor_valid[ARRAY_SIZE(ntc_thermal_sensors)];
+
+static const struct device *max31785i2c = DEVICE_DT_GET(DT_NODELABEL(max31785_i2c3));
+static bool max31785_cpu_valid;
+
+int thermal_sensors_init(void)
 {
-	int i;
-	int num_sensors = ARRAY_SIZE(ntc_thermal_sensors);
+	int i, num_sensors = ARRAY_SIZE(ntc_thermal_sensors);
+	int present = 0;
 
 	for (i = 0; i < num_sensors; i++) {
-#if 0
-		LOG_INF("Sensor %d, name: %s\n", i, ntc_thermal_sensors[i]->name);
-		adc = &ntc_thermal_sensors[i].config;
+		thermal_sensor_valid[i] = probe_sensor(ntc_thermal_sensors[i],
+			SENSOR_CHAN_AMBIENT_TEMP, ntc_thermal_sensors[i]->name);
+		if (thermal_sensor_valid[i])
+			present++;
+	}
+	LOG_INF("NTC thermal sensors: %d/%d present", present, num_sensors);
 
-		hwmon->cfg[adc->channel_id] = adc->channel_id + THERMISTOR_TYPE 
-#endif
-	}	
+	max31785_cpu_valid = probe_sensor(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP,
+		"MAX31785 CPU");
 
 	return 0;
 }
@@ -60,17 +118,24 @@ void thermal_sensors_update(void)
 	volatile struct hwmon_sdata *sdata;
 	int err;
 
-	const struct device *max31785i2c = DEVICE_DT_GET(DT_NODELABEL(max31785_i2c3));
-
 	if (hwmon_data == NULL) {
 		return; // espi emi not configured yet
 	}
 
-	err = sensor_sample_fetch_chan(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP);
-	sensor_channel_get(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP, &temp);
-	LOG_INF("MAX31785 CPU read %d.%03dC", temp.val1, temp.val2);
+	if (max31785_cpu_valid) {
+		err = sensor_sample_fetch_chan(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP);
+		if (!err)
+			err = sensor_channel_get(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+		if (!err)
+			LOG_INF("MAX31785 CPU read %d.%03dC", temp.val1, temp.val2);
+		else
+			LOG_WRN("MAX31785 CPU read failed: %d", err);
+	}
 
 	for (i = 0; i < num_sensors; i++) {
+		if (!thermal_sensor_valid[i])
+			continue;
+
 		adc_dt = (struct adc_dt_spec *)ntc_thermal_sensors[i]->config;
 
 		sdata = &hwmon_data->mon[adc_dt->channel_cfg.channel_id];
@@ -114,36 +179,34 @@ void thermal_sensors_update(void)
 	}
 }
 
-#undef DT_DRV_COMPAT
+#define VOLTAGE_SENSOR_DECLARE(node_id, prop, idx) \
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
-#define DT_DRV_COMPAT voltage_divider
-
-#define VOLTAGE_MONITOR(inst)				\
-       DEVICE_DT_GET(DT_NODELABEL(voltage##inst)),	
-
-#define VOLTAGE_MONITOR_DT(inst)			\
-	VOLTAGE_DIVIDER_DT_SPEC_GET(DT_NODELABEL(voltage##inst)),
+#define VOLTAGE_SENSOR_DT_DECLARE(node_id, prop, idx) \
+	VOLTAGE_DIVIDER_DT_SPEC_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 static const struct device *voltage_sensors[] = {
-	DT_INST_FOREACH_STATUS_OKAY(VOLTAGE_MONITOR)
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, board_volt_sensors, VOLTAGE_SENSOR_DECLARE)
 };
 
 static struct voltage_divider_dt_spec data[] = {
-	DT_INST_FOREACH_STATUS_OKAY(VOLTAGE_MONITOR_DT)
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, board_volt_sensors, VOLTAGE_SENSOR_DT_DECLARE)
 };
+
+static bool voltage_sensor_valid[ARRAY_SIZE(voltage_sensors)];
 
 int voltage_monitor_init(void)
 {
-	int i;
-	int num_sensors = ARRAY_SIZE(voltage_sensors);
+	int i, num_sensors = ARRAY_SIZE(voltage_sensors);
+	int present = 0;
 
 	for (i = 0; i < num_sensors; i++) {
-
-#if 0
-		LOG_INF("Sensor %d, name: %s\n", i, voltage_sensors[i]->name);
-		hwmon->cfg[voltage->port.channel_id] = voltage->port.channel_id + VOLTAGE_TYPE;
-#endif
-	}	
+		voltage_sensor_valid[i] = probe_sensor(voltage_sensors[i],
+			SENSOR_CHAN_VOLTAGE, voltage_sensors[i]->name);
+		if (voltage_sensor_valid[i])
+			present++;
+	}
+	LOG_INF("Voltage sensors: %d/%d present", present, num_sensors);
 
 	return 0;
 }
@@ -165,6 +228,9 @@ void voltage_monitor_update(void)
 	}
 
 	for (i = 0; i < num_sensors; i++) {
+		if (!voltage_sensor_valid[i])
+			continue;
+
 		voltage = &data[i];
 
 		sdata = &hwmon_data->mon[voltage->port.channel_id];
@@ -190,22 +256,37 @@ void voltage_monitor_update(void)
 	}
 }
 
-#undef DT_DRV_COMPAT
+#define CURRENT_SENSOR_DECLARE(node_id, prop, idx) \
+	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
-#define DT_DRV_COMPAT current_sense_amplifier
-#define CURRENT_SENSOR(inst)	\
-       DEVICE_DT_GET(DT_NODELABEL(current##inst)),
-
-#define CURRENT_SENSE_DT(inst)			\
-	CURRENT_SENSE_AMPLIFIER_DT_SPEC_GET(DT_NODELABEL(current##inst)),
+#define CURRENT_SENSOR_DT_DECLARE(node_id, prop, idx) \
+	CURRENT_SENSE_AMPLIFIER_DT_SPEC_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),
 
 static const struct device *current_sensors[] = {
-	DT_INST_FOREACH_STATUS_OKAY(CURRENT_SENSOR)
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, board_curr_sensors, CURRENT_SENSOR_DECLARE)
 };
 
 static struct current_sense_amplifier_dt_spec current_data[] = {
-	DT_INST_FOREACH_STATUS_OKAY(CURRENT_SENSE_DT)
+	DT_FOREACH_PROP_ELEM(BOARD_SENSORS_NODE, board_curr_sensors, CURRENT_SENSOR_DT_DECLARE)
 };
+
+static bool current_sensor_valid[ARRAY_SIZE(current_sensors)];
+
+int current_sense_init(void)
+{
+	int i, num_sensors = ARRAY_SIZE(current_sensors);
+	int present = 0;
+
+	for (i = 0; i < num_sensors; i++) {
+		current_sensor_valid[i] = probe_sensor(current_sensors[i],
+			SENSOR_CHAN_CURRENT, current_sensors[i]->name);
+		if (current_sensor_valid[i])
+			present++;
+	}
+	LOG_INF("Current sensors: %d/%d present", present, num_sensors);
+
+	return 0;
+}
 
 void current_sense_update(void)
 {
@@ -222,6 +303,9 @@ void current_sense_update(void)
 	}
 
 	for (i = 0; i < num_sensors; i++) {
+		if (!current_sensor_valid[i])
+			continue;
+
 		current = &current_data[i];
 
 		sdata = &hwmon_data->mon[current->port.channel_id];
@@ -290,8 +374,6 @@ void fan_update(void)
 
 }
 
-#undef DT_DRV_COMPAT
-
 static const struct device *espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 
 struct espi_callback pltrst_cb;
@@ -322,6 +404,7 @@ int sensors_init()
 
 	thermal_sensors_init();
 	voltage_monitor_init();
+	current_sense_init();
 
 	return 0;
 }
@@ -333,4 +416,3 @@ void sensors_update()
 	current_sense_update();
 	fan_update();
 }
-#undef DT_DRV_COMPAT

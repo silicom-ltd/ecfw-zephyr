@@ -16,6 +16,7 @@
  */
 int thermal_sensors_init(void);
 int voltage_sensors_init(void);
+int current_sense_init(void);
 
 
 /**

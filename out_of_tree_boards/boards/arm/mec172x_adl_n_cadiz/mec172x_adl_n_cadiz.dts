@@ -367,6 +367,16 @@
 		};
 	};
 
+	board_sensors: board-sensors {
+		compatible = "silicom,board-sensors";
+
+		board-volt-sensors = <&voltage0>, <&voltage1>, <&voltage2>, <&voltage3>,
+				      <&voltage4>, <&voltage5>, <&voltage6>, <&voltage7>,
+				      <&voltage8>;
+
+		board-curr-sensors = <&current0>, <&current1>;
+	};
+
 	zephyr,user {
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
 		pinctrl-names = "default";
