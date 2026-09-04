@@ -13,6 +13,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/drivers/espi.h>
 #include <zephyr/drivers/adc.h>
+#include <zephyr/drivers/fan.h>
 #include <zephyr/drivers/adc/voltage_divider.h>
 #include <zephyr/drivers/adc/current_sense_amplifier.h>
 #include "hwmon.h"
@@ -20,7 +21,8 @@
 
 struct hwmon_sram *hwmon_data;
 
-LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
+//LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
+LOG_MODULE_REGISTER(thrmsens, 3);
 
 #define DT_DRV_COMPAT murata_ncp15xh103
 
@@ -58,9 +60,15 @@ void thermal_sensors_update(void)
 	volatile struct hwmon_sdata *sdata;
 	int err;
 
+	const struct device *max31785i2c = DEVICE_DT_GET(DT_NODELABEL(max31785_i2c3));
+
 	if (hwmon_data == NULL) {
 		return; // espi emi not configured yet
 	}
+
+	err = sensor_sample_fetch_chan(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP);
+	sensor_channel_get(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP, &temp);
+	LOG_INF("MAX31785 CPU read %d.%03dC", temp.val1, temp.val2);
 
 	for (i = 0; i < num_sensors; i++) {
 		adc_dt = (struct adc_dt_spec *)ntc_thermal_sensors[i]->config;
@@ -73,7 +81,7 @@ void thermal_sensors_update(void)
 			continue;
 		}
 		sensor_channel_get(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP, &temp);
-		LOG_INF("Sensor %d thermistor read: %d.%03dC", i, temp.val1, temp.val2);
+		LOG_DBG("Sensor %d thermistor read: %d.%03dC", i, temp.val1, temp.val2);
 
 		old_multiplier = sdata->multiplier;
 		multiplier = 0;
@@ -91,7 +99,7 @@ void thermal_sensors_update(void)
 			sdata->multiplier = multiplier;
 			sdata->mon_max = temp_val;
 		} else if (sdata->mon_in > sdata->mon_max) {
-//		LOG_INF("\tUpdating memory @ 0x%08x with %d, mult: %d\n",(unsigned int)&sdata->mon_in, sdata->mon_in, multiplier);
+		LOG_DBG("\tUpdating memory @ 0x%08x with %d, mult: %d\n",(unsigned int)&sdata->mon_in, sdata->mon_in, multiplier);
 			sdata->mon_max = sdata->mon_in;
 		}
 		if ((sdata->mon_min == 0) || (sdata->mon_in < sdata->mon_min))
@@ -167,11 +175,11 @@ void voltage_monitor_update(void)
 			continue;
 		}
 		sensor_channel_get(voltage_sensors[i], SENSOR_CHAN_VOLTAGE, &volts);
-		LOG_INF("ADC %d voltage read: %d.%03d V", i, volts.val1, volts.val2);
+		LOG_DBG("ADC %d voltage read: %d.%03d V", i, volts.val1, volts.val2);
 
 		//sdata->mon_in = (volts.val1 << 16) | (volts.val2 / 16);
 		sdata->mon_in = (volts.val1 * 1000) + (volts.val2 / 1000);
-//		LOG_INF("\tUpdating memory @ 0x%08x with %d\n",(unsigned int)&sdata->mon_in, sdata->mon_in);
+		LOG_DBG("\tUpdating memory @ 0x%08x with %d\n",(unsigned int)&sdata->mon_in, sdata->mon_in);
 		if (sdata->mon_in > sdata->mon_max)
 			sdata->mon_max = sdata->mon_in;
 		if ((sdata->mon_min == 0) || (sdata->mon_in < sdata->mon_min))
@@ -224,7 +232,7 @@ void current_sense_update(void)
 			continue;
 		}
 		sensor_channel_get(current_sensors[i], SENSOR_CHAN_CURRENT, &amps);
-		LOG_INF("ADC %d current read: %d.%d mA", i, amps.val1, amps.val2);
+		LOG_DBG("ADC %d current read: %d.%d mA", i, amps.val1, amps.val2);
 
 		old_multiplier = sdata->multiplier;
 		multiplier = 0;
@@ -239,7 +247,7 @@ void current_sense_update(void)
 		sdata->mon_in = temp_val;
 		sdata->multiplier = multiplier;
 
-		LOG_INF("\tUpdating memory @ 0x%08x with %d\n", (unsigned int)&sdata->mon_in, sdata->mon_in);
+		LOG_DBG("\tUpdating memory @ 0x%08x with %d\n", (unsigned int)&sdata->mon_in, sdata->mon_in);
 		if (sdata->mon_in > sdata->mon_max)
 			sdata->mon_max = sdata->mon_in;
 		if ((sdata->mon_min == 0) || (sdata->mon_in < sdata->mon_min))
@@ -247,6 +255,39 @@ void current_sense_update(void)
 		if (sdata->mon_min + sdata->mon_hyst)
 			; /* place saver for hysteresis action ? */
 	}
+}
+
+static const struct device *fan_dev[] = {
+        DEVICE_DT_GET(DT_ALIAS(fan0)),
+        DEVICE_DT_GET(DT_ALIAS(fan1)),
+        DEVICE_DT_GET(DT_ALIAS(fan2)),
+        DEVICE_DT_GET(DT_ALIAS(fan3)),
+        DEVICE_DT_GET(DT_ALIAS(fan4)),
+        DEVICE_DT_GET(DT_ALIAS(fan5)),
+};
+
+void fan_update(void)
+{
+	int ret;
+	int i;
+	struct sensor_value val;
+	struct hwmon_fdata *fdata;
+
+	for (i = 0; i < ARRAY_SIZE(fan_dev); i++) {
+
+		ret = fan_get_speed(fan_dev[i], &val);
+		LOG_DBG("fan index %d, name: %s, speed: %d",i, fan_dev[i]->name, val.val1);
+
+		if (ret != 0)
+			return;
+
+		if (hwmon_data == NULL)
+			return;
+
+		fdata = &hwmon_data->fan[i];
+		fdata->fan_rpm = val.val1;
+	}
+
 }
 
 #undef DT_DRV_COMPAT
@@ -290,5 +331,6 @@ void sensors_update()
 	voltage_monitor_update();
 	thermal_sensors_update();
 	current_sense_update();
+	fan_update();
 }
 #undef DT_DRV_COMPAT

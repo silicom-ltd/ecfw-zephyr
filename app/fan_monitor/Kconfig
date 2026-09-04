@@ -1,0 +1,24 @@
+# Kconfig - Config options for EC FW
+#
+# Copyright (c) 2024 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "Fan Monitor"
+
+config FAN_MONITOR
+	bool "Enable FAN monitor"
+	help
+	  Indicate if EC supports monitoring of fan sources.
+
+config FAN_MONITOR_LOG_LEVEL
+	int "Fan monitor log level"
+	depends on LOG
+	depends on FAN_MONITOR
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for fan monitor module.
+
+endmenu

@@ -864,6 +864,7 @@ void smc_update_pch_dts_temperature(int temp)
 	g_acpi_tbl.acpi_pch_dts_temp = temp;
 }
 
+#ifndef CONFIG_BOARD_MEC172X_ADL_N_CADIZ
 void smc_update_fan_tach(uint8_t fan_idx, uint16_t rpm)
 {
 	switch (fan_idx) {
@@ -903,6 +904,7 @@ void smc_update_fan_pwm(uint8_t fan_idx, uint8_t pwm)
 		break;
 	}
 }
+#endif
 
 void smc_update_therm_trip_status(uint16_t status)
 {

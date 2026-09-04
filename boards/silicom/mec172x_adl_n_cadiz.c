@@ -112,7 +112,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ THRMTRIP_3P3_N,	GPIO_INPUT },
 
 	{ SLP_S3_N,		GPIO_INPUT },
-	{ BOOT_MEDIA_PWR_CNTRL,	GPIO_OUTPUT_HIGH },
+	{ BOOT_MEDIA_PWR_CNTRL,	GPIO_INPUT },
 	{ PCHHOT_N,		GPIO_INPUT },
 	{ RSMRST_PWRGD, 	GPIO_INPUT },
 
@@ -357,10 +357,12 @@ static struct fan_dev fan_tbl[] = {
 	{ PWM_CH_01,	TACH_CH_01 }, /* Fan 2 */
 };
 #else
+#if 0
 static struct fan_dev fan_tbl[] = {
 	{ RPM2PWM_CH_00,	RPM2PWM_TACH_CH_00 },
 	{ RPM2PWM_CH_01,	RPM2PWM_TACH_CH_01 },
 };
+#endif
 #endif
 
 

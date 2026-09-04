@@ -37,12 +37,18 @@
 		gpioled5 = &gpioled5;
 		gpioled6 = &gpioled6;
 		eeprom0 = &eeprom;
+		fan0 = &max31785_fan0;
+		fan1 = &max31785_fan1;
+		fan2 = &max31785_fan2;
+		fan3 = &max31785_fan3;
+		fan4 = &max31785_fan4;
+		fan5 = &max31785_fan5;
 	};
 
 	cputemp: cpu-temp {
 		compatible = "x86-peci-temp";
 		peci-dev = <&peci0>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	gpio_keys {
@@ -330,6 +336,8 @@
 				max31785_i2c0: i2c0 {
 				};
 				max31785_i2c1: i2c1 {
+				};
+				max31785_i2c3: i2c3 {
 				};
 			};
 		};

@@ -63,7 +63,6 @@ int fan_set_duty_cycle(enum fan_type fan_idx, uint8_t rpm)
 
 	const struct device *pwm = rpm2pwm_fan_dev[fan_idx];
 
-		LOG_WRN("Fan %d setting duty cycle %d", fan_idx, rpm);
 	ret = pwm_set_cycles(pwm, 0, UINT32_MAX, rpm, 0);
 
 	if (ret) {
