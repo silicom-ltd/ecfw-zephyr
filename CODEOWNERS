@@ -1,4 +1,4 @@
 # Code owners for this repo. A lone '*' matches every file recursively,
 # so these owners are required reviewers on all PRs into this branch.
-# btsil=Bill Terrell, jjdalynh=Jeff Daly, wwang22=Wen Wang (all have write access).
-*       @btsil @jjdalynh @wwang22
+# btsil=Bill Terrell, jjdalynh=Jeff Daly, wwang22=Wen Wang, blairw-brk=Blair Wang (all have write access).
+*       @btsil @jjdalynh @wwang22 @blairw-brk
