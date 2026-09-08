@@ -13,10 +13,6 @@
 
 #include "board_config.h"
 #include "smchost.h"
-#include "hwmon.h"
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-#include "hwmon_cp.h"
-#endif
 
 #include "pwrplane.h"
 #include "pwrbtnmgmt.h"
@@ -26,6 +22,7 @@
 #include "postcodemgmt.h"
 
 #include "lom_mgmt_proc_inc.h"
+#include "hwmon_sens.h"
 #include "host_event.h"
 #include "postcode.h"
 #include "pwrctrl.h"
@@ -34,137 +31,7 @@ LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 #define CPU_TEMP_CS_ACCESS_PERIOD_SEC 8U
 
-#if defined(CONFIG_BOARD_MEC172X_ADL_N_CP) && !defined(CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE)
-#error "Error: CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE must be enabled"
-#endif
-
 extern struct hwmon_sram *hwmon_data;
-
-#define SENS_DTYPE_INTEG 0
-#define SENS_DTYPE_FLOAT 1
-
-#define HWMON_SDATA_MUL_OFF 7
-
-struct hwmon_sram_entry_desc {
-	uint16_t          entry_idx;
-	enum sensor_types sens_type;
-	uint8_t           sens_id;
-};
-
-#ifdef CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE
-struct sensor_record {
-	uint8_t  info; /* b[7:6]:type, b[5:0]: multiplier */
-	uint8_t  sens_id;
-	uint16_t value;
-} __attribute__((__packed__));
-
-#define SENS_INFO_MUL_BIT 0
-#define SENS_INFO_TYP_BIT 6 /* data type(2bits): 0: integer, 1: float */
-
-#define SENS_INFO_MUL_MASK 0x3F
-
-#define SRD_SENS_ID(srd) (srd->sens_id)
-
-#define SET_SRD_SENS_ID(srd, val)		\
-	do {					\
-		srd->sens_id = val;		\
-	} while (0)
-#else
-struct sensor_record {
-	uint8_t info; /* b[7]:type, b[6]:multiplier, b[5:0]: sensor id */
-	uint16_t value;
-} __attribute__((__packed__));
-
-#define SENS_INFO_MUL_BIT 6
-#define SENS_INFO_TYP_BIT 7 /* data type(1bits): 0: integer, 1: float */
-
-#define SENS_INFO_MUL_MASK 0x1
-
-#define SRD_SENS_ID(srd) (srd->info & 0x3F)
-
-#define SET_SRD_SENS_ID(srd, val)		\
-	do {					\
-		srd->info |= val;		\
-	} while (0)
-#endif
-
-#define SENSOR_RECORD_SIZE (sizeof(struct sensor_record))
-
-#define LOM_SENSOR_MAX 256
-
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-
-#define DYN_SENSOR_HWMON_IDX_BASE 43
-
-/*
-  The new added sensors always be stored in contiguous memory locations and at the end,
-  so the sensor_id could be calculated by sequence
-*/
-static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
-	/* hwmon_sdata[16]: 0x100 */
-	{  8/*0x100*/, hwmon_in,    6 }, /* 12V */
-	{  9/*0x120*/, hwmon_in,    7 }, /* 5V */
-	{ 10/*0x140*/, hwmon_in,    8 }, /* 3.3V Always On */
-	{ 11/*0x160*/, hwmon_in,    9 }, /* 1.8V Always On */
-	{ 12/*0x180*/, hwmon_temp,  1 }, /* Ambient */
-	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* Core VR */
-	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR */
-	{ 17/*0x220*/, hwmon_in,   10 }, /* 1.8V */
-	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU */
-	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX */
-	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2 */
-	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM */
-	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* Board Power */
-
-	/* hwmon_peci:      0x300 */
-	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU PECI */
-
-	/*
-	 * !! new sens_id should start from 18 !!
-	 */
-
-	/* hwmon.emc230x_fan@33, 8 entries*/
-	{ 33/*0x420*/, hwmon_fan,  18 }, /* Fan1_RPM    */
-	{ 34/*0x440*/, hwmon_fan,  19 }, /* Fan2_RPM    */
-	{ 35/*0x460*/, hwmon_fan,  20 }, /* Fan3_RPM    */
-	{ 36/*0x480*/, hwmon_fan,  21 }, /* Fan4_RPM    */
-	{ 37/*0x4a0*/, hwmon_fan,  22 }, /* Fan5_RPM    */
-	{ 38/*0x4c0*/, hwmon_fan,  23 }, /* Fan6_RPM    */
-	{ 39/*0x4e0*/, hwmon_fan,  24 }, /* Fan7_RPM    */
-	{ 40/*0x500*/, hwmon_fan,  25 }, /* Fan8_RPM    */
-
-	{ 0xFFFF, 0, 0 },
-};
-#else
-static struct hwmon_sram_entry_desc hwmon_entries[LOM_SENSOR_MAX] = {
-	/* hwmon_sdata[16]: 0x100 */
-	{  8/*0x100*/, hwmon_in,    6 }, /* P12V0A        */
-	{  9/*0x120*/, hwmon_in,    7 }, /* P5V0A         */
-	{ 10/*0x140*/, hwmon_in,    8 }, /* P3V3_ALW_ON   */
-	{ 11/*0x160*/, hwmon_in,    9 }, /* P1V8_ALW_ON   */
-	{ 12/*0x180*/, hwmon_temp,  1 }, /* AmbientTemp   */
-	{ 13/*0x1a0*/, hwmon_temp,  2 }, /* VR_Temp       */
-	{ 14/*0x1c0*/, hwmon_temp,  3 }, /* DDR_Temp      */
-	{ 17/*0x220*/, hwmon_in,   10 }, /* P1V8A         */
-	{ 18/*0x240*/, hwmon_temp,  4 }, /* CPU_Temp      */
-	{ 19/*0x260*/, hwmon_in,   11 }, /* VCCIN_AUX     */
-	{ 20/*0x280*/, hwmon_in,   12 }, /* 1.2V_VDD2     */
-	{ 21/*0x2a0*/, hwmon_in,   13 }, /* P0V95S        */
-	{ 22/*0x2c0*/, hwmon_in,   14 }, /* VTT_SODIMM    */
-
-	{ 23/*0x2e0*/, hwmon_curr, 17 }, /* PWR_MON       */
-
-	/* hwmon_peci:      0x300 */
-	{ 24/*0x300*/, hwmon_temp,  5 }, /* CPU_PECI_Temp */
-
-	/* hwmon_fdata[4]:  0x320 */
-	{ 25/*0x320*/, hwmon_fan,  15 }, /* Fan1_Speed    */
-	{ 26/*0x340*/, hwmon_fan,  16 }, /* Fan2_Speed    */
-
-	{ 0xFFFF, 0, 0 },
-};
-#endif
-
 
 static const struct device *lom_mgmt_dev = DEVICE_DT_GET(DT_NODELABEL(lom_mgmt));
 
@@ -207,6 +74,8 @@ static const struct device *const espi_dev = DEVICE_DT_GET(DT_NODELABEL(espi0));
 static uint16_t boot_cycle_count = 0;
 #endif
 
+static struct hwmon_sram_entry_desc * sens_descs = NULL;
+
 static uint8_t acpi_state[] = {
 	6, /* Hard Off */
 	1, /* S0 */
@@ -248,80 +117,6 @@ void avail_resource_set(int bit, int val)
 	lom_mgmt_i2c_set_avail_res(lom_mgmt_dev, bit, val);
 }
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-static void lom_mgmt_sw_sensor_table_init(void)
-{
-	int start_idx;
-	int used_max_sens_id = 0;
-	int entry_idx = DYN_SENSOR_HWMON_IDX_BASE;
-	int i;
-
-	for (i = 0; i < LOM_SENSOR_MAX; i++) {
-		if (hwmon_entries[i].entry_idx == 0xFFFF) {
-			break;
-		}
-		if (hwmon_entries[i].sens_id > used_max_sens_id) {
-			used_max_sens_id = hwmon_entries[i].sens_id;
-		}
-	}
-	start_idx = i;
-
-	for (i = 0; i < SW_THERMAL_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_temp;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<TEMP> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += SW_THERMAL_SENSOR_NUM;
-
-	for (i = 0; i < SW_VOLTAGE_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_in;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<VOLT> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += SW_VOLTAGE_SENSOR_NUM;
-
-	for (i = 0; i < SW_CURRENT_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_curr;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<CURR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += SW_CURRENT_SENSOR_NUM;
-
-	for (i = 0; i < SW_POWER_SENSOR_NUM; i++, entry_idx++) {
-		hwmon_entries[start_idx + i].entry_idx = entry_idx;
-		hwmon_entries[start_idx + i].sens_type = hwmon_power;
-		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
-
-		LOG_DBG_SENS("<POWR> SENS[%02d]: { %d, %d, %3d }", start_idx +i,
-			hwmon_entries[start_idx + i].entry_idx,
-			hwmon_entries[start_idx + i].sens_type,
-			hwmon_entries[start_idx + i].sens_id);
-	}
-	start_idx += SW_POWER_SENSOR_NUM;
-
-	hwmon_entries[start_idx].entry_idx = 0xFFFF;
-
-	LOG_DBG_SENS("<LAST> SENS[%02d]: { -1, %d, %3d }", start_idx,
-		hwmon_entries[start_idx].sens_type,
-		hwmon_entries[start_idx].sens_id);
-}
-#endif
-
 static inline void fill_one_sensor(struct sensor_record *srd,
 	const struct hwmon_sram_entry_desc * ent)
 {
@@ -348,7 +143,7 @@ static int do_get_sensors(uint8_t *res_data, struct func_ret_info* fri)
 	struct sensor_record * srd;
 	uint16_t data_off = 0;
 
-	for (int i = 0; hwmon_entries[i].entry_idx != 0xFFFF; i++) {
+	for (int i = 0; sens_descs[i].entry_idx != 0xFFFF; i++) {
 		if (data_off + SENSOR_RECORD_SIZE > RES_DLEN_MAX) {
 			LOG_ERR("payload size exceeds the limit: %d", RES_DLEN_MAX);
 			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENOSPC);
@@ -357,10 +152,11 @@ static int do_get_sensors(uint8_t *res_data, struct func_ret_info* fri)
 
 		srd = (struct sensor_record *)&(res_data[data_off]);
 
-		fill_one_sensor(srd, &hwmon_entries[i]);
+		fill_one_sensor(srd, &sens_descs[i]);
 
-		LOG_DBG_SENS("SENS@hwmon[%03d] 0x%02x %3d 0x%04x", hwmon_entries[i].entry_idx,
-			srd->info, SRD_SENS_ID(srd), ntohs(srd->value));
+		LOG_DBG_SENS("SENS@hwmon[%03d] 0x%02x(t:%d,m:%d) %3d 0x%04x", sens_descs[i].entry_idx,
+			srd->info, SRD_SENS_TYP(srd), SRD_SENS_MUL(srd),
+			SRD_SENS_ID(srd), ntohs(srd->value));
 
 		data_off += SENSOR_RECORD_SIZE;
 	}
@@ -903,9 +699,7 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 	wait_hwdata_ready(normal_period);
 
-#ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-	lom_mgmt_sw_sensor_table_init();
-#endif
+	lom_mgmt_sens_desc_init(&sens_descs);
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 	lom_pwrctrl_thread_start();
