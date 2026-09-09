@@ -31,6 +31,10 @@
 #include "dnx.h"
 #endif
 
+#ifdef CONFIG_THERMAL_MANAGEMENT_V6
+#include "fan.h"
+#endif
+
 LOG_MODULE_REGISTER(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 
 uint8_t host_req[SMCHOST_MAX_BUF_SIZE];
@@ -564,6 +568,13 @@ static void change_peci_access_mode(void)
 }
 #endif
 
+#ifdef CONFIG_THERMAL_MANAGEMENT_V6
+static void set_fan_manual_control(void)
+{
+	fan_set_manual_control(host_req[1] ? true : false);
+}
+#endif
+
 static void acpi_burst_ec(void)
 {
 	acpi_burst_flag = 1;
@@ -649,6 +660,9 @@ static uint8_t smchost_req_length(uint8_t command)
 	case SMCHOST_SET_SHDWN_THRESHOLD:
 	case SMCHOST_SET_PECI_ACCESS_MODE:
 #endif
+#ifdef CONFIG_THERMAL_MANAGEMENT_V6
+	case SMCHOST_SET_FAN_MANUAL_CONTROL:
+#endif
 		return 1;
 
 	case SMCHOST_ACPI_WRITE:
@@ -716,6 +730,11 @@ static void smchost_cmd_handler(uint8_t command)
 	case SMCHOST_SET_OS_ACTIVE_TRIP:
 	case SMCHOST_GET_HW_PERIPHERALS_STS:
 		smchost_cmd_thermal_handler(command);
+		break;
+#endif
+#ifdef CONFIG_THERMAL_MANAGEMENT_V6
+	case SMCHOST_SET_FAN_MANUAL_CONTROL:
+		set_fan_manual_control();
 		break;
 #endif
 #ifdef CONFIG_LED_MANAGEMENT

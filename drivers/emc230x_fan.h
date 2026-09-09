@@ -109,4 +109,21 @@ void fans_spin_down(void);
 
 void fans_set_default(void);
 
+/**
+ * @brief Enable/disable host manual fan control.
+ *
+ * While enabled, fan_update() drives each fan from its hwmon fan_target
+ * field instead of the thermal management profile.
+ *
+ * @param en true to enable manual control, false to resume profile control.
+ */
+void fan_set_manual_control(bool en);
+
+/**
+ * @brief  Check whether host manual fan control is enabled.
+ *
+ * @return true if manual control is enabled, otherwise false.
+ */
+bool fan_is_manual_control(void);
+
 #endif	/* __FAN_H__ */

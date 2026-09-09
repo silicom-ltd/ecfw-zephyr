@@ -20,6 +20,8 @@ LOG_MODULE_REGISTER(fan, CONFIG_FAN_LOG_LEVEL);
 
 extern struct hwmon_sram *hwmon_data;
 
+static bool fan_manual_control;
+
 #define MAX_DUTY_CYCLE		100u
 #define EMC230X_FAN_DEFAULT_DUTY_CYCLE 50u
 
@@ -144,11 +146,22 @@ int fan_update(void)
 
 		fdata = &hwmon_data->emc230x_fan[i];
 		fdata->fan_rpm = val.val1;
-#if 0
-		if ((fdata->fan_target != 0) && (fdata->fan_target <= 100))
+
+		if (fan_manual_control && fdata->fan_target != 0 &&
+		    fdata->fan_target <= 100)
 			fan_set_duty_cycle(i, (uint8_t)fdata->fan_target);
-#endif
 	}
 
 	return 0;
+}
+
+void fan_set_manual_control(bool en)
+{
+	fan_manual_control = en;
+	LOG_INF("Fan manual control %s", en ? "enabled" : "disabled");
+}
+
+bool fan_is_manual_control(void)
+{
+	return fan_manual_control;
 }

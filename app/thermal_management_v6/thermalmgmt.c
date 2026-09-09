@@ -250,6 +250,12 @@ static void manage_fan(void)
 	/* Enable power to fan when system is in S0 and not in CS */
 	fan_power_set(true);
 
+	if (fan_is_manual_control()) {
+		LOG_DBG("Fan manual control active, skipping thermal profile");
+		fan_update();
+		return;
+	}
+
 	if (read_max_ambient(&max_sw)) {
 		LOG_WRN("No ambient sensor read this cycle, fan left at %d%%",
 			fan_profile.last_fan);
