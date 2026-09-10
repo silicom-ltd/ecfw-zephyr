@@ -23,6 +23,17 @@ extern struct hwmon_sram *hwmon_data;
 #define MAX_DUTY_CYCLE		100u
 #define EMC230X_FAN_DEFAULT_DUTY_CYCLE 50u
 
+/* Sentinel values a host/tool can write into a fan's hwmon fan_target to
+ * take that one fan out of thermal management's automatic control:
+ * writing FAN_TARGET_MANUAL_ENABLE arms manual control for that fan (no
+ * PWM change yet); every fan_target write after that, while armed, is
+ * applied verbatim as the commanded duty cycle (0-100) until
+ * FAN_TARGET_MANUAL_DISABLE is written, which hands the fan back to the
+ * thermal profile.
+ */
+#define FAN_TARGET_MANUAL_ENABLE	0xFA57u
+#define FAN_TARGET_MANUAL_DISABLE	0x0510u
+
 #define DT_FAN_INST(x)		DEVICE_DT_GET(DT_ALIAS(fan##x)),
 
 static const struct device *emc230x_fan_dev[] = {
@@ -35,6 +46,8 @@ static const struct device *emc230x_fan_dev[] = {
 	DEVICE_DT_GET(DT_ALIAS(fan6)),
 	DEVICE_DT_GET(DT_ALIAS(fan7)),
 };
+
+static bool fan_manual_control[ARRAY_SIZE(emc230x_fan_dev)];
 
 int fan_init(void)
 {
@@ -144,11 +157,25 @@ int fan_update(void)
 
 		fdata = &hwmon_data->emc230x_fan[i];
 		fdata->fan_rpm = val.val1;
-#if 0
-		if ((fdata->fan_target != 0) && (fdata->fan_target <= 100))
+
+		if (fdata->fan_target == FAN_TARGET_MANUAL_ENABLE) {
+			fan_manual_control[i] = true;
+			LOG_INF("Fan %d manual control enabled", i);
+		} else if (fdata->fan_target == FAN_TARGET_MANUAL_DISABLE) {
+			fan_manual_control[i] = false;
+			LOG_INF("Fan %d manual control disabled", i);
+		} else if (fan_manual_control[i] && fdata->fan_target <= 100) {
 			fan_set_duty_cycle(i, (uint8_t)fdata->fan_target);
-#endif
+		}
 	}
 
 	return 0;
+}
+
+bool fan_is_manual_control(enum fan_type fan_idx)
+{
+	if (fan_idx >= ARRAY_SIZE(emc230x_fan_dev))
+		return false;
+
+	return fan_manual_control[fan_idx];
 }

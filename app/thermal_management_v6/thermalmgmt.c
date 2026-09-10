@@ -272,6 +272,11 @@ static void manage_fan(void)
 			fan);
 
 		for (i = 0; i < ARRAY_SIZE(fan_devices); i++) {
+			if (fan_is_manual_control(i)) {
+				LOG_DBG("Fan %d under manual control, skipping profile command", i);
+				continue;
+			}
+
 			err = fan_set_cycles(fan_devices[i], (uint32_t)fan);
 			if (err) {
 				LOG_WRN("Fan %s set to %d%% failed: %d",

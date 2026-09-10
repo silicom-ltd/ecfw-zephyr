@@ -105,4 +105,17 @@ int fan_read_rpm(enum fan_type fan_idx, uint16_t *rpm);
 
 int fan_update(void);
 
+/**
+ * @brief  Check whether a fan is under host manual PWM control.
+ *
+ * While true, thermal management must not write this fan's commanded duty
+ * cycle from the automatic profile - fan_update() is driving it from the
+ * host-supplied fan_target instead.
+ *
+ * @param fan_idx fan type.
+ *
+ * @return true if the fan is under manual control, otherwise false.
+ */
+bool fan_is_manual_control(enum fan_type fan_idx);
+
 #endif	/* __FAN_H__ */
