@@ -31,10 +31,10 @@ static struct hwmon_sram_entry_desc cadiz_sens_descs[LOM_SENSOR_MAX] = {
 	/* hwmon_fdata[4]:  0x320 */
 	{ 25/*0x320*/, hwmon_fan,  13 }, /* Fan1_Speed    */
 	{ 26/*0x340*/, hwmon_fan,  14 }, /* Fan2_Speed    */
-	{ 27/*0x360*/, hwmon_fan,  15 }, /* Fan1_Speed    */
-	{ 28/*0x380*/, hwmon_fan,  16 }, /* Fan2_Speed    */
-	{ 29/*0x3A0*/, hwmon_fan,  17 }, /* Fan1_Speed    */
-	{ 30/*0x3C0*/, hwmon_fan,  18 }, /* Fan2_Speed    */
+	{ 27/*0x360*/, hwmon_fan,  15 }, /* Fan3_Speed    */
+	{ 28/*0x380*/, hwmon_fan,  16 }, /* Fan4_Speed    */
+	{ 29/*0x3A0*/, hwmon_fan,  17 }, /* Fan5_Speed    */
+	{ 30/*0x3C0*/, hwmon_fan,  18 }, /* Fan6_Speed    */
 
        { 0xFFFF, 0, 0 },
 };
