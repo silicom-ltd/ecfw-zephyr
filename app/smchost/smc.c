@@ -45,8 +45,8 @@ static const bool acpi_tbl_attr[256] = {
 	/* [4 / 4] uint8_t acpi_smb_buffer[40]; */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [5 / 5]  */
-	ACPI_ATTR_READ_WRITE,
+	/* [5 / 5] SMBus CMI 'stat' - EC-owned, read-only to ASL */
+	ACPI_ATTR_READ_ONLY,
 
 	/* [6 / 6]  */
 	ACPI_ATTR_READ_WRITE,
@@ -150,17 +150,17 @@ static const bool acpi_tbl_attr[256] = {
 	/* [39 / 27]  */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [40 / 28]  */
+	/* [40 / 28] SMBus CMI 'bcnt' */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [41 / 29]  */
+	/* [41 / 29] SMBus CMI 'aadr' */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [42 / 2A]  */
+	/* [42 / 2A] SMBus CMI 'alrm_data0' */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [43 / 2B]  */
-	ACPI_ATTR_READ_WRITE,
+	/* [43 / 2B] SMBus CMI 'alrm_data1' - EC-owned, read-only to ASL */
+	ACPI_ATTR_READ_ONLY,
 
 	/* [44 / 2C] uint8_t acpi_thermal_policy; */
 	ACPI_ATTR_READ_WRITE,

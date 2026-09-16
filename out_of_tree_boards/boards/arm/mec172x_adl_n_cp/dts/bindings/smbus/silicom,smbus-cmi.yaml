@@ -1,0 +1,19 @@
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  ACPI SMBus Control Method Interface (SMBus CMI). The host addresses this
+  interface through app/smchost's existing ACPI_EC_0 EmbeddedControl
+  opregion, using its acpi_smb_buffer sub-region; the EC relays each
+  requested SMBus transaction onto the referenced local I2C/SMBus
+  controller (i2c-bus).
+
+compatible: "silicom,smbus-cmi"
+
+properties:
+  i2c-bus:
+    type: phandle
+    required: true
+    description: |
+      The local I2C/SMBus controller this interface bridges host SMBus
+      requests onto.

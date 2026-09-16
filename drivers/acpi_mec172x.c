@@ -20,8 +20,6 @@ LOG_MODULE_DECLARE(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 static uintptr_t regbase[] = {
 	DT_REG_ADDR(DT_NODELABEL(acpi_ec0)),
 	DT_REG_ADDR(DT_NODELABEL(acpi_ec1)),
-	DT_REG_ADDR(DT_NODELABEL(acpi_ec2)),
-	DT_REG_ADDR(DT_NODELABEL(acpi_ec3)),
 };
 
 bool acpi_get_flag(enum acpi_ec_interface num, uint8_t type)

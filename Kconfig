@@ -33,6 +33,7 @@ rsource "app/leds/Kconfig"
 rsource "app/lom_mgmt/Kconfig"
 rsource "app/sw_power/Kconfig"
 rsource "app/fan_sense/Kconfig"
+rsource "app/smbus_cmi/Kconfig"
 
 rsource "app/soc_debug_awareness/Kconfig"
 rsource "boards/Kconfig"
