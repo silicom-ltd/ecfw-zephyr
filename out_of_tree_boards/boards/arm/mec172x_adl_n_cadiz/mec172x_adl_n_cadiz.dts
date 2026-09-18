@@ -375,6 +375,8 @@
 				      <&voltage8>;
 
 		board-curr-sensors = <&current0>, <&current1>;
+
+		board-peci-temp-sensor = <&cputemp>;
 	};
 
 	zephyr,user {

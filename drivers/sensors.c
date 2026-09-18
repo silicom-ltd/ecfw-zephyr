@@ -18,6 +18,7 @@
 #include <zephyr/drivers/adc/current_sense_amplifier.h>
 #include "hwmon.h"
 #include "board_config.h"
+#include "peci_hub.h"
 
 struct hwmon_sram *hwmon_data;
 
@@ -341,6 +342,112 @@ void current_sense_update(void)
 	}
 }
 
+/*
+ * CPU die temperature via PECI, into hwmon_data->peci -- a single dedicated
+ * struct for this one reading, distinct from the mon[] array the other
+ * board-*-sensors above populate.
+ *
+ * Two mutually exclusive mechanisms exist in this codebase -- enforced
+ * mutually exclusive by "depends on !DT_HAS_X86_PECI_TEMP_ENABLED" on
+ * CONFIG_PECI_OVER_ESPI_ENABLE (app/thermal_management/Kconfig), so at most
+ * one of these two branches is ever compiled in:
+ *  - devicetree enumeration of the normal Zephyr sensor-model driver
+ *    (../zephyr/drivers/sensor/x86_peci_temp, compatible "x86-peci-temp"),
+ *    which is what this board (cadiz) actually uses: board-peci-temp-sensor
+ *    is resolved with DEVICE_DT_GET and read like the other board-*-sensors
+ *    above via sensor_sample_fetch/channel_get;
+ *  - CONFIG_PECI_OVER_ESPI_ENABLE, where drivers/peci_hub.c's own
+ *    PECI-over-eSPI OOB implementation is used instead -- it doesn't go
+ *    through the Zephyr device model at all and resolves its own PECI bus
+ *    device internally via PECI_0_INST, so board-peci-temp-sensor's target
+ *    isn't actually consumed there; it only gates whether this board
+ *    reports PECI CPU temp at all.
+ */
+#if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, board_peci_temp_sensor)
+
+#if DT_HAS_COMPAT_STATUS_OKAY(x86_peci_temp)
+
+static const struct device *peci_cpu_temp_dev =
+	DEVICE_DT_GET(DT_PHANDLE(BOARD_SENSORS_NODE, board_peci_temp_sensor));
+static bool peci_cpu_temp_valid;
+
+int peci_temp_init(void)
+{
+	peci_cpu_temp_valid = probe_sensor(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP,
+		peci_cpu_temp_dev->name);
+
+	return peci_cpu_temp_valid ? 0 : -ENODEV;
+}
+
+void peci_temp_update(void)
+{
+	struct sensor_value temp;
+	volatile struct hwmon_peci *pdata;
+	unsigned int temp_val;
+	int multiplier;
+	int err;
+
+	if (hwmon_data == NULL || !peci_cpu_temp_valid) {
+		return; // espi emi not configured yet, or sensor absent
+	}
+
+	err = sensor_sample_fetch_chan(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP);
+	if (!err)
+		err = sensor_channel_get(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP, &temp);
+	if (err) {
+		LOG_WRN("PECI CPU temp read failed: %d", err);
+		return;
+	}
+	LOG_DBG("PECI CPU temp: %d.%03d C", temp.val1, temp.val2);
+
+	multiplier = 0;
+	temp_val = (temp.val1 * 1000) + (temp.val2 / 1000);
+	while (temp_val & 0xFFFF0000) {
+		temp_val >>= 1;
+		if (!multiplier)
+			multiplier = 1;
+		else
+			multiplier <<= 1;
+	}
+
+	pdata = &hwmon_data->peci;
+	pdata->peci_in = temp_val;
+	pdata->multiplier = multiplier;
+}
+
+#elif defined(CONFIG_PECI_OVER_ESPI_ENABLE)
+
+int peci_temp_init(void)
+{
+	int err = peci_init();
+
+	if (err)
+		LOG_WRN("PECI init failed: %d, CPU temp will not be reported", err);
+
+	return err;
+}
+
+void peci_temp_update(void)
+{
+	int temp, err;
+
+	if (hwmon_data == NULL) {
+		return; // espi emi not configured yet
+	}
+
+	err = peci_get_temp(CPU, &temp);
+	if (err) {
+		LOG_WRN("PECI CPU temp read failed: %d", err);
+		return;
+	}
+
+	LOG_DBG("PECI CPU temp: %d C", temp);
+}
+
+#endif /* DT_HAS_COMPAT_STATUS_OKAY(x86_peci_temp) vs CONFIG_PECI_OVER_ESPI_ENABLE */
+
+#endif /* DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, board_peci_temp_sensor) */
+
 static const struct device *fan_dev[] = {
         DEVICE_DT_GET(DT_ALIAS(fan0)),
         DEVICE_DT_GET(DT_ALIAS(fan1)),
@@ -405,6 +512,9 @@ int sensors_init()
 	thermal_sensors_init();
 	voltage_monitor_init();
 	current_sense_init();
+#if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, board_peci_temp_sensor)
+	peci_temp_init();
+#endif
 
 	return 0;
 }
@@ -415,4 +525,7 @@ void sensors_update()
 	thermal_sensors_update();
 	current_sense_update();
 	fan_update();
+#if DT_NODE_HAS_PROP(BOARD_SENSORS_NODE, board_peci_temp_sensor)
+	peci_temp_update();
+#endif
 }

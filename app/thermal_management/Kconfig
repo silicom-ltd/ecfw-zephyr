@@ -41,8 +41,16 @@ config EC_FAN_CONTROL
 
 config PECI_OVER_ESPI_ENABLE
 	bool "Enable PECI over ESPI OOB"
+	depends on !DT_HAS_X86_PECI_TEMP_ENABLED
 	help
 	  Indicate if peci over espi oob enabled or not.
+
+	  Mutually exclusive with a devicetree that enumerates an
+	  "x86-peci-temp" sensor node: a board using that Zephyr sensor-model
+	  driver (../zephyr/drivers/sensor/x86_peci_temp) for PECI CPU
+	  temperature reads it via the normal device/sensor model instead of
+	  this eSPI OOB-tunneled, non-device-model implementation, so the two
+	  must not both be active for the same PECI reading.
 
 config PECI_ACCESS_DISABLE_IN_CS
 	bool "Disable PECI access in connected standby"

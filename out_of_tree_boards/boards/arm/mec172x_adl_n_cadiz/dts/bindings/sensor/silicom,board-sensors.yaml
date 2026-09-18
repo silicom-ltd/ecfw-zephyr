@@ -44,3 +44,20 @@ properties:
     description: |
       PSU input power sensor channels (hwmon "power" class), reported to
       the host in this order.
+
+  board-peci-temp-sensor:
+    type: phandle
+    description: |
+      Device used to read CPU die temperature into hwmon_sram's dedicated
+      "peci" struct (a single hwmon "temp" entry, distinct from the mon[]
+      array the other board-*-sensors properties above populate). Two
+      mutually exclusive mechanisms exist in this codebase, selected in
+      drivers/sensors.c: a normal Zephyr sensor-model driver
+      (../zephyr/drivers/sensor/x86_peci_temp, compatible "x86-peci-temp")
+      read like the phandles properties above via sensor_sample_fetch/
+      channel_get -- point this at that node, as this board (cadiz) does --
+      or, on a board built with CONFIG_PECI_OVER_ESPI_ENABLE instead,
+      drivers/peci_hub.c's own PECI-over-eSPI OOB implementation, which
+      resolves its own PECI bus device internally and so does not actually
+      use this phandle's target; it only gates whether PECI CPU temp is
+      reported at all.
