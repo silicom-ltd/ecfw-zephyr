@@ -19,6 +19,7 @@ rsource "app/thermal_management_v2/Kconfig"
 rsource "app/voltage_monitor/Kconfig"
 rsource "app/current_monitor/Kconfig"
 rsource "app/fan_monitor/Kconfig"
+rsource "app/peci_monitor/Kconfig"
 
 menu "EC optional features"
 

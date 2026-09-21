@@ -23,6 +23,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/thermal_manageme
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/current_monitor)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/fan_monitor)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/peci_monitor)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/lom_mgmt)
 
@@ -201,6 +202,13 @@ target_sources_ifdef(CONFIG_FAN_MONITOR app
     ${CMAKE_CURRENT_LIST_DIR}/fan_monitor/fan_monitor.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/fan_monitor/fanmon.h
+    )
+
+target_sources_ifdef(CONFIG_PECI_MONITOR app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/peci_monitor/peci_monitor.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/peci_monitor/pecimon.h
     )
 
 target_sources_ifdef(CONFIG_LOM_MGMT_PROC app

@@ -1,0 +1,28 @@
+# Kconfig - Config options for EC FW
+#
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menu "PECI Monitor"
+
+config PECI_MONITOR
+	bool "Enable PECI CPU temperature monitor"
+	help
+	  Indicate if EC supports periodic reporting of CPU die temperature
+	  read via PECI (see drivers/sensors.c's peci_temp_update()). Only
+	  meaningful on a board whose board-sensors devicetree node declares
+	  board-peci-temp-sensor; enable via that board's own defconfig, not
+	  globally in prj.conf.
+
+config PECI_MONITOR_LOG_LEVEL
+	int "PECI monitor log level"
+	depends on LOG
+	depends on PECI_MONITOR
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for PECI monitor module.
+
+endmenu

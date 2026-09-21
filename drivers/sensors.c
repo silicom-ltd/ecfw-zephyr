@@ -19,11 +19,13 @@
 #include "hwmon.h"
 #include "board_config.h"
 #include "peci_hub.h"
+#include "pwrplane.h"
+#include "system.h"
 
 struct hwmon_sram *hwmon_data;
 
 //LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
-LOG_MODULE_REGISTER(thrmsens, 3);
+LOG_MODULE_REGISTER(thrmsens, 4);
 
 /*
  * Not every declared sensor is populated on every board revision (e.g. an
@@ -147,7 +149,7 @@ void thermal_sensors_update(void)
 			continue;
 		}
 		sensor_channel_get(ntc_thermal_sensors[i], SENSOR_CHAN_AMBIENT_TEMP, &temp);
-		LOG_DBG("Sensor %d thermistor read: %d.%03dC", i, temp.val1, temp.val2);
+		LOG_DBG("Sensor %d thermistor read: %d.%03dC", adc_dt->channel_cfg.channel_id, temp.val1, temp.val2);
 
 		old_multiplier = sdata->multiplier;
 		multiplier = 0;
@@ -242,7 +244,7 @@ void voltage_monitor_update(void)
 			continue;
 		}
 		sensor_channel_get(voltage_sensors[i], SENSOR_CHAN_VOLTAGE, &volts);
-		LOG_DBG("ADC %d voltage read: %d.%03d V", i, volts.val1, volts.val2);
+		LOG_DBG("ADC %d voltage read: %d.%03d V", voltage->port.channel_id, volts.val1, volts.val2);
 
 		//sdata->mon_in = (volts.val1 << 16) | (volts.val2 / 16);
 		sdata->mon_in = (volts.val1 * 1000) + (volts.val2 / 1000);
@@ -317,7 +319,7 @@ void current_sense_update(void)
 			continue;
 		}
 		sensor_channel_get(current_sensors[i], SENSOR_CHAN_CURRENT, &amps);
-		LOG_DBG("ADC %d current read: %d.%d mA", i, amps.val1, amps.val2);
+		LOG_DBG("ADC %d current read: %d.%d mA", current->port.channel_id, amps.val1, amps.val2);
 
 		old_multiplier = sdata->multiplier;
 		multiplier = 0;
@@ -369,14 +371,23 @@ void current_sense_update(void)
 
 static const struct device *peci_cpu_temp_dev =
 	DEVICE_DT_GET(DT_PHANDLE(BOARD_SENSORS_NODE, board_peci_temp_sensor));
-static bool peci_cpu_temp_valid;
 
+/*
+ * Unlike the other board-*-sensors above, this isn't probe_sensor()'d once
+ * at init: PECI only responds once the CPU is powered (S0), which isn't
+ * guaranteed yet at sensors_init() time, and a probe failure there would
+ * permanently mark it absent. Instead peci_temp_update() checks system
+ * state on every call and only reads it in S0.
+ */
 int peci_temp_init(void)
 {
-	peci_cpu_temp_valid = probe_sensor(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP,
-		peci_cpu_temp_dev->name);
+	if (!device_is_ready(peci_cpu_temp_dev)) {
+		LOG_WRN("board-peci-temp-sensor (%s): device not ready",
+			peci_cpu_temp_dev->name);
+		return -ENODEV;
+	}
 
-	return peci_cpu_temp_valid ? 0 : -ENODEV;
+	return 0;
 }
 
 void peci_temp_update(void)
@@ -387,8 +398,14 @@ void peci_temp_update(void)
 	int multiplier;
 	int err;
 
-	if (hwmon_data == NULL || !peci_cpu_temp_valid) {
-		return; // espi emi not configured yet, or sensor absent
+	if (hwmon_data == NULL) {
+		return; // espi emi not configured yet
+	}
+
+	if (pwrseq_system_state() != SYSTEM_S0_STATE) {
+		LOG_DBG("PECI CPU temp skipped, system state %d != SYSTEM_S0_STATE",
+			pwrseq_system_state());
+		return; // PECI only responds to the CPU while it's powered
 	}
 
 	err = sensor_sample_fetch_chan(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP);
