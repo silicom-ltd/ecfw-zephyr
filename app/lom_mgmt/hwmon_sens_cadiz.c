@@ -11,7 +11,7 @@
 LOG_MODULE_DECLARE(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
 static struct hwmon_sram_entry_desc cadiz_sens_descs[LOM_SENSOR_MAX] = {
-       /* hwmon_sdata[16]: 0x100 */
+	/* hwmon_sdata[16]: 0x100 */
 	{  8/*0x100*/, hwmon_in,    1 }, /* 12V             */
 	{  9/*0x120*/, hwmon_in,    2 }, /* 5V              */
 	{ 10/*0x140*/, hwmon_in,    3 }, /* 3.3V            */
@@ -36,7 +36,7 @@ static struct hwmon_sram_entry_desc cadiz_sens_descs[LOM_SENSOR_MAX] = {
 	{ 29/*0x3A0*/, hwmon_fan,  17 }, /* Fan5_Speed    */
 	{ 30/*0x3C0*/, hwmon_fan,  18 }, /* Fan6_Speed    */
 
-       { 0xFFFF, 0, 0 },
+	{ 0xFFFF, 0, 0 },
 };
 
 
