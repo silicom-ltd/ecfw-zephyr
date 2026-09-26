@@ -211,13 +211,37 @@ target_sources_ifdef(CONFIG_PECI_MONITOR app
     ${CMAKE_CURRENT_LIST_DIR}/peci_monitor/pecimon.h
     )
 
+# Select the platform's LOM-MGMT sensor table. The board already determines the
+# platform, so derive the file from CONFIG_BOARD_* -- the convention already
+# used in drivers/CMakeLists.txt -- rather than from $ENV{PLATFORM}.
+#
+# This keeps one CMakeLists that is correct on all three platforms, so these
+# files can move between the platform branches unchanged, while removing the
+# two ways the environment variable could go wrong: it is undefined outside
+# Ibiza-ops' ecfw-build.yml, so local builds failed at generate; and a stale
+# value selected another platform's table with no error.
+if(CONFIG_LOM_MGMT_PROC)
+  if(CONFIG_BOARD_MEC172X_ADL_N_CADIZ)
+    set(LOM_HWMON_SENS hwmon_sens_cadiz.c)
+  elseif(CONFIG_BOARD_MEC172X_ADL_N_CP)
+    set(LOM_HWMON_SENS hwmon_sens_maestro.c)
+  elseif(CONFIG_BOARD_MEC172X_ADL_N)
+    set(LOM_HWMON_SENS hwmon_sens_ibiza.c)
+  else()
+    message(FATAL_ERROR
+      "CONFIG_LOM_MGMT_PROC is enabled but no hwmon_sens_*.c is mapped for "
+      "board '${BOARD}'. Add it in app/CMakeLists.txt.")
+  endif()
+  message(STATUS "LOM-MGMT sensor table: ${LOM_HWMON_SENS}")
+endif()
+
 target_sources_ifdef(CONFIG_LOM_MGMT_PROC app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_mgmt_proc.c
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/host_event.c
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/postcode.c
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/pwrctrl.c
-    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/hwmon_sens_$ENV{PLATFORM}.c
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/${LOM_HWMON_SENS}
     )
 
 target_include_directories(app
