@@ -11,6 +11,15 @@ config RESET_BUTTON
 	help
 	  Indicate if Reset button functionality is enabled.
 
+config RESET_BUTTON_HANDLER_MAX
+	int "Maximum number of reset button handlers"
+	default 2 if LOM_MGMT_FUNC_HOST_EVENT
+	default 1
+	help
+	  This option defines the maximum number of reset button handlers
+	  that can be registered in the system simultaneously.
+
+
 config RESET_BUTTON_LOG_LEVEL
 	int "Reset button log level"
 	depends on LOG

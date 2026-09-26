@@ -83,10 +83,12 @@ static bool pwrseq_failure;
 static enum system_power_state current_state;
 static enum system_power_state next_state;
 
+#ifdef CONFIG_TRACK_ALL_ACPI_SLEEP_SIGNALS
 #define SLP_SIG_S3 0x1
 #define SLP_SIG_S4 0x2
 #define SLP_SIG_S5 0x4
 static int asserted_slp_sigs;
+#endif
 
 /* Handle S5 entry/exit and G3 exit */
 static void power_off(void);
@@ -149,6 +151,25 @@ static void pwrseq_slp_handler(uint32_t signal, uint32_t status)
 		}
 	} else {
 		/* SLPx assertion indicates a specific power system state */
+#ifndef CONFIG_TRACK_ALL_ACPI_SLEEP_SIGNALS
+		switch (current_state) {
+		case SYSTEM_S0_STATE:
+			if (signal == ESPI_VWIRE_SIGNAL_SLP_S3) {
+				LOG_DBG("SLP S3 asserted");
+				next_state = SYSTEM_S3_STATE;
+			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S4) {
+				LOG_DBG("SLP S4 asserted");
+		//		if (next_state != SYSTEM_S5_STATE)
+					next_state = SYSTEM_S4_STATE;
+			} else if (signal == ESPI_VWIRE_SIGNAL_SLP_S5) {
+				LOG_DBG("SLP S5 asserted");
+				next_state = SYSTEM_S5_STATE;
+			}
+			break;
+		default:
+			LOG_WRN("<DN> SLP_SX[%d] while at %x", signal, current_state);
+		}
+#else
 		if (current_state >= SYSTEM_S0_STATE && current_state <= SYSTEM_S5_STATE) {
 			switch (signal) {
 			case ESPI_VWIRE_SIGNAL_SLP_S3:
@@ -189,6 +210,7 @@ static void pwrseq_slp_handler(uint32_t signal, uint32_t status)
 		else {
 			LOG_WRN("<DN> SLP_SX[%d] while at %x", signal, current_state);
 		}
+#endif
 	}
 }
 
@@ -593,7 +615,9 @@ static void pwrseq_update(void)
 	if (valid_sx_transition) {
 		LOG_WRN("System transition %d->%d", current_state, next_state);
 		current_state = next_state;
+#ifdef CONFIG_TRACK_ALL_ACPI_SLEEP_SIGNALS
 		asserted_slp_sigs = 0;
+#endif
 	} else {
 		LOG_ERR("Unsupported next state: %d", next_state);
 		/* Do not transition to invalid state,

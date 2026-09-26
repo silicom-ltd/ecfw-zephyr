@@ -79,7 +79,7 @@ enum ctx_sta_stages {
 };
 
 #if defined(CONFIG_LOM_MGMT_I2C_DBG_STA) || defined(CONFIG_LOM_MGMT_I2C_DBG_APP) || \
-	defined(CONFIG_LOM_MGMT_I2C_DBG_I2C_DAT)
+	defined(CONFIG_LOM_MGMT_I2C_DBG_I2C)
 /*
  * ctx_sta_stages's short name, used for debug
  */
@@ -150,6 +150,9 @@ struct i2c_lom_mgmt_target_config {
 	&(((struct i2c_lom_mgmt_target_data *)dev->data)->ctx)
 
 static int lom_mgmt_func_cap[FUNC_COUNT] = {
+#ifdef CONFIG_LOM_MGMT_FUNC_GET_SYS_IDS
+	[FUNC_GET_ID] = 1,
+#endif
 	[FUNC_FINI] = 1,
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
@@ -169,7 +172,13 @@ static int lom_mgmt_func_cap[FUNC_COUNT] = {
 	[FUNC_GET_POSTCODE] = 1,
 #endif
 
+#ifdef CONFIG_LOM_MGMT_FUNC_REPORT_LOM_IP
+	[FUNC_REPORT_LOM_IP] = 1,
+#endif
+
+#ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	[FUNC_TEST_L3] = 1,
+#endif
 };
 
 static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx);
@@ -305,7 +314,7 @@ static int lom_mgmt_tgt_wr_req(struct i2c_target_config *config)
 
 static inline int need_timestamp(uint16_t res_meta)
 {
-	return RES_META_FLAG_NTOH(res_meta) & RES_META_F_TIMESTAMP
+	return RES_META_FLAG_NTOH(res_meta) & RES_META_F_TIMESTAMP;
 }
 
 static inline void set_timestamp(uint8_t *buf)
@@ -414,7 +423,7 @@ static int lom_mgmt_tgt_wr_rcv(struct i2c_target_config *config, uint8_t val)
 
 		ctx->first_data_access = 1;
 
-#if (defined(_DBG_STA) || defined(_DBG_I2C_DAT)) && (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+#if defined(CONFIG_LOM_MGMT_I2C_DBG_STA) || defined(CONFIG_LOM_MGMT_I2C_DBG_I2C)
 		LOG_INF("(+) New Access @ COMM[0x%02x]", ctx->access_addr);
 #endif
 	}
@@ -427,11 +436,10 @@ static int lom_mgmt_tgt_wr_rcv(struct i2c_target_config *config, uint8_t val)
 			return 0;
 		}
 
-		ctx->req.buf[ctx->req_idx] = val;
-
-		LOG_DBG_I2C("COMM[0x%02x] REQ[%d] <= 0x%02x", ctx->access_addr, ctx->req_idx, val);
-
-		ctx->req_idx = (ctx->req_idx + 1) % REQ_BUFF_SIZE;
+		if (ctx->req_idx < REQ_BUFF_SIZE) {
+			LOG_DBG_I2C("COMM[0x%02x] REQ[%d] <= 0x%02x", ctx->access_addr, ctx->req_idx, val);
+			ctx->req.buf[ctx->req_idx++] = val;
+		}
 	}
 
 	return 0;
@@ -444,7 +452,7 @@ static int lom_mgmt_tgt_stop(struct i2c_target_config *config)
 {
 	struct lom_mgmt_i2c_context * ctx = LOM_MGMT_CTX_FROM_CFG(config);
 
-#if (defined(_DBG_STA) || defined(_DBG_I2C_DAT)) && (CONFIG_LOM_MGMT_I2C_LOG_LEVEL >= LOG_LEVEL_DBG)
+#if defined(CONFIG_LOM_MGMT_I2C_DBG_STA) || defined(CONFIG_LOM_MGMT_I2C_DBG_I2C)
 	LOG_INF("Stop: COMM[0x%02x], REQ[idx %d, size %d], STA[%s]",
 		ctx->access_addr, ctx->req_idx, ctx->req.size, ctx_sta_string[ctx->state]);
 #endif
@@ -555,8 +563,9 @@ static bool check_csum(struct lom_mgmt_i2c_context *ctx)
 
 static void lom_mgmt_tgt_do_fini(struct lom_mgmt_i2c_context *ctx)
 {
-	LOG_DBG_APP("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]", ctx->req_func_last,
-		ctx_sta_string[ctx->state_last], ctx->res_idx, ctx->res.size-1);
+	LOG_DBG_APP("FINI: Last Func<%02d> STA[%s] RES[(FYI)%4d/%-4d]<%02x %02x %02x>", ctx->req_func_last,
+		ctx_sta_string[ctx->state_last], ctx->res_idx, ctx->res.size-1,
+		ctx->res.buf[0], ctx->res.buf[1], ctx->res.buf[2]);
 
 	ctx->cb->send_cancel();
 
@@ -565,30 +574,6 @@ static void lom_mgmt_tgt_do_fini(struct lom_mgmt_i2c_context *ctx)
 	set_ctx_response_meta(ctx, EC_RET_READY, 0, 0, STA_READY);
 
 	ctx->req_func_last = 0;
-}
-
-
-/*
- *  ALERT: this will delay the I2C bus, make the LOM side timeout.
- */
-static void lom_mgmt_tgt_do_testl2(struct lom_mgmt_i2c_context *ctx)
-{
-	uint16_t tst_size = ((uint16_t)ctx->req.data[0] << 8) | ctx->req.data[1]; /* test size */
-
-	LOG_DBG_APP("test_l2 size %d\n", tst_size);
-
-	if (tst_size > (RES_DLEN_MAX)) {
-		LOG_ERR("request size exceeds the limit: %d", RES_DLEN_MAX);
-		set_ctx_response_meta(ctx, EC_RET_ERR_INV_SIZE, 0, 0, STA_SEND_RES);
-	}
-	else {
-		for (int i = 0; i < tst_size; i++) {
-			ctx->res.data[i] = i + RES_HEAD_LEN;
-		}
-		set_ctx_response_meta(ctx, EC_RET_OK, tst_size, 0, STA_SEND_RES);
-	}
-
-	ctx->res_ready = 1;
 }
 
 static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
@@ -601,7 +586,7 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 	 */
 	if (ctx->req.size < REQ_HEAD_LEN || ctx->req.dlen > REQ_DLEN_MAX ||
 		(ctx->req.dlen != ctx->req.size - REQ_HEAD_LEN)) {
-		LOG_DBG_APP("Invalid request size: %u", ctx->req.size);
+		LOG_DBG_APP("Invalid request size: total %u, dlen %u", ctx->req.size, ctx->req.dlen);
 		goto error_quit;
 	}
 
@@ -610,15 +595,13 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 		goto error_quit;
 	}
 
-	if (ctx->req.func < FUNC_FIRST || ctx->req.func > FUNC_LAST)
-	{
+	if (ctx->req.func < FUNC_FIRST || ctx->req.func >= FUNC_COUNT) {
 		LOG_DBG_APP("Invalid func %u", ctx->req.func);
 		goto error_quit;
 	}
 
 	if ((ctx->state == STA_RECV_FINI && ctx->req.func != FUNC_FINI) ||
-		(ctx->state == STA_RECV_REQ && ctx->req.func == FUNC_FINI))
-	{
+		(ctx->state == STA_RECV_REQ && ctx->req.func == FUNC_FINI)) {
 		LOG_DBG_APP("Un-expected func %d", ctx->req.func);
 		goto error_quit;
 	}
@@ -628,30 +611,25 @@ static void lom_mgmt_tgt_deliver_request(struct lom_mgmt_i2c_context *ctx)
 		return;
 	}
 
-	ctx->req_func_last = ctx->req.func;
-	ctx->res_ready = 0;
-
 	if (lom_mgmt_func_is_supported(ctx->req.func) == 0) {
 		set_ctx_response_meta(ctx, EC_RET_ERR_NOT_IMPL, 0, 0, STA_SEND_RES);
 		return;
 	}
 
-	if (ctx->req.func == FUNC_TEST_L2) {
-		lom_mgmt_tgt_do_testl2(ctx);
+	if (ctx->cb == NULL) { /* this should never be true under normal operation */
+		set_ctx_response_meta(ctx, EC_RET_NO_PROC, 0, 0, STA_SEND_RES);
+		LOG_WRN("State corrupted(No Proc)");
+		return;
 	}
-	else {
-		if (ctx->cb == NULL) { /* this shouldn't happen */
-			set_ctx_response_meta(ctx, EC_RET_NO_PROC, 0, 0, STA_SEND_RES);
-			LOG_WRN("State corrupted");
-			return;
-		}
 
-		set_ctx_response_meta(ctx, EC_RET_RETRY, 0, 0, STA_WAIT_PROC);
+	ctx->req_func_last = ctx->req.func;
+	ctx->res_ready = 0;
 
-		ctx->cb->send_request(&ctx->req, &ctx->res);
+	set_ctx_response_meta(ctx, EC_RET_RETRY, 0, 0, STA_WAIT_PROC);
 
-		LOG_DBG_APP("Send F<%d> to app", ctx->req.func);
-	}
+	ctx->cb->send_request(&ctx->req, &ctx->res);
+
+	LOG_DBG_APP("Send F<%d> to app", ctx->req.func);
 
 	return;
 
