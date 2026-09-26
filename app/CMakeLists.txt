@@ -216,10 +216,8 @@ target_sources_ifdef(CONFIG_LOM_MGMT_PROC app
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_mgmt_proc.c
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/host_event.c
     ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/postcode.c
-    PUBLIC
-    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/lom_mgmt_proc.h
-    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/host_event.h
-    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/postcode.h
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/pwrctrl.c
+    ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt/hwmon_sens_$ENV{PLATFORM}.c
     )
 
 target_include_directories(app

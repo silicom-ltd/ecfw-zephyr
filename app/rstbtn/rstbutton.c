@@ -25,7 +25,7 @@ struct rstbtn_handler {
 };
 
 /* This is just a pool */
-static struct rstbtn_handler rstbtn_handlers[1];
+static struct rstbtn_handler rstbtn_handlers[CONFIG_RESET_BUTTON_HANDLER_MAX];
 static int rstbtn_handler_index;
 static bool sys_rst_btn_sts = HIGH;
 static bool rst_btn_out_sts = HIGH;
@@ -53,7 +53,7 @@ void rstbtn_btn_evt_processor()
 	if (rstbtn_evt != rst_btn_out_sts) {
 		rst_btn_out_sts = rstbtn_evt;
 
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < ARRAY_SIZE(rstbtn_handlers); i++) {
 			if (rstbtn_handlers[i].handler) {
 				LOG_DBG("Calling handler %s: evt: %d", __func__, rstbtn_evt);
 				rstbtn_handlers[i].handler(rst_btn_out_sts);
@@ -80,10 +80,13 @@ void rstbtn_register_handler(rstbtn_handler_t handler)
 {
         LOG_DBG("%s", __func__);
 
-        if (rstbtn_handler_index < 2 - 1) {
+        if (rstbtn_handler_index < ARRAY_SIZE(rstbtn_handlers)) {
                 rstbtn_handlers[rstbtn_handler_index].handler = handler;
                 rstbtn_handler_index++;
         }
+	else {
+		LOG_ERR("No space for new rstbtn handler");
+	}
 }
 
 void rstbutton_init(void)
