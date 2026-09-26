@@ -13,6 +13,8 @@
 #define THRML_MGMT_TASK_NAME    "THRMLMGMT"
 #define VOLTAGE_MGMT_TASK_NAME  "VLTGLMGMT"
 #define CURRENT_MGMT_TASK_NAME  "CURRMGMT"
+#define FAN_MGMT_TASK_NAME	"FANMGMT"
+#define PECI_MGMT_TASK_NAME	"PECIMGMT"
 
 /**
  * @brief Set names for all tasks in the app.

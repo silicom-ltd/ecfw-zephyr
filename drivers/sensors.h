@@ -16,6 +16,8 @@
  */
 int thermal_sensors_init(void);
 int voltage_sensors_init(void);
+int current_sense_init(void);
+int peci_temp_init(void);
 
 
 /**
@@ -26,5 +28,13 @@ int voltage_sensors_init(void);
  */
 void thermal_sensors_update(void);
 void voltage_sensors_update(void);
+
+/**
+ * @brief Read CPU die temperature via PECI and update hwmon_data->peci.
+ *
+ * Only compiled in when the board-sensors devicetree node declares
+ * board-peci-temp-sensor; see drivers/sensors.c.
+ */
+void peci_temp_update(void);
 
 #endif	/* __THERMAL_SENSOR_H__ */
