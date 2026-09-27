@@ -481,18 +481,23 @@ void fan_update(void)
 	struct sensor_value val;
 	struct hwmon_fdata *fdata;
 
+	if (hwmon_data == NULL) {
+		return; // espi emi not configured yet
+	}
+
 	for (i = 0; i < ARRAY_SIZE(fan_dev); i++) {
+		fdata = &hwmon_data->fan[i];
 
 		ret = fan_get_speed(fan_dev[i], &val);
-		LOG_DBG("fan index %d, name: %s, speed: %d",i, fan_dev[i]->name, val.val1);
+		if (ret != 0) {
+			LOG_ERR("fan %d (%s) read failed: %d, reporting 0",
+				i, fan_dev[i]->name, ret);
+			fdata->fan_rpm = 0;
+			continue;
+		}
 
-		if (ret != 0)
-			return;
+		LOG_DBG("fan index %d, name: %s, speed: %d", i, fan_dev[i]->name, val.val1);
 
-		if (hwmon_data == NULL)
-			return;
-
-		fdata = &hwmon_data->fan[i];
 		fdata->fan_rpm = val.val1;
 	}
 
