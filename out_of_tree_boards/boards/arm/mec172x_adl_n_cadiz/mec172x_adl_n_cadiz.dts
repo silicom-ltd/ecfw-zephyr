@@ -438,6 +438,17 @@
 
 };
 
+&i2c00_sda_gpio003 {
+	drive-open-drain;
+	output-enable;
+	output-high;
+};
+&i2c00_scl_gpio004 {
+	drive-open-drain;
+	output-enable;
+	output-high;
+};
+
 &i2c_smb_1 {
 	status = "okay";
 	port_sel = <3>;
@@ -459,10 +470,12 @@
 
 &i2c03_sda_gpio007 {
 	drive-open-drain;
+	output-enable;
 	output-high;
 };
 &i2c03_scl_gpio010 {
 	drive-open-drain;
+	output-enable;
 	output-high;
 };
 
@@ -483,10 +496,12 @@
 
 &i2c12_sda_gpio026 {
 	drive-open-drain;
+	output-enable;
 	output-high;
 };
 &i2c12_scl_gpio027 {
 	drive-open-drain;
+	output-enable;
 	output-high;
 };
 
@@ -508,6 +523,17 @@
 	};
 };
 
+&i2c08_sda_gpio231 {
+	drive-open-drain;
+	output-enable;
+	output-high;
+};
+&i2c08_scl_gpio230 {
+	drive-open-drain;
+	output-enable;
+	output-high;
+};
+
 &i2c_smb_2 {
 	status = "okay";
 	port_sel = <5>;
@@ -523,23 +549,15 @@
 	};
 };
 
-&i2c03_sda_gpio007 {
-	drive-open-drain;
-	output-high;
-};
-
-&i2c03_scl_gpio010 {
-	drive-open-drain;
-	output-high;
-};
-
 &i2c05_sda_gpio141 {
 	drive-open-drain;
+	output-enable;
 	output-high;
 };
 
 &i2c05_scl_gpio142 {
 	drive-open-drain;
+	output-enable;
 	output-high;
 };
 
