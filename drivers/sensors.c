@@ -16,6 +16,7 @@
 #include <zephyr/drivers/fan.h>
 #include <zephyr/drivers/adc/voltage_divider.h>
 #include <zephyr/drivers/adc/current_sense_amplifier.h>
+#include <zephyr/pm/device_runtime.h>
 #include "hwmon.h"
 #include "board_config.h"
 #include "peci_hub.h"
@@ -369,15 +370,18 @@ void current_sense_update(void)
 
 #if DT_HAS_COMPAT_STATUS_OKAY(x86_peci_temp)
 
-static const struct device *peci_cpu_temp_dev =
-	DEVICE_DT_GET(DT_PHANDLE(BOARD_SENSORS_NODE, board_peci_temp_sensor));
+#define PECI_CPU_TEMP_NODE DT_PHANDLE(BOARD_SENSORS_NODE, board_peci_temp_sensor)
+
+static const struct device *peci_cpu_temp_dev = DEVICE_DT_GET(PECI_CPU_TEMP_NODE);
 
 /*
  * Unlike the other board-*-sensors above, this isn't probe_sensor()'d once
  * at init: PECI only responds once the CPU is powered (S0), which isn't
  * guaranteed yet at sensors_init() time, and a probe failure there would
- * permanently mark it absent. Instead peci_temp_update() checks system
- * state on every call and only reads it in S0.
+ * permanently mark it absent. Instead peci_temp_update() checks on every
+ * call that the host is up: through the node's power domain (e.g. the host
+ * power domain, drivers/host_power_domain.c) when it has one, else by
+ * checking system state directly.
  */
 int peci_temp_init(void)
 {
@@ -402,15 +406,28 @@ void peci_temp_update(void)
 		return; // espi emi not configured yet
 	}
 
+#if DT_NODE_HAS_PROP(PECI_CPU_TEMP_NODE, power_domain)
+	/* The domain refuses the claim while the host is off */
+	err = pm_device_runtime_get(peci_cpu_temp_dev);
+	if (err == -EAGAIN) {
+		LOG_DBG("PECI CPU temp skipped, host power off");
+		return;
+	} else if (err) {
+		LOG_WRN("PECI CPU temp resume failed: %d", err);
+		return;
+	}
+#else
 	if (pwrseq_system_state() != SYSTEM_S0_STATE) {
 		LOG_DBG("PECI CPU temp skipped, system state %d != SYSTEM_S0_STATE",
 			pwrseq_system_state());
 		return; // PECI only responds to the CPU while it's powered
 	}
+#endif
 
 	err = sensor_sample_fetch_chan(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP);
 	if (!err)
 		err = sensor_channel_get(peci_cpu_temp_dev, SENSOR_CHAN_DIE_TEMP, &temp);
+	(void)pm_device_runtime_put(peci_cpu_temp_dev);
 	if (err) {
 		LOG_WRN("PECI CPU temp read failed: %d", err);
 		return;

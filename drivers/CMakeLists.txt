@@ -127,6 +127,13 @@ target_sources_ifdef(CONFIG_I2C_TARGET_LOM_MGMT app
   ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt_i2c.h
 )
 
+target_sources_ifdef(CONFIG_HOST_POWER_DOMAIN app
+  PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/host_power_domain.c
+  PUBLIC
+  ${CMAKE_CURRENT_LIST_DIR}/host_power_domain.h
+)
+
 target_include_directories(app
     PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}

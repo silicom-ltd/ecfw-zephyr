@@ -47,8 +47,20 @@
 #include "dnx.h"
 #endif
 #include "vrtt.h"
+#ifdef CONFIG_HOST_POWER_DOMAIN
+#include "host_power_domain.h"
+#endif
 
 LOG_MODULE_REGISTER(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
+
+/* Tell host-dependent devices whether the host is powered */
+#ifdef CONFIG_HOST_POWER_DOMAIN
+static const struct device *const host_pd =
+	DEVICE_DT_GET_ONE(silicom_host_power_domain);
+#define host_pd_set(on)	(void)host_power_domain_set(host_pd, (on))
+#else
+#define host_pd_set(on)	do { } while (0)
+#endif
 
 /* For more details for below signals refer to platform design guidelines
  * If not explicitly indicated delays are in miliseconds.
@@ -345,6 +357,7 @@ void pwrseq_error(uint8_t error_code)
 	LOG_ERR("%s: %d", __func__, error_code);
 
 	pwrseq_failure = true;
+	host_pd_set(false);
 #ifdef CONFIG_POSTCODE_MANAGEMENT
 	update_error(error_code);
 #endif
@@ -595,6 +608,11 @@ static void pwrseq_update(void)
 {
 	bool valid_sx_transition = false;
 
+	/* Stop host-dependent devices before the host rails drop */
+	if ((current_state == SYSTEM_S0_STATE) && (next_state != SYSTEM_S0_STATE)) {
+		host_pd_set(false);
+	}
+
 	switch (next_state) {
 	case SYSTEM_S0_STATE:
 		valid_sx_transition = pwrseq_handle_transition_to_s0();
@@ -625,6 +643,9 @@ static void pwrseq_update(void)
 		 */
 		next_state = current_state;
 	}
+
+	/* Also restores S0 if a transition out of it failed */
+	host_pd_set(current_state == SYSTEM_S0_STATE);
 }
 
 bool atx_detect(void)
@@ -803,6 +824,9 @@ void therm_shutdown(void)
 static void power_off(void)
 {
 	int level;
+
+	/* Also reached directly from therm_shutdown() */
+	host_pd_set(false);
 
 #ifdef VCCST_PWRGD
 	gpio_write_pin(VCCST_PWRGD, 0);

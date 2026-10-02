@@ -48,6 +48,9 @@
 	cputemp: cpu-temp {
 		compatible = "x86-peci-temp";
 		peci-dev = <&peci0>;
+		/* PECI only answers while the host is in S0 */
+		power-domain = <&host_pd>;
+		zephyr,pm-device-runtime-auto;
 		status = "okay";
 	};
 
@@ -359,6 +362,13 @@
 				page = <1>;
 			};
 		};
+	};
+
+	/* Follows host S0 state from power sequencing; host-dependent
+	 * devices reference it with power-domain = <&host_pd>.
+	 */
+	host_pd: host-power-domain {
+		compatible = "silicom,host-power-domain";
 	};
 
 	board_sensors: board-sensors {
