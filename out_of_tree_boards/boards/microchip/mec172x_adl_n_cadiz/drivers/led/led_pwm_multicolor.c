@@ -162,12 +162,12 @@ static int led_pwm_mc_init(const struct device *dev)
 static int led_pwm_mc_pm_action(const struct device *dev,
 			     enum pm_device_action action)
 {
-	const struct led_pwm_mc_config *config = dev->config;
+	const struct led_pwm_mc *config = dev->config;
 
 	/* switch all underlying PWM devices to the new state */
 	for (size_t i = 0; i < config->num_colors; i++) {
 		int err;
-		const struct pwm_dt_spec *led = &config->leds[i].led;
+		const struct pwm_dt_spec *led = &config->subleds[i].pwm;
 
 		LOG_DBG("PWM %p running pm action %" PRIu32, led->dev, action);
 
@@ -205,8 +205,9 @@ static const struct led_driver_api led_pwm_mc_api = {
 		DT_FOREACH_PROP_ELEM(n, pwms, LED_SUBLEDS_PWM_GET)	\
 		DT_FOREACH_PROP_ELEM(n, color_mapping, LED_SUBLEDS_COLOR_GET) \
 	};								\
+	PM_DEVICE_DT_DEFINE(n, led_pwm_mc_pm_action);			\
 	DEVICE_DT_DEFINE(n, led_pwm_mc_init_##n,			\
-		NULL, &subled_data_##n, &mc_led_##n,			\
+		PM_DEVICE_DT_GET(n), &subled_data_##n, &mc_led_##n,	\
 		POST_KERNEL, CONFIG_LED_INIT_PRIORITY,			\
 		&led_pwm_mc_api);					\
 									\

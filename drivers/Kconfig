@@ -215,3 +215,37 @@ config LOM_MGMT_I2C_DBG_I2C
 endif
 
 endmenu
+
+menu "EC host power domain"
+
+config HOST_POWER_DOMAIN
+	bool "Host power domain driver"
+	default y
+	depends on DT_HAS_SILICOM_HOST_POWER_DOMAIN_ENABLED
+	select PM_DEVICE
+	select PM_DEVICE_RUNTIME
+	select PM_DEVICE_POWER_DOMAIN
+	select DEVICE_DEPS
+	help
+	  Enable the host power domain driver. Power sequencing reports host
+	  S0 entry/exit to it, and it turns host-dependent devices (those whose
+	  devicetree node has power-domain = <&host_pd>) off and on to match.
+
+if HOST_POWER_DOMAIN
+
+config HOST_POWER_DOMAIN_INIT_PRIORITY
+	int "Host power domain init priority"
+	default 75
+	help
+	  Init priority of the host power domain (POST_KERNEL level).
+
+config HOST_POWER_DOMAIN_LOG_LEVEL
+	int "Log level of host power domain driver"
+	depends on LOG
+	default 3
+	help
+	  Set log level for host power domain driver.
+
+endif
+
+endmenu

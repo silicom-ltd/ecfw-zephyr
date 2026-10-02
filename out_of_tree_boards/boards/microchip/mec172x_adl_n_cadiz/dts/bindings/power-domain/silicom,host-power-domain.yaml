@@ -1,0 +1,26 @@
+# Copyright (c) 2026, Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Host power domain
+
+  Follows the host (SoC) power state as reported by EC power sequencing.
+  It does not switch any rail itself. Devices that only work while the host
+  is in S0 reference it with power-domain = <&node>; they are sent
+  TURN_OFF when the host leaves S0 and TURN_ON when it returns, and
+  pm_device_runtime_get() on them fails with -EAGAIN while the host is off.
+
+  Example:
+
+    host_pd: host-power-domain {
+      compatible = "silicom,host-power-domain";
+    };
+
+    &some_host_dependent_device {
+      power-domain = <&host_pd>;
+      zephyr,pm-device-runtime-auto;
+    };
+
+compatible: "silicom,host-power-domain"
+
+include: power-domain.yaml
