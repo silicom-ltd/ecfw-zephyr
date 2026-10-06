@@ -82,7 +82,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ ENABLE_12V_FAN_N,	GPIO_OUTPUT_LOW },
 
 	{ SEC_OVERRIDE_1V8,	GPIO_INPUT }, // change to output when needed
-	{ PM_PWRBTN,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
+	{ PM_PWRBTN,		GPIO_OUTPUT_LOW | GPIO_OPEN_DRAIN },
 	{ EC_SMI,		GPIO_OUTPUT_HIGH | GPIO_OPEN_DRAIN },
 	{ PCH_PWROK,		GPIO_OUTPUT_LOW | GPIO_OPEN_DRAIN },
 	{ GPIO_HOST_UC_0,	GPIO_INPUT },
@@ -809,9 +809,9 @@ int board_init(void)
 
 	char read_data[256];
 
-	weektmr->BGPO_PWR &= ~0x3FU;
-
 	ret = pinctrl_apply_state(zephyr_user, PINCTRL_STATE_DEFAULT);
+
+	weektmr->BGPO_PWR &= ~0x3FU;
 
 	if (ret) {
 		LOG_ERR("Failed to initialize zephyr,user gpios: %d", ret);
