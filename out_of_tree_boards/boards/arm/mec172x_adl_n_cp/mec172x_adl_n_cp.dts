@@ -249,7 +249,7 @@
 
 	zephyr,user {
 //		signal-gpios = <&gpio_100_136 1 GPIO_ACTIVE_LOW>;
-		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
+		pinctrl-0 = <&pm_pwrbtn_n &ec_smi_n &slp_s4_n &thermtrip_n &gpio_uc_2>;
 		pinctrl-names = "default";
 	};
 };
@@ -833,20 +833,23 @@
 };
 
 &pinctrl {
-	gpio101: gpio101 {
+	pm_pwrbtn_n: gpio101 {
 		pinmux = < MCHP_XEC_PINMUX(0101, MCHP_AF0) >;
 		bias-disable;
 	};
-	gpio102: gpio102 {
+	ec_smi_n: gpio102 {
 		pinmux = < MCHP_XEC_PINMUX(0102, MCHP_AF0) >;
+		output-disable;
 		bias-disable;
 	};
-	gpio172: gpio172 {
+	slp_s4_n: gpio172 {
 		pinmux = < MCHP_XEC_PINMUX(0172, MCHP_AF0) >;
+		output-disable;
 		bias-disable;
 	};
-	gpio173: gpio173 {
+	thermtrip_n: gpio173 {
 		pinmux = < MCHP_XEC_PINMUX(0173, MCHP_AF0) >;
+		output-disable;
 		bias-disable;
 	};
 	gpio174: gpio174 {

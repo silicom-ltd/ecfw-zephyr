@@ -158,6 +158,8 @@ static void host_warn_handler(uint32_t signal, uint32_t status)
 		} else {
 			LOG_WRN("No suspend handler registered");
 		}
+		espi_send_vwire(espi_dev, ESPI_VWIRE_SIGNAL_SUS_ACK,
+				status);
 		break;
 	case ESPI_VWIRE_SIGNAL_DNX_WARN:
 		hub.dnx_mode = status;
