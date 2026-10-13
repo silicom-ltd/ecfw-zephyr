@@ -103,6 +103,13 @@ config LOM_MGMT_FUNC_GET_SYS_IDS
 	help
 	  Enable support for LOM to get SBL version from EC.
 
+config LOM_MGMT_SENS_TABLE
+	string
+	default "ibiza" if BOARD_MEC172X_ADL_N
+	default "maestro" if BOARD_MEC172X_ADL_N_CP
+	default "cadiz" if BOARD_MEC172X_ADL_N_CADIZ
+	default "Not_Supported"
+
 config LOM_MGMT_PROC_LOG_LEVEL
 	int "LOM management handler log level"
 	depends on LOG
