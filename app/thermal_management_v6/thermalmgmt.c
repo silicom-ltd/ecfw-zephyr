@@ -62,10 +62,11 @@ static struct fan_profile_v6 fan_profile;
  * thermistor it reports as "CPU". That third sensor participates in the
  * maximum despite the fan table being labelled SW Ambient.
  *
- * Deliberately a separate property from 'sw-amb-temp-sensors', which is the
- * hwmon reporting list: what the host is shown and what drives the fans are
- * different concerns, and coupling them means a reporting change silently
- * retunes the thermals. All entries are read on SENSOR_CHAN_AMBIENT_TEMP.
+ * Deliberately a separate property from the board-sensors node's
+ * 'board-amb-temp-sensors', which is the hwmon reporting list: what the host
+ * is shown and what drives the fans are different concerns, and coupling
+ * them means a reporting change silently retunes the thermals. All entries
+ * are read on SENSOR_CHAN_AMBIENT_TEMP.
  */
 #define FAN_TEMP_SENSOR_GET(node_id, prop, idx)		\
 	DEVICE_DT_GET(DT_PHANDLE_BY_IDX(node_id, prop, idx)),

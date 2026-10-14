@@ -296,7 +296,7 @@ static void lom_mgmt_sw_sensor_table_init(void)
 	}
 	start_idx = i;
 
-	for (i = 0; i < SW_THERMAL_SENSOR_NUM; i++, entry_idx++) {
+	for (i = 0; i < BOARD_THERMAL_SENSOR_NUM; i++, entry_idx++) {
 		hwmon_entries[start_idx + i].entry_idx = entry_idx;
 		hwmon_entries[start_idx + i].sens_type = hwmon_temp;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
@@ -306,9 +306,9 @@ static void lom_mgmt_sw_sensor_table_init(void)
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
 	}
-	start_idx += SW_THERMAL_SENSOR_NUM;
+	start_idx += BOARD_THERMAL_SENSOR_NUM;
 
-	for (i = 0; i < SW_VOLTAGE_SENSOR_NUM; i++, entry_idx++) {
+	for (i = 0; i < BOARD_VOLTAGE_SENSOR_NUM; i++, entry_idx++) {
 		hwmon_entries[start_idx + i].entry_idx = entry_idx;
 		hwmon_entries[start_idx + i].sens_type = hwmon_in;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
@@ -318,9 +318,9 @@ static void lom_mgmt_sw_sensor_table_init(void)
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
 	}
-	start_idx += SW_VOLTAGE_SENSOR_NUM;
+	start_idx += BOARD_VOLTAGE_SENSOR_NUM;
 
-	for (i = 0; i < SW_CURRENT_SENSOR_NUM; i++, entry_idx++) {
+	for (i = 0; i < BOARD_CURRENT_SENSOR_NUM; i++, entry_idx++) {
 		hwmon_entries[start_idx + i].entry_idx = entry_idx;
 		hwmon_entries[start_idx + i].sens_type = hwmon_curr;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
@@ -330,9 +330,9 @@ static void lom_mgmt_sw_sensor_table_init(void)
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
 	}
-	start_idx += SW_CURRENT_SENSOR_NUM;
+	start_idx += BOARD_CURRENT_SENSOR_NUM;
 
-	for (i = 0; i < SW_POWER_SENSOR_NUM; i++, entry_idx++) {
+	for (i = 0; i < BOARD_POWER_SENSOR_NUM; i++, entry_idx++) {
 		hwmon_entries[start_idx + i].entry_idx = entry_idx;
 		hwmon_entries[start_idx + i].sens_type = hwmon_power;
 		hwmon_entries[start_idx + i].sens_id   = ++used_max_sens_id;
@@ -342,7 +342,7 @@ static void lom_mgmt_sw_sensor_table_init(void)
 			hwmon_entries[start_idx + i].sens_type,
 			hwmon_entries[start_idx + i].sens_id);
 	}
-	start_idx += SW_POWER_SENSOR_NUM;
+	start_idx += BOARD_POWER_SENSOR_NUM;
 
 	hwmon_entries[start_idx].entry_idx = 0xFFFF;
 

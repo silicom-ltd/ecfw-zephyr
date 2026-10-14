@@ -8,22 +8,31 @@
 #define __HWMON_CP_H__
 
 #include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 
-#define SW_DIE_THERMAL_SENSOR_NUM					\
-	DT_PROP_LEN_OR(DT_PATH(zephyr_user), sw_die_temp_sensors, 0)
+/*
+ * Add-on card overlays (snippets/mho-150, snippets/mho-200) each instantiate
+ * one "silicom,board-sensors" node, pointing its phandle lists at whichever
+ * PMBus/LM75/CPLD sensor devices that particular card wires up. See
+ * out_of_tree_boards/boards/arm/mec172x_adl_n_cp/dts/bindings/sensor/silicom,board-sensors.yaml
+ */
+#define BOARD_SENSORS_NODE DT_COMPAT_GET_ANY_STATUS_OKAY(silicom_board_sensors)
 
-#define SW_AMB_THERMAL_SENSOR_NUM					\
-	DT_PROP_LEN_OR(DT_PATH(zephyr_user), sw_amb_temp_sensors, 0)
+#define BOARD_DIE_THERMAL_SENSOR_NUM					\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, board_die_temp_sensors, 0)
 
-#define SW_VOLTAGE_SENSOR_NUM 						\
-	DT_PROP_LEN_OR(DT_PATH(zephyr_user), sw_volt_sensors, 0)
+#define BOARD_AMB_THERMAL_SENSOR_NUM					\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, board_amb_temp_sensors, 0)
 
-#define SW_CURRENT_SENSOR_NUM						\
-	DT_PROP_LEN_OR(DT_PATH(zephyr_user), sw_curr_sensors, 0)
+#define BOARD_VOLTAGE_SENSOR_NUM 					\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, board_volt_sensors, 0)
 
-#define SW_POWER_SENSOR_NUM						\
-	DT_PROP_LEN_OR(DT_PATH(zephyr_user), sw_powr_sensors, 0)
+#define BOARD_CURRENT_SENSOR_NUM					\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, board_curr_sensors, 0)
 
-#define SW_THERMAL_SENSOR_NUM (SW_DIE_THERMAL_SENSOR_NUM + SW_AMB_THERMAL_SENSOR_NUM)
+#define BOARD_POWER_SENSOR_NUM						\
+	DT_PROP_LEN_OR(BOARD_SENSORS_NODE, board_powr_sensors, 0)
+
+#define BOARD_THERMAL_SENSOR_NUM (BOARD_DIE_THERMAL_SENSOR_NUM + BOARD_AMB_THERMAL_SENSOR_NUM)
 
 #endif	/* __HWMON_CP_H__ */
