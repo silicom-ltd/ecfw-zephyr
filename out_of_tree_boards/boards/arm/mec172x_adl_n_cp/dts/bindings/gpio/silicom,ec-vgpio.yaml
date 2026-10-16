@@ -1,0 +1,45 @@
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  EC Virtual GPIO Proxy. One child node per EC-owned GPIO line exposed to
+  the host through the ACPI mailbox in app/ec_vgpio/ (overlaid onto
+  app/smchost's g_acpi_tbl.ec_vgpio_buffer - see ec_vgpio_region.h for the
+  host-visible protocol). Line IDs are assigned by child node order
+  (0-based) at build time; that order is the single source of truth shared
+  with the host-side ASL/driver.
+
+compatible: "silicom,ec-vgpio"
+
+child-binding:
+  description: one EC-owned GPIO line exposed to the host
+  properties:
+    gpios:
+      type: phandle-array
+      required: true
+      description: the physical EC GPIO pin backing this line
+
+    label:
+      type: string
+      description: |
+        Line name reported to the host by mailbox command 4 (max 15
+        characters). Defaults to the node name if unset.
+
+    input:
+      type: boolean
+      description: the host may get() this line's level
+
+    output:
+      type: boolean
+      description: this line can be driven to a level
+
+    host-settable:
+      type: boolean
+      description: |
+        The host may set() this line (requires 'output'). An 'output'
+        line without this property is EC-driven only - reported to the
+        host as output-capable but not host-writable.
+
+    irq-capable:
+      type: boolean
+      description: the host may arm edge interrupts on this line

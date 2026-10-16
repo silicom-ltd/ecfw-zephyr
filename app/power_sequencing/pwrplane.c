@@ -46,6 +46,9 @@
 #ifdef CONFIG_DNX_SUPPORT
 #include "dnx.h"
 #endif
+#ifdef CONFIG_EC_VGPIO
+#include "ec_vgpio.h"
+#endif
 #include "vrtt.h"
 
 LOG_MODULE_REGISTER(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
@@ -376,6 +379,9 @@ static inline int pwrseq_task_init(void)
 #endif
 #ifdef CONFIG_DNX_EC_ASSISTED_TRIGGER
 	dnx_ec_assisted_init();
+#endif
+#ifdef CONFIG_EC_VGPIO
+	ec_vgpio_init();
 #endif
 
 	/* the charger type as of now is updated with a static value */

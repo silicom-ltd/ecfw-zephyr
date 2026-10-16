@@ -513,104 +513,104 @@ static const bool acpi_tbl_attr[256] = {
 	/* [160 / A0] uint8_t acpi_stop_on_err; */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [161 / A1] uint8_t acpi_peci_packet[20]; */
+	/* [161 / A1] EC Virtual GPIO Proxy 'vgid' */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [162 / A2]  */
+	/* [162 / A2] EC Virtual GPIO Proxy 'vgvl' */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [163 / A3]  */
+	/* [163 / A3] EC Virtual GPIO Proxy 'vgcm' - write arms/fires command */
 	ACPI_ATTR_READ_WRITE,
 
-	/* [164 / A4]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [165 / A5]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [166 / A6]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [167 / A7]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [168 / A8]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [169 / A9]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [170 / AA]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [171 / AB]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [172 / AC]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [173 / AD]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [174 / AE]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [175 / AF]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [176 / B0]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [177 / B1]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [178 / B2]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [179 / B3]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [180 / B4]  */
-	ACPI_ATTR_READ_WRITE,
-
-	/* [181 / B5] uint8_t acpi_turbo_pl2_lsb; */
+	/* [164 / A4] EC Virtual GPIO Proxy 'vgst' - EC-owned, read-only to ASL */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [182 / B6] uint8_t acpi_turbo_pl2_msb; */
+	/* [165 / A5] EC Virtual GPIO Proxy 'vgfl' */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [166 / A6] EC Virtual GPIO Proxy 'vgnm[0]' - EC-owned, read-only to ASL */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [183 / B7] uint8_t acpi_turbo_tdp_lsb; */
+	/* [167 / A7] EC Virtual GPIO Proxy 'vgnm[1]' */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [184 / B8] uint8_t acpi_turbo_tdp_msb; */
+	/* [168 / A8] EC Virtual GPIO Proxy 'vgnm[2]' */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [185 / B9] uint8_t acpi_plt_pwr_lsb; */
+	/* [169 / A9] EC Virtual GPIO Proxy 'vgnm[3]' */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [186 / BA] uint8_t acpi_plt_pwr_msb; */
+	/* [170 / AA] EC Virtual GPIO Proxy 'vgnm[4]' */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [187 / BB] uint8_t acpi_peci_status; */
+	/* [171 / AB] EC Virtual GPIO Proxy 'vgnm[5]' */
 	ACPI_ATTR_READ_ONLY,
 
-	/* [188 / BC] uint32_t acpi_peci_err; */
+	/* [172 / AC] EC Virtual GPIO Proxy 'vgnm[6]' */
 	ACPI_ATTR_READ_ONLY,
+
+	/* [173 / AD] EC Virtual GPIO Proxy 'vgnm[7]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [174 / AE] EC Virtual GPIO Proxy 'vgnm[8]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [175 / AF] EC Virtual GPIO Proxy 'vgnm[9]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [176 / B0] EC Virtual GPIO Proxy 'vgnm[10]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [177 / B1] EC Virtual GPIO Proxy 'vgnm[11]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [178 / B2] EC Virtual GPIO Proxy 'vgnm[12]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [179 / B3] EC Virtual GPIO Proxy 'vgnm[13]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [180 / B4] EC Virtual GPIO Proxy 'vgnm[14]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [181 / B5] EC Virtual GPIO Proxy 'vgnm[15]' */
+	ACPI_ATTR_READ_ONLY,
+
+	/* [182 / B6] EC Virtual GPIO Proxy - reserved for future growth */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [183 / B7]  */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [184 / B8]  */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [185 / B9]  */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [186 / BA]  */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [187 / BB]  */
+	ACPI_ATTR_READ_WRITE,
+
+	/* [188 / BC]  */
+	ACPI_ATTR_READ_WRITE,
 
 	/* [189 / BD]  */
-	ACPI_ATTR_READ_ONLY,
+	ACPI_ATTR_READ_WRITE,
 
 	/* [190 / BE]  */
-	ACPI_ATTR_READ_ONLY,
+	ACPI_ATTR_READ_WRITE,
 
 	/* [191 / BF]  */
-	ACPI_ATTR_READ_ONLY,
+	ACPI_ATTR_READ_WRITE,
 
-	/* [192 / C0] uint8_t acpi_cpu_gt_vr_temp; */
-	ACPI_ATTR_READ_ONLY,
+	/* [192 / C0]  */
+	ACPI_ATTR_READ_WRITE,
 
-	/* [193 / C1] uint8_t acpi_mincard_temp; */
-	ACPI_ATTR_READ_ONLY,
+	/* [193 / C1]  */
+	ACPI_ATTR_READ_WRITE,
 
 	/* [194 / C2] uint8_t free3[2]; */
 	ACPI_ATTR_READ_ONLY,

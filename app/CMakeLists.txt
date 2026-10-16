@@ -28,6 +28,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/current_monitor)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/lom_mgmt)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/ec_vgpio)
 
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
@@ -72,6 +73,14 @@ target_sources_ifdef(CONFIG_DNX_EC_ASSISTED_TRIGGER app
     ${CMAKE_CURRENT_LIST_DIR}/dnx/dnx_ec_assisted_trigger.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/dnx/dnx_ec_assisted_trigger.h
+    )
+
+target_sources_ifdef(CONFIG_EC_VGPIO app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/ec_vgpio/ec_vgpio.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/ec_vgpio/ec_vgpio.h
+    ${CMAKE_CURRENT_LIST_DIR}/ec_vgpio/ec_vgpio_region.h
     )
 
 target_sources_ifdef(CONFIG_SOC_DEBUG_AWARENESS app

@@ -1,0 +1,38 @@
+# Kconfig - Config options for the EC Virtual GPIO Proxy
+#
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+menu "EC Virtual GPIO Proxy"
+
+config EC_VGPIO
+	bool "Enable EC Virtual GPIO Proxy"
+	help
+	  Expose EC-owned GPIO lines (get/set/interrupt) to the host through
+	  an ACPI mailbox overlaid onto app/smchost's existing ACPI_EC_0
+	  channel. Requires a 'silicom,ec-vgpio' devicetree node listing the
+	  lines to expose.
+
+if EC_VGPIO
+
+config EC_VGPIO_LOG_LEVEL
+	int "EC Virtual GPIO Proxy module log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for the EC Virtual GPIO Proxy module.
+
+config EC_VGPIO_EVQ_DEPTH
+	int "Pending GPIO event queue depth"
+	default 16
+	range 1 255
+	help
+	  Number of {line ID, level} edge events the EC buffers before the
+	  host drains them via mailbox command 6. Older events are dropped
+	  (and the overflow flag set) once the queue is full.
+
+endif # EC_VGPIO
+
+endmenu

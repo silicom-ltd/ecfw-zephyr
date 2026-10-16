@@ -246,21 +246,13 @@ struct acpi_tbl {
 	uint8_t acpi_repeat_period;
 	/* [160/A0] */
 	uint8_t acpi_stop_on_err;
-	/* [161-180] Free Space for peci_ Interface */
-	uint8_t acpi_peci_packet[20];
-	/* [181/B5] Turbo PL */
-	uint16_t acpi_turbo_pl2;
-	/* [183/B7] Turbo TDP setting */
-	uint16_t acpi_turbo_tdp;
-	/* [185/B9] */
-	uint16_t acpi_plt_pwr;
-	/* [187/BB] peci_ status and error */
-	uint8_t acpi_peci_status;
-	uint32_t acpi_peci_err;
-	/* [192/C0] */
-	uint8_t acpi_cpu_gt_vr_temp;
-	/* [193/C1] */
-	uint8_t acpi_mincard_temp;
+	/* [161/A1] EC Virtual GPIO Proxy mailbox - see app/ec_vgpio/.
+	 * Reclaimed from acpi_peci_packet/acpi_turbo_pl2/acpi_turbo_tdp/
+	 * acpi_plt_pwr/acpi_peci_status/acpi_peci_err/acpi_cpu_gt_vr_temp/
+	 * acpi_mincard_temp (33 bytes, offsets 161-193), none of which were
+	 * ever read or written anywhere in this tree.
+	 */
+	uint8_t ec_vgpio_buffer[33];
 	/* [194/C2] */
 	uint8_t free3;
 	/* [195/C3] */

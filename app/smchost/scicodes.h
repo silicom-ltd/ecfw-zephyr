@@ -117,6 +117,9 @@
 /* for Geyserville break event */
 #define SCI_GYSRVL              0xB0
 
+/* EC Virtual GPIO Proxy event queue went empty -> non-empty */
+#define SCI_EC_VGPIO_EVENT      0xB1
+
 /* AON Up button */
 #define SCI_AON_UP              0xD0
 /* AON Down button */
