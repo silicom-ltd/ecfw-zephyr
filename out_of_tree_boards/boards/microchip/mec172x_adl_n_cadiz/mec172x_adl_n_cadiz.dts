@@ -265,7 +265,6 @@
 					ppr = <2>;
 					fan-speeds = <35 35 35 45 60 75 90 100>;
 					fan-temps =  <10 20 32 35 38 40 43 45>;
-					locked-rotor-en = <0>;
 					initial-setting = <25>;
 				};
 				max31785_fan1: fan1 {
@@ -274,7 +273,6 @@
 					ppr = <2>;
 					fan-speeds = <35 35 35 45 60 75 90 100>;
 					fan-temps =  <10 20 32 35 38 40 43 45>;
-					locked-rotor-en = <0>;
 					initial-setting = <25>;
 				};
 				max31785_fan2: fan2 {
@@ -283,7 +281,6 @@
 					ppr = <2>;
 					fan-speeds = <35 35 35 45 60 75 90 100>;
 					fan-temps =  <10 20 32 35 38 40 43 45>;
-					locked-rotor-en = <0>;
 					initial-setting = <25>;
 				};
 				max31785_fan3: fan3 {
@@ -292,7 +289,6 @@
 					ppr = <2>;
 					fan-speeds = <35 35 35 45 60 75 90 100>;
 					fan-temps =  <10 20 32 35 38 40 43 45>;
-					locked-rotor-en = <0>;
 					initial-setting = <10>;
 				};
 				max31785_fan4: fan4 {
@@ -301,7 +297,6 @@
 					ppr = <2>;
 					fan-speeds = <35 35 35 45 60 75 90 100>;
 					fan-temps =  <10 20 32 35 38 40 43 45>;
-					locked-rotor-en = <0>;
 					initial-setting = <10>;
 				};
 				max31785_fan5: fan5 {
@@ -310,7 +305,6 @@
 					ppr = <2>;
 					fan-speeds = <35 35 35 45 60 75 90 100>;
 					fan-temps =  <10 20 32 35 38 40 43 45>;
-					locked-rotor-en = <0>;
 					initial-setting = <10>;
 				};
 			};
