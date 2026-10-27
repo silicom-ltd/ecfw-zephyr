@@ -31,12 +31,12 @@ void thermal_sensors_update(void);
 void voltage_sensors_update(void);
 
 #ifdef CONFIG_BOARD_MEC172X_ADL_N_CP
-void sw_sensors_hwmon_setting(void);
-void sw_thermal_sensors_update(void);
-void sw_voltage_sensors_update(void);
-void sw_current_sensors_update(void);
-void sw_power_sensors_update(void);
-void sw_sensors_update(void);
+void board_sensors_hwmon_setting(void);
+void board_thermal_sensors_update(void);
+void board_voltage_sensors_update(void);
+void board_current_sensors_update(void);
+void board_power_sensors_update(void);
+void board_sensors_update(void);
 #endif
 
 #endif	/* __THERMAL_SENSOR_H__ */
