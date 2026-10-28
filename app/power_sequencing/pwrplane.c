@@ -55,9 +55,13 @@ LOG_MODULE_REGISTER(pwrmgmt, CONFIG_PWRMGT_LOG_LEVEL);
  */
 
 /* VCCST_PWRGD & PM_PCH_PWROK to be generated together 2ms after
- * ALL_SYS_PWRGD
+ * ALL_SYS_PWRGD (6ms on Cadiz)
  */
+#ifdef CONFIG_BOARD_MEC172X_ADL_N_CADIZ
+#define VR_ON_RAMP_DELAY_US    6000U
+#else
 #define VR_ON_RAMP_DELAY_US    2000U
+#endif
 
 #define PM_PWROFF_DELAY_US     500U
 
