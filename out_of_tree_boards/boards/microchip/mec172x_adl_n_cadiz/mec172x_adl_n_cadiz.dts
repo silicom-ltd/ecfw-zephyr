@@ -496,6 +496,7 @@
 		target-sensor = <&cputemp>;
 		/* cputemp is only readable while the host is in S0 */
 		power-domain = <&host_pd>;
+		failsafe-temp-millic = <32000>;
 		status = "okay";
 	};
 };
