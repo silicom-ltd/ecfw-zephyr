@@ -261,77 +261,75 @@
 
 				max31785_fan0: fan0 {
 					page = <0>;
-					mode = "FAN_AUTO_PWM";
+					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
-					fan-speeds = <35 35 35 45 60 75 90 100>;
-					fan-temps =  <10 20 32 35 38 40 43 45>;
-					initial-setting = <25>;
+					fan-speeds = <6300 8200 10600 12100 13800 15700 17700 20000>;
+					fan-temps =  <10 45 55 60 65 70 75 80>;
+					fan-ramp-time-ds = <24>;
+					hyst = <2>;
+					pwm-frequency = <25000>;
 				};
 				max31785_fan1: fan1 {
 					page = <1>;
-					mode = "FAN_AUTO_PWM";
+					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
-					fan-speeds = <35 35 35 45 60 75 90 100>;
-					fan-temps =  <10 20 32 35 38 40 43 45>;
-					initial-setting = <25>;
+					fan-speeds = <6300 8200 10600 12100 13800 15700 17700 20000>;
+					fan-temps =  <10 45 55 60 65 70 75 80>;
+					fan-ramp-time-ds = <24>;
+					hyst = <2>;
+					pwm-frequency = <25000>;
 				};
 				max31785_fan2: fan2 {
 					page = <2>;
-					mode = "FAN_AUTO_PWM";
+					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
-					fan-speeds = <35 35 35 45 60 75 90 100>;
-					fan-temps =  <10 20 32 35 38 40 43 45>;
-					initial-setting = <25>;
+					fan-speeds = <6300 8200 10600 12100 13800 15700 17700 20000>;
+					fan-temps =  <10 45 55 60 65 70 75 80>;
+					fan-ramp-time-ds = <24>;
+					hyst = <2>;
+					pwm-frequency = <25000>;
 				};
 				max31785_fan3: fan3 {
 					page = <3>;
-					mode = "FAN_AUTO_PWM";
+					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
-					fan-speeds = <35 35 35 45 60 75 90 100>;
-					fan-temps =  <10 20 32 35 38 40 43 45>;
-					initial-setting = <10>;
+					fan-speeds = <6300 8200 10600 12100 13800 15700 17700 20000>;
+					fan-temps =  <10 45 55 60 65 70 75 80>;
+					fan-ramp-time-ds = <24>;
+					hyst = <2>;
+					pwm-frequency = <25000>;
 				};
 				max31785_fan4: fan4 {
 					page = <4>;
-					mode = "FAN_AUTO_PWM";
+					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
-					fan-speeds = <35 35 35 45 60 75 90 100>;
-					fan-temps =  <10 20 32 35 38 40 43 45>;
-					initial-setting = <10>;
+					fan-speeds = <6300 8200 10600 12100 13800 15700 17700 20000>;
+					fan-temps =  <10 45 55 60 65 70 75 80>;
+					fan-ramp-time-ds = <24>;
+					hyst = <2>;
+					pwm-frequency = <25000>;
 				};
 				max31785_fan5: fan5 {
 					page = <5>;
-					mode = "FAN_AUTO_PWM";
+					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
-					fan-speeds = <35 35 35 45 60 75 90 100>;
-					fan-temps =  <10 20 32 35 38 40 43 45>;
-					initial-setting = <10>;
+					fan-speeds = <6300 8200 10600 12100 13800 15700 17700 20000>;
+					fan-temps =  <10 45 55 60 65 70 75 80>;
+					fan-ramp-time-ds = <24>;
+					hyst = <2>;
+					pwm-frequency = <25000>;
 				};
 			};
 			sensors {
 				compatible = "maxim,max31785-dts";
 
-				max31785_dts0: dts0 {
-					fans = <&max31785_fan0 &max31785_fan1 &max31785_fan2
-						&max31785_fan3 &max31785_fan4 &max31785_fan5>;
-				};
-				max31785_dts1: dts1 {
-				};
-				max31785_dts2: dts2 {
-				};
-				max31785_dts3: dts3 {
-				};
-				max31785_dts4: dts4 {
-				};
-				max31785_dts5: dts5 {
-				};
-				max31785_die: die {
-				};
 				max31785_i2c0: i2c0 {
 				};
 				max31785_i2c1: i2c1 {
 				};
 				max31785_i2c3: i2c3 {
+					fans = <&max31785_fan0 &max31785_fan1 &max31785_fan2
+						&max31785_fan3 &max31785_fan4 &max31785_fan5>;
 				};
 			};
 		};
