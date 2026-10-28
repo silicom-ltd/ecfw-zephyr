@@ -25,8 +25,7 @@
 
 struct hwmon_sram *hwmon_data;
 
-//LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
-LOG_MODULE_REGISTER(thrmsens, 4);
+LOG_MODULE_REGISTER(thrmsens, CONFIG_THERMAL_SENSOR_LOG_LEVEL);
 
 /*
  * Not every declared sensor is populated on every board revision (e.g. an
@@ -90,9 +89,6 @@ static const struct device *ntc_thermal_sensors[] = {
 
 static bool thermal_sensor_valid[ARRAY_SIZE(ntc_thermal_sensors)];
 
-static const struct device *max31785i2c = DEVICE_DT_GET(DT_NODELABEL(max31785_i2c3));
-static bool max31785_cpu_valid;
-
 int thermal_sensors_init(void)
 {
 	int i, num_sensors = ARRAY_SIZE(ntc_thermal_sensors);
@@ -105,9 +101,6 @@ int thermal_sensors_init(void)
 			present++;
 	}
 	LOG_INF("NTC thermal sensors: %d/%d present", present, num_sensors);
-
-	max31785_cpu_valid = probe_sensor(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP,
-		"MAX31785 CPU");
 
 	return 0;
 }
@@ -124,16 +117,6 @@ void thermal_sensors_update(void)
 
 	if (hwmon_data == NULL) {
 		return; // espi emi not configured yet
-	}
-
-	if (max31785_cpu_valid) {
-		err = sensor_sample_fetch_chan(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP);
-		if (!err)
-			err = sensor_channel_get(max31785i2c, SENSOR_CHAN_AMBIENT_TEMP, &temp);
-		if (!err)
-			LOG_INF("MAX31785 CPU read %d.%03dC", temp.val1, temp.val2);
-		else
-			LOG_WRN("MAX31785 CPU read failed: %d", err);
 	}
 
 	for (i = 0; i < num_sensors; i++) {
