@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config BOARD_MEC172X_ADL_N
-	bool "Silicom ADL-N MEC172X EC"
-	depends on SOC_MEC172X_NLJ
+	select SOC_MEC172X_NLJ
 
 config EC_ONBOARD_SWITCHES_DISABLE
 	bool "Disable onboard switches support"
