@@ -50,7 +50,8 @@ static void smbus_cmi_execute(void)
 
 	if (!device_is_ready(cmi_i2c_bus)) {
 		LOG_ERR("SMBus CMI I2C bus not ready");
-		g_cmi_region.stat = SMBUS_CMI_STAT_DEVICE_ERROR;
+		g_cmi_region.stat = SMBUS_CMI_STAT_UNKNOWN_FAILURE;
+		g_cmi_region.prtcl = 0;
 		return;
 	}
 
@@ -115,16 +116,23 @@ static void smbus_cmi_execute(void)
 	default:
 		LOG_WRN("SMBus CMI unsupported protocol: %02x", g_cmi_region.prtcl);
 		g_cmi_region.stat = SMBUS_CMI_STAT_UNSUPPORTED_PROTOCOL;
+		g_cmi_region.prtcl = 0;
 		return;
 	}
 
 	if (ret) {
 		LOG_WRN("SMBus CMI protocol %02x failed: %d", g_cmi_region.prtcl, ret);
 		g_cmi_region.stat = (ret == -ETIMEDOUT) ? SMBUS_CMI_STAT_TIMEOUT :
-				     SMBUS_CMI_STAT_BUS_ERROR;
+				     SMBUS_CMI_STAT_ADDR_NOT_ACKED;
 	} else {
 		g_cmi_region.stat = SMBUS_CMI_STAT_OK;
 	}
+
+	/* Per ACPI's EC-SMBus protocol (and the CMI spec's identical sample
+	 * ASL SWTC wait-method), completion is signaled by the controller
+	 * clearing PRTCL back to 0 after STAT is updated - not by STAT alone.
+	 */
+	g_cmi_region.prtcl = 0;
 }
 
 void smbus_cmi_handle_ec_write(uint8_t acpi_idx)
