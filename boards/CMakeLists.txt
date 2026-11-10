@@ -7,7 +7,7 @@ target_sources_ifdef(NOT CONFIG_BOARD_MEC172X_AZBEACH && NOT CONFIG_BOARD_MEC172
     ${CMAKE_CURRENT_LIST_DIR}/board.h
     )
 
-if(CONFIG_SOC_FAMILY_MEC)
+if(CONFIG_SOC_FAMILY_MICROCHIP_MEC)
 
 # RVP + MECC
 include(${CMAKE_CURRENT_LIST_DIR}/microchip/mec15xx_mecc/CMakeLists.txt)

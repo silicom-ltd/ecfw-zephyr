@@ -12,7 +12,7 @@
  */
 extern uint8_t boot_mode_maf;
 
-#if defined(CONFIG_SOC_FAMILY_MEC)
+#if defined(CONFIG_SOC_FAMILY_MICROCHIP_MEC)
 
 #ifdef CONFIG_BOARD_MEC1501MODULAR_ASSY6885
 #include "mec15xx_aic_rvp_selection.h"
@@ -30,7 +30,7 @@ extern uint8_t boot_mode_maf;
 #error "Platform not supported"
 #endif /* CONFIG_BOARD_MEC1501MODULAR_ASSY6885 */
 
-#endif /* CONFIG_SOC_FAMILY_MEC */
+#endif /* CONFIG_SOC_FAMILY_MICROCHIP_MEC */
 
 #if defined(CONFIG_THERMAL_MANAGEMENT) || defined(CONFIG_THERMAL_MANAGEMENT_V2)
 #include "thermalmgmt.h"
