@@ -31,6 +31,10 @@
 #include "dnx.h"
 #endif
 
+#ifdef CONFIG_SMBUS_CMI
+#include "smbus_cmi.h"
+#endif
+
 LOG_MODULE_REGISTER(smchost, CONFIG_SMCHOST_LOG_LEVEL);
 
 uint8_t host_req[SMCHOST_MAX_BUF_SIZE];
@@ -542,6 +546,9 @@ static void acpi_write_ec(void)
 		if (smc_is_acpi_offset_write_permitted(acpi_idx)) {
 			*((uint8_t *)&g_acpi_tbl + acpi_idx) = data;
 			LOG_DBG("ACPI ECW Data [%02x]: %02x", acpi_idx, data);
+#ifdef CONFIG_SMBUS_CMI
+			smbus_cmi_handle_ec_write(acpi_idx);
+#endif
 		} else {
 			LOG_WRN("ACPI WR not permitted at offset: %02x",
 				acpi_idx);

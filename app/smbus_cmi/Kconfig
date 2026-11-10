@@ -1,0 +1,30 @@
+# Kconfig - Config options for the ACPI SMBus Control Method Interface
+#
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+menu "SMBus Control Method Interface (CMI)"
+
+config SMBUS_CMI
+	bool "Enable ACPI SMBus Control Method Interface"
+	help
+	  Relay ACPI SMBus Control Method Interface (SMBus CMI) requests from
+	  the host to a devicetree-selected I2C/SMBus bus. The host addresses
+	  the interface through app/smchost's existing ACPI_EC_0 channel,
+	  using the acpi_smb_buffer region already reserved there - there is
+	  no dedicated ACPI EC channel for this module.
+
+if SMBUS_CMI
+
+config SMBUS_CMI_LOG_LEVEL
+	int "SMBus CMI module log level"
+	depends on LOG
+	default 0
+	default 2 if CONFIG_EC_DEBUG_LOG_LEVEL
+	help
+	  Set log level for the SMBus CMI module.
+
+endif # SMBUS_CMI
+
+endmenu

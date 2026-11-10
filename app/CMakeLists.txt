@@ -28,6 +28,7 @@ include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/voltage_monitor)
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/current_monitor)
 
 include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/lom_mgmt)
+include_directories(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/smbus_cmi)
 
 target_sources_ifdef(CONFIG_PERIPHERAL_MANAGEMENT app
     PRIVATE
@@ -65,6 +66,14 @@ target_sources_ifdef(CONFIG_DNX_SUPPORT app
     ${CMAKE_CURRENT_LIST_DIR}/dnx/dnx.c
     PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/dnx/dnx.h
+    )
+
+target_sources_ifdef(CONFIG_SMBUS_CMI app
+    PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/smbus_cmi/smbus_cmi.c
+    PUBLIC
+    ${CMAKE_CURRENT_LIST_DIR}/smbus_cmi/smbus_cmi.h
+    ${CMAKE_CURRENT_LIST_DIR}/smbus_cmi/smbus_cmi_region.h
     )
 
 target_sources_ifdef(CONFIG_DNX_EC_ASSISTED_TRIGGER app
