@@ -31,7 +31,7 @@ extern struct hwmon_sram *hwmon_data;
  * FAN_TARGET_MANUAL_DISABLE is written, which hands the fan back to the
  * thermal profile.
  */
-#define FAN_TARGET_MANUAL_ENABLE	0xFA57u
+#define FAN_TARGET_MANUAL_ENABLE	999u
 #define FAN_TARGET_MANUAL_DISABLE	0x0510u
 
 #define DT_FAN_INST(x)		DEVICE_DT_GET(DT_ALIAS(fan##x)),
