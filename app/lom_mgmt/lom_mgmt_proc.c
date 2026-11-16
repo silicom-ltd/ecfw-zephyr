@@ -597,6 +597,23 @@ static struct vwi_signal_info vwi_managed_sigs[] =
 };
 #endif
 
+#define PCR_PWR_RST_STS      (*(volatile uint32_t *)0x40080110)
+#define WDT_EVENT_BIT        (1UL << 8)  // 0x0100
+
+#define EC_BOOT_BY_WDT 1
+#define EC_BOOT_BY_PWR 2
+
+int check_ec_boot_reason(void)
+{
+	uint32_t rst_reason = PCR_PWR_RST_STS;
+
+	if (rst_reason & WDT_EVENT_BIT) {
+		return EC_BOOT_BY_WDT;
+	}
+
+	return EC_BOOT_BY_PWR;
+}
+
 /*
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 1 : System Power UP
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 0 : System Power Down
@@ -637,9 +654,17 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		break;
 	case ESPI_VWIRE_SIGNAL_SLP_S3:
 		if (event.evt_data == 1) { /* power on sequence */
-			if (pwr_sta == SYSTEM_G3_STATE) {
-				LOG_DBG_EVENT(">> [HOST Power Up]");
-				host_event_submit(HOST_EVENT_POWER_UP);
+			if (pwr_sta == SYSTEM_G3_STATE || g_pwrflags.g3_to_s5) {
+				g_pwrflags.g3_to_s5 = 0;
+
+				if (check_ec_boot_reason() == EC_BOOT_BY_WDT) {
+					LOG_DBG_EVENT(">> [HOST Reset EC]");
+					host_event_submit(HOST_EVENT_EC_WATCHDOG_RESET);
+				}
+				else {
+					LOG_DBG_EVENT(">> [HOST Power Up]");
+					host_event_submit(HOST_EVENT_POWER_UP);
+				}
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
