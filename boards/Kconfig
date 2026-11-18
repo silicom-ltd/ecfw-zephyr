@@ -69,4 +69,10 @@ config SIM_DETECT_SLOT_POST
 	default n
 	depends on BOARD_POST && CONFIG_BOARD_MEC172X_AZBEACH
 
+config FAULT_GPIO_MONITOR
+	bool "Enable monitering for fault gpios(CATERR, THRMTRIP)"
+	depends on LOM_MGMT_FUNC_HOST_EVENT
+	default y if BOARD_MEC172X_ADL_N_CADIZ
+	default n
+
 endmenu
