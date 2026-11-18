@@ -110,14 +110,6 @@ config LOM_MGMT_FUNC_MGMT_LED_CTRL
 	help
 	  Enable support for controlling the front panel management LEDs
 
-config LOM_MGMT_FAULT_GPIO_MON
-	bool
-	depends on LOM_MGMT_FUNC_HOST_EVENT
-	default y if BOARD_MEC172X_ADL_N_CADIZ
-	default n
-	help
-	  Enable support for monitor the fault gpios(CATERR, THRMSTRIP).
-
 config LOM_MGMT_SENS_TABLE
 	string
 	default "ibiza" if BOARD_MEC172X_ADL_N

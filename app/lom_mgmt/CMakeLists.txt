@@ -5,7 +5,6 @@ target_sources_ifdef(CONFIG_LOM_MGMT_PROC app
     ${CMAKE_CURRENT_LIST_DIR}/host_event_logger.c
     ${CMAKE_CURRENT_LIST_DIR}/postcode.c
     ${CMAKE_CURRENT_LIST_DIR}/pwrctrl.c
-    ${CMAKE_CURRENT_LIST_DIR}/fault_gpio_mon.c
     ${CMAKE_CURRENT_LIST_DIR}/mgmt_led_ctrl.c
     ${CMAKE_CURRENT_LIST_DIR}/hwmon_sens_${CONFIG_LOM_MGMT_SENS_TABLE}.c
     )
