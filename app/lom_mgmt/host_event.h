@@ -19,9 +19,10 @@ enum host_event_type {
 	HOST_EVENT_RSTBTN_PRESSED,    /* 7  */
 	HOST_EVENT_RSTBTN_RELEASED,   /* 8  */
 	HOST_EVENT_EC_WATCHDOG_RESET, /* 9 */
-	HOST_EVENT_CATERR,            /* 10 */
-	HOST_EVENT_THRMTRIP,          /* 11 */
-	HOST_EVENT_MAX = HOST_EVENT_THRMTRIP,
+	HOST_EVENT_IERR,              /* 10 */
+	HOST_EVENT_MCERR,             /* 11 */
+	HOST_EVENT_THERMTRIP,         /* 12 */
+	HOST_EVENT_MAX = HOST_EVENT_THERMTRIP,
 };
 
 int host_event_submit(uint8_t event);
