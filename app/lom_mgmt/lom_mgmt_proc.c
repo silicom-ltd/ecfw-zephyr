@@ -26,7 +26,6 @@
 #include "host_event.h"
 #include "postcode.h"
 #include "pwrctrl.h"
-#include "fault_gpio_mon.h"
 #include "mgmt_led_ctrl.h"
 
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
