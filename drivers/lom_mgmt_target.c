@@ -176,6 +176,10 @@ static int lom_mgmt_func_cap[FUNC_COUNT] = {
 	[FUNC_REPORT_LOM_IP] = 1,
 #endif
 
+#ifdef CONFIG_LOM_MGMT_FUNC_MGMT_LED_CTRL
+	[FUNC_MGMT_LED_CTRL] = 1,
+#endif
+
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	[FUNC_TEST_L3] = 1,
 #endif

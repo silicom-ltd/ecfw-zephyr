@@ -71,29 +71,25 @@ int host_event_put(uint8_t event)
 
 int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 {
-	int ret;
-	int off = 0;
 	int event_size = ring_buf_size_get(&host_event_ring_buf);
 
 	if (event_size == 0) {
 		return 0;
 	}
 
-	while ((ret = ring_buf_get(&host_event_ring_buf, &buf[off], HOST_EVENT_ENT_SZ)) != 0) {
-		if (ret != HOST_EVENT_ENT_SZ) {
-			return -EIO;
-		}
+	uint16_t max_allowed_bytes = (buf_size / HOST_EVENT_ENT_SZ) * HOST_EVENT_ENT_SZ;
 
-		off += HOST_EVENT_ENT_SZ;
-
-		/* has space for next entry? */
-		if (off + HOST_EVENT_ENT_SZ > buf_size) {
-			LOG_DBG_EVENT("Event: res buff full quit");
-			break;
-		}
+	if (event_size > max_allowed_bytes) {
+		event_size = max_allowed_bytes;
+		LOG_WRN("Event: destination buffer full, truncating read size");
 	}
 
-	*ret_size = off;
+	int bytes_read = ring_buf_get(&host_event_ring_buf, buf, event_size);
+	if (bytes_read < 0) {
+		return -EIO;
+	}
+
+	*ret_size = (uint16_t)bytes_read;
 
 	if (!host_event_count()) {
 		avail_resource_set(AVAIL_RES_EVENT, 0);

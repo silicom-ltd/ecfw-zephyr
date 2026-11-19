@@ -42,6 +42,7 @@ struct pwr_flags {
 	uint8_t deep_s3_timer_on:1;
 	uint8_t g3_exit:1;
 	uint8_t pm_rsmrst:1;
+	uint8_t g3_to_s5:1;
 };
 
 /**

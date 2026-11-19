@@ -26,6 +26,7 @@
 #include "host_event.h"
 #include "postcode.h"
 #include "pwrctrl.h"
+#include "mgmt_led_ctrl.h"
 
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
@@ -384,6 +385,81 @@ static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 	return 0;
 }
 
+#define MGMT_LED_REQ_DLEN_SET_COLOR 2
+#define MGMT_LED_REQ_DLEN_OFF       1
+#define MGMT_LED_REQ_DLEN_BLINK     10
+
+static int do_mgmt_led_ctrl(uint8_t* req_data, uint8_t req_dlen, struct func_ret_info* fri)
+{
+#ifdef CONFIG_LOM_MGMT_FUNC_MGMT_LED_CTRL
+	int ret;
+
+	if (!mgmt_led_is_ready()) {
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
+		return -1;
+	}
+
+	if (req_dlen < 1) {
+		LOG_ERR("Invalid MGMT_LED_CTRL request");
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
+	uint8_t led_op = req_data[0]; /* 0: set_color */
+
+	if (led_op == MGMT_LED_OP_SET_COLOR) {
+		if (req_dlen < MGMT_LED_REQ_DLEN_SET_COLOR) {
+			LOG_ERR("Invalid MGMT_LED_CTRL request");
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+			return -1;
+		}
+
+		uint8_t led_id = req_data[1]; /* led_id / color */
+
+		ret = mgmt_led_set_color(led_id);
+		if (ret) {
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
+			return -1;
+		}
+	}
+	else if (led_op == MGMT_LED_OP_OFF) {
+		ret = mgmt_led_off();
+		if (ret) {
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
+			return -1;
+		}
+	}
+#ifdef CONFIG_LED_GPIO_BLINK
+	else if (led_op == MGMT_LED_OP_BLINK) {
+		if (req_dlen < MGMT_LED_REQ_DLEN_BLINK) {
+			LOG_ERR("Invalid MGMT_LED_CTRL request");
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+			return -1;
+		}
+
+		uint8_t  led_id    = req_data[1];
+		uint32_t delay_on  = sys_get_be32(&req_data[2]);
+		uint32_t delay_off = sys_get_be32(&req_data[6]);
+
+		ret = mgmt_led_blink(led_id, delay_on, delay_off);
+		if (ret) {
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
+			return -1;
+		}
+	}
+#endif
+	else {
+		LOG_ERR("Unsupported operation: %d", led_op);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
+	return 0;
+}
+
 static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 {
 	if (task->req == NULL || task->res == NULL) {
@@ -395,6 +471,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 
 	uint8_t *req_data = task->req->data;
 	uint8_t *res_data = task->res->data;
+	uint8_t  req_dlen = task->req->dlen;
 	struct func_ret_info fri = { .code = EC_RET_OK, .data_size = 0, .flag = 0 };
 
 	switch (task->req->func) {
@@ -402,7 +479,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_ids(res_data, &fri);
 		break;
 	case FUNC_POWER_CTRL:
-		do_power_ctrl(req_data, task->req->dlen, &fri);
+		do_power_ctrl(req_data, req_dlen, &fri);
 		break;
 	case FUNC_GET_ACPI_POWER_STATE:
 		do_get_acpi(res_data, &fri);
@@ -425,6 +502,9 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		break;
 	case FUNC_REPORT_LOM_IP:
 		do_report_lom_ip(req_data, &fri);
+		break;
+	case FUNC_MGMT_LED_CTRL:
+		do_mgmt_led_ctrl(req_data, req_dlen, &fri);
 		break;
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	case FUNC_TEST_L3:
@@ -516,6 +596,23 @@ static struct vwi_signal_info vwi_managed_sigs[] =
 };
 #endif
 
+#define PCR_PWR_RST_STS      (*(volatile uint32_t *)0x40080110)
+#define WDT_EVENT_BIT        (1UL << 8)  // 0x0100
+
+#define EC_BOOT_BY_WDT 1
+#define EC_BOOT_BY_PWR 2
+
+int check_ec_boot_reason(void)
+{
+	uint32_t rst_reason = PCR_PWR_RST_STS;
+
+	if (rst_reason & WDT_EVENT_BIT) {
+		return EC_BOOT_BY_WDT;
+	}
+
+	return EC_BOOT_BY_PWR;
+}
+
 /*
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 1 : System Power UP
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 0 : System Power Down
@@ -550,22 +647,30 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		if (event.evt_data == 0) { /* power off sequence */
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Off]");
-				host_event_put(HOST_EVENT_SOFT_DN);
+				host_event_submit(HOST_EVENT_SOFT_DN);
 			}
 		}
 		break;
 	case ESPI_VWIRE_SIGNAL_SLP_S3:
 		if (event.evt_data == 1) { /* power on sequence */
-			if (pwr_sta == SYSTEM_G3_STATE) {
-				LOG_DBG_EVENT(">> [HOST Power Up]");
-				host_event_put(HOST_EVENT_POWER_UP);
+			if (pwr_sta == SYSTEM_G3_STATE || g_pwrflags.g3_to_s5) {
+				g_pwrflags.g3_to_s5 = 0;
+
+				if (check_ec_boot_reason() == EC_BOOT_BY_WDT) {
+					LOG_DBG_EVENT(">> [HOST Reset EC]");
+					host_event_submit(HOST_EVENT_EC_WATCHDOG_RESET);
+				}
+				else {
+					LOG_DBG_EVENT(">> [HOST Power Up]");
+					host_event_submit(HOST_EVENT_POWER_UP);
+				}
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
 			}
 			else if (pwr_sta == SYSTEM_S4_STATE || pwr_sta == SYSTEM_S5_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Up]");
-				host_event_put(HOST_EVENT_SOFT_UP);
+				host_event_submit(HOST_EVENT_SOFT_UP);
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
@@ -579,7 +684,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		if (event.evt_data) {
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [Host Reboot]");
-				host_event_put(HOST_EVENT_REBOOT);
+				host_event_submit(HOST_EVENT_REBOOT);
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
@@ -591,33 +696,12 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		lom_pwrctrl_on_signal(event.evt_details, event.evt_data);
 		break;
 #endif
-	case ESPI_VWIRE_SIGNAL_HOST_RST_WARN:
-		if (event.evt_data == 1) {
-			LOG_DBG_EVENT(">> [HOST RST]");
-			host_event_put(HOST_EVENT_HOST_RESET);
-		}
-		break;
-	case ESPI_VWIRE_SIGNAL_DNX_WARN:
-		if (event.evt_data == 1) {
-			LOG_DBG_EVENT(">> [DNX WARN]");
-			host_event_put(HOST_EVENT_DNX_WARN);
-		}
-		break;
 	default:
 		break;
 	}
 }
 
-static void espi_bus_reset_monitor(const struct device *dev, struct espi_callback *cb,
-	struct espi_event event)
-{
-	LOG_DBG_EVENT("eSPI BUS reset %d", event.evt_data);
-
-	host_event_put(HOST_EVENT_BUS_RESET);
-}
-
 static struct espi_callback espi_vwi_cb;
-static struct espi_callback espi_rst_cb;
 
 void init_espi_event_monitor(void)
 {
@@ -626,10 +710,8 @@ void init_espi_event_monitor(void)
 		return;
 	}
 
-	espi_init_callback(&espi_rst_cb, espi_bus_reset_monitor, ESPI_BUS_RESET);
 	espi_init_callback(&espi_vwi_cb, espi_vwire_monitor, ESPI_BUS_EVENT_VWIRE_RECEIVED);
 
-	espi_add_callback(espi_dev, &espi_rst_cb);
 	espi_add_callback(espi_dev, &espi_vwi_cb);
 }
 
@@ -637,11 +719,11 @@ static void pwrbtn_event_handler(uint8_t pwrbtn_sts)
 {
 	if (pwrbtn_sts == 0) {
 		LOG_DBG_EVENT("Power Button Pressed");
-		host_event_put(HOST_EVENT_PWRBTN_DN);
+		host_event_submit(HOST_EVENT_PWRBTN_PRESSED);
 	}
 	else {
 		LOG_DBG_EVENT("Power Button Released");
-		host_event_put(HOST_EVENT_PWRBTN_UP);
+		host_event_submit(HOST_EVENT_PWRBTN_RELEASED);
 	}
 }
 
@@ -649,11 +731,11 @@ static void rstbtn_event_handler(uint8_t rstbtn_sts)
 {
 	if (rstbtn_sts == 0) {
 		LOG_DBG_EVENT("Reset Button Pressed");
-		host_event_put(HOST_EVENT_RSTBTN_PRESSED);
+		host_event_submit(HOST_EVENT_RSTBTN_PRESSED);
 	}
 	else {
 		LOG_DBG_EVENT("Reset Button Released");
-		host_event_put(HOST_EVENT_RSTBTN_RELEASED);
+		host_event_submit(HOST_EVENT_RSTBTN_RELEASED);
 	}
 }
 
@@ -703,6 +785,9 @@ void lom_mgmt_thread(void *p1, void *p2, void *p3)
 
 #ifdef CONFIG_LOM_MGMT_FUNC_POWER_CTRL
 	lom_pwrctrl_thread_start();
+#endif
+#ifdef CONFIG_LOM_MGMT_FAULT_GPIO_MON
+	fault_gpio_mon_thread_start();
 #endif
 
 #ifdef CONFIG_LOM_MGMT_LARGE_SENSOR_VALUE

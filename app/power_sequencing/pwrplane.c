@@ -745,9 +745,11 @@ void pwrseq_thread(void *p1, void *p2, void *p3)
 		}
 
 		if (current_state == SYSTEM_G3_STATE &&
-		    	next_state == SYSTEM_G3_STATE &&
-			level)
+			next_state == SYSTEM_G3_STATE && level) {
+			LOG_DBG("next_state: G3 to S5");
 			next_state = SYSTEM_S5_STATE;
+			g_pwrflags.g3_to_s5 = 1;
+		}
 
 		/* DeepSx is sub-state for S4/S5 */
 		if (dsw_enabled() &&
