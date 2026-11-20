@@ -216,6 +216,36 @@ endif
 
 endmenu
 
+menu "Fan controller reset hold"
+
+config FAN_RESET_HOLD
+	bool "Hold fan controllers in reset until their temperature sources are valid"
+	default y
+	depends on DT_HAS_SILICOM_FAN_RESET_HOLD_ENABLED
+	depends on GPIO
+	depends on SENSOR
+	help
+	  For each silicom,fan-reset-hold devicetree node: the fan controller
+	  is held in reset from EC boot (reset GPIO hogged low, so its fans run
+	  at 100%) with its device inits deferred. Once every ready-sensors
+	  entry reports a real reading, release it and run its inits. There is
+	  no timeout: if a sensor never becomes valid, the fans stay at 100%.
+
+if FAN_RESET_HOLD
+
+config FAN_RESET_HOLD_POLL_MS
+	int "How often to check the ready sensors (ms)"
+	default 250
+
+config FAN_RESET_HOLD_LOG_LEVEL
+	int "Log level of fan reset hold"
+	depends on LOG
+	default 3
+
+endif
+
+endmenu
+
 menu "EC host power domain"
 
 config HOST_POWER_DOMAIN

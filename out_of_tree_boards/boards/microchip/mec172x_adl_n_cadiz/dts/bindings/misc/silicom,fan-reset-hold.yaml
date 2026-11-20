@@ -1,0 +1,39 @@
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Hold a fan controller in reset (fans at 100%) from EC boot until its
+  temperature sources are valid, then release it and initialize it.
+  drivers/fan_reset_hold.c (CONFIG_FAN_RESET_HOLD).
+
+  Requirements on the fan controller node:
+  - reset-gpios: the reset line; it must also be hogged low (gpio-hog,
+    output-low) so it is held from GPIO driver init;
+  - zephyr,deferred-init on the controller and on its child device nodes
+    (fans, sensors), so nothing configures it while it is held.
+
+  Release happens once per EC boot, when every ready-sensors entry reports
+  a real reading. There is no timeout: if a sensor never becomes valid the
+  fans stay at 100%. If an init fails after release, the controller is put
+  back in reset (fans at 100%).
+
+  ready-sensors entries can be:
+  - an LM75 target (zephyr,i2c-target-lm75): ready when its latest poll
+    read its own target-sensor successfully, so it is only ready once the
+    real sensor behind it (e.g. PECI CPU temperature) answers;
+  - any Zephyr sensor device: ready when sensor_sample_fetch() succeeds.
+
+compatible: "silicom,fan-reset-hold"
+
+properties:
+  fan-controller:
+    type: phandle
+    required: true
+    description: Fan controller to hold in reset (must have reset-gpios).
+
+  ready-sensors:
+    type: phandles
+    required: true
+    description: |
+      Temperature sources the fan controller depends on. All must be ready
+      before it is released.
