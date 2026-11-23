@@ -103,6 +103,13 @@ config LOM_MGMT_FUNC_GET_SYS_IDS
 	help
 	  Enable support for LOM to get SBL version from EC.
 
+config LOM_MGMT_FUNC_MGMT_LED_CTRL
+	bool "Support controlling the front panel management LEDs"
+	select LED_GPIO_BLINK
+	default n
+	help
+	  Enable support for controlling the front panel management LEDs
+
 config LOM_MGMT_SENS_TABLE
 	string
 	default "ibiza" if BOARD_MEC172X_ADL_N

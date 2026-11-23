@@ -26,6 +26,7 @@
 #include "host_event.h"
 #include "postcode.h"
 #include "pwrctrl.h"
+#include "mgmt_led_ctrl.h"
 
 LOG_MODULE_REGISTER(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
@@ -384,6 +385,81 @@ static int do_get_ids(uint8_t *res_data, struct func_ret_info* fri)
 	return 0;
 }
 
+#define MGMT_LED_REQ_DLEN_SET_COLOR 2
+#define MGMT_LED_REQ_DLEN_OFF       1
+#define MGMT_LED_REQ_DLEN_BLINK     10
+
+static int do_mgmt_led_ctrl(uint8_t* req_data, uint8_t req_dlen, struct func_ret_info* fri)
+{
+#ifdef CONFIG_LOM_MGMT_FUNC_MGMT_LED_CTRL
+	int ret;
+
+	if (!mgmt_led_is_ready()) {
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -ENODEV);
+		return -1;
+	}
+
+	if (req_dlen < 1) {
+		LOG_ERR("Invalid MGMT_LED_CTRL request");
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
+	uint8_t led_op = req_data[0]; /* 0: set_color */
+
+	if (led_op == MGMT_LED_OP_SET_COLOR) {
+		if (req_dlen < MGMT_LED_REQ_DLEN_SET_COLOR) {
+			LOG_ERR("Invalid MGMT_LED_CTRL request");
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+			return -1;
+		}
+
+		uint8_t led_id = req_data[1]; /* led_id / color */
+
+		ret = mgmt_led_set_color(led_id);
+		if (ret) {
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
+			return -1;
+		}
+	}
+	else if (led_op == MGMT_LED_OP_OFF) {
+		ret = mgmt_led_off();
+		if (ret) {
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
+			return -1;
+		}
+	}
+#ifdef CONFIG_LED_GPIO_BLINK
+	else if (led_op == MGMT_LED_OP_BLINK) {
+		if (req_dlen < MGMT_LED_REQ_DLEN_BLINK) {
+			LOG_ERR("Invalid MGMT_LED_CTRL request");
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+			return -1;
+		}
+
+		uint8_t  led_id    = req_data[1];
+		uint32_t delay_on  = sys_get_be32(&req_data[2]);
+		uint32_t delay_off = sys_get_be32(&req_data[6]);
+
+		ret = mgmt_led_blink(led_id, delay_on, delay_off);
+		if (ret) {
+			SET_RET_CODE(fri, EC_RET_ERR_FAIL, ret);
+			return -1;
+		}
+	}
+#endif
+	else {
+		LOG_ERR("Unsupported operation: %d", led_op);
+		SET_RET_CODE(fri, EC_RET_ERR_FAIL, -EINVAL);
+		return -1;
+	}
+
+#else
+	fri->code = EC_RET_ERR_NOT_IMPL;
+#endif
+	return 0;
+}
+
 static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 {
 	if (task->req == NULL || task->res == NULL) {
@@ -426,6 +502,9 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		break;
 	case FUNC_REPORT_LOM_IP:
 		do_report_lom_ip(req_data, &fri);
+		break;
+	case FUNC_MGMT_LED_CTRL:
+		do_mgmt_led_ctrl(req_data, req_dlen, &fri);
 		break;
 #ifdef LOM_MGMT_PROTO_STRESS_TESTING
 	case FUNC_TEST_L3:
