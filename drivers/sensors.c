@@ -488,6 +488,14 @@ void fan_update(void)
 	for (i = 0; i < ARRAY_SIZE(fan_dev); i++) {
 		fdata = &hwmon_data->fan[i];
 
+		if (!device_is_ready(fan_dev[i])) {
+			/* Fan controller held in reset (fans at 100%), see
+			 * drivers/fan_reset_hold.c
+			 */
+			fdata->fan_rpm = 0;
+			continue;
+		}
+
 		ret = fan_get_speed(fan_dev[i], &val);
 		if (ret != 0) {
 			LOG_ERR("fan %d (%s) read failed: %d, reporting 0",
