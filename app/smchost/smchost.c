@@ -280,11 +280,13 @@ static void smchost_pltrst_handler(uint8_t pltrst_sts)
 #ifdef CONFIG_LED_MANAGEMENT
 	if (!pltrst_sts) {
 		/*
-		 * Host is resetting: take the LEDs back so the EC's boot
-		 * indication runs again. The OS re-claims them from
-		 * SLCM.RSET() once ACPI is up.
+		 * Host is resetting: drop host ownership and zero every LED's
+		 * color/brightness/blink/PWM so nothing the OS programmed
+		 * survives into the next boot. The EC's boot indication then
+		 * runs again; the OS re-claims the LEDs from SLCM.RSET() once
+		 * ACPI is up.
 		 */
-		host_clear_all_led_ownership();
+		ledmgmt_request_reset();
 	}
 #endif
 

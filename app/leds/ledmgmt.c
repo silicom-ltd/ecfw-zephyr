@@ -39,6 +39,14 @@ void led_request()
 static bool led_update;
 #endif
 
+/* Set from ISR context (PLTRST#), consumed by the LED thread. */
+static atomic_t led_reset_pending;
+
+/* manage_local_leds() breathing state; file scope so a reset can clear it */
+static uint16_t breathe_level;
+static uint16_t breathe_countup = 1;
+static bool breathe_handed_off;
+
 /*
  * Front-panel power LED selection.
  *
@@ -302,23 +310,54 @@ void host_update_led_ownership(uint8_t idx)
 	}
 }
 
-/*
- * Drop all host LED ownership, handing the LEDs back to the EC.
- *
- * Ownership is otherwise set-only: nothing clears it on reset, and the OS sends
- * no DISABLE_ACPI on reboot or poweroff, so without this the very first
- * SLCM.RSET() would own the power LED for the rest of the EC's uptime. Every
- * later boot would then skip the EC's boot indication and sit on whatever color
- * was last programmed.
- *
- * Called on PLTRST# assertion, which covers both a warm reboot and the reset
- * that precedes any cold boot, so the boot indication runs on every host boot.
- */
-void host_clear_all_led_ownership(void)
+void ledmgmt_request_reset(void)
 {
-	for (uint8_t i = 0; i < max_led_dev; i++) {
-		led_tbl[i].owned = 0;
+	atomic_set(&led_reset_pending, 1);
+#ifdef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+	led_request();
+#endif
+}
+
+/*
+ * Return every LED to its power-on state: no host ownership, color 0,
+ * brightness 0, no blink, PWM output 0.
+ *
+ * Runs in the LED thread only (never from the eSPI ISR), so it cannot race
+ * manage_leds()/manage_local_leds() on led_tbl or on the PWM registers.
+ *
+ * Hardware order matters for the multicolor PWM driver: clearing the color
+ * zeroes each channel's intensity, and led_off() then reprograms every
+ * channel with its devicetree period and a 0 pulse. That also cancels any
+ * blink, because led_blink() works by stretching the PWM period.
+ */
+static void ledmgmt_reset_all(void)
+{
+	static const uint8_t no_color[3] = { 0, 0, 0 };
+
+	for (uint8_t idx = 0; idx < max_led_dev; idx++) {
+		led_tbl[idx].owned = 0;
+		led_tbl[idx].color = 0;
+		led_tbl[idx].brightness = 0;
+		led_tbl[idx].on = 0;
+		led_tbl[idx].off = 0;
+		led_tbl[idx].update_color = 0;
+		led_tbl[idx].update_brightness = 0;
+		led_tbl[idx].update_blink = 0;
+
+		if (led_tbl[idx].rgb) {
+			led_set_color(led_tbl[idx].dev, 0, 3, no_color);
+		}
+		led_off(led_tbl[idx].dev, 0);
 	}
+
+#ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
+	led_update = 0;
+#endif
+	breathe_level = 0;
+	breathe_countup = 1;
+	breathe_handed_off = false;
+
+	LOG_INF("All LEDs reset (color/brightness/blink/PWM = 0)");
 }
 
 void host_update_led_color(uint8_t idx, uint16_t greenblue, uint16_t red)
@@ -481,9 +520,6 @@ static int color_table[] = {
  */
 static void manage_local_leds(void)
 {
-	static uint16_t level = 0;
-	static uint16_t countup = 1;
-	static bool handed_off;
 	const struct device *led_pwm_mc = power_led;
 	int err;
 	int color_choice;
@@ -496,7 +532,6 @@ static void manage_local_leds(void)
 	}
 
 	in_s0 = (pwrseq_system_state() == SYSTEM_S0_STATE);
-
 	if (in_s0 && is_led_controlled_by_host(power_led_idx)) {
 		/*
 		 * Host owns the LED now. Blank the breathe once on the way out,
@@ -504,16 +539,16 @@ static void manage_local_leds(void)
 		 * reached; manage_leds() then applies the host's own color and
 		 * brightness. Re-armed below if control ever comes back.
 		 */
-		if (!handed_off) {
+		if (!breathe_handed_off) {
 			led_set_brightness(led_pwm_mc, 0, 0);
-			level = 0;
-			countup = 1;
-			handed_off = true;
+			breathe_level = 0;
+			breathe_countup = 1;
+			breathe_handed_off = true;
 			LOG_INF("power LED handed off to host");
 		}
 		return;
 	}
-	handed_off = false;
+	breathe_handed_off = false;
 
 	/*
 	 * Boot window, standard SKU: legacy solid amber, unchanged. Only Netgate
@@ -537,19 +572,19 @@ static void manage_local_leds(void)
 	colors[2] = color_table[color_choice] & 0xFF;
 
 	led_set_color(led_pwm_mc, 0, 3, colors);
-	err = led_set_brightness(led_pwm_mc, 0, level);
+	err = led_set_brightness(led_pwm_mc, 0, breathe_level);
 	if (err)
 		return;
 
-	if (countup)
-		level++;
+	if (breathe_countup)
+		breathe_level++;
 	else
-		level--;
+		breathe_level--;
 
-	if (level == 100)
-		countup = 0;
-	else if (level == 0)
-		countup = 1;
+	if (breathe_level == 100)
+		breathe_countup = 0;
+	else if (breathe_level == 0)
+		breathe_countup = 1;
 }
 
 void ledmgmt_thread(void *p1, void *p2, void *p3)
@@ -573,11 +608,21 @@ void ledmgmt_thread(void *p1, void *p2, void *p3)
 	while (true) {
 #ifndef CONFIG_SMCHOST_EVENT_DRIVEN_TASK
 		k_msleep(normal_period);
+		if (atomic_cas(&led_reset_pending, 1, 0)) {
+			ledmgmt_reset_all();
+		}
 		manage_local_leds();
 		manage_leds();
 #else
 		manage_local_leds();
 		k_sem_take(&led_lock, Z_TIMEOUT_MS(5));
+		/*
+		 * Not gated on S0 like manage_leds(): the SLP_S5# reset arrives
+		 * after the platform has already left S0.
+		 */
+		if (atomic_cas(&led_reset_pending, 1, 0)) {
+			ledmgmt_reset_all();
+		}
 		manage_leds();
 #endif
 	}
