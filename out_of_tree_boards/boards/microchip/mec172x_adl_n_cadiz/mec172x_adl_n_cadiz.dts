@@ -32,10 +32,6 @@
 		gpioled0 = &gpioled0;
 		gpioled1 = &gpioled1;
 		gpioled2 = &gpioled2;
-		gpioled3 = &gpioled3;
-		gpioled4 = &gpioled4;
-		gpioled5 = &gpioled5;
-		gpioled6 = &gpioled6;
 		eeprom0 = &eeprom;
 		fan0 = &max31785_fan0;
 		fan1 = &max31785_fan1;
@@ -63,7 +59,7 @@
 			label = "ESPI_RST_MAF";
 		};
 	};
-  
+
 
 	/* Front panel GPIO LEDs — each position shares a light pipe with a PWM RGB LED */
 
@@ -91,34 +87,26 @@
 		};
 	};
 
-	/* Amber: mgmt, bottom-right (GPIO035) */
-	gpioled3: gpioled3 {
+	mgmt_leds: mgmt_leds {
 		compatible = "gpio-leds";
-		gpio_led3: led-3 {
+
+		/* Amber: mgmt, bottom-right (GPIO035) */
+		mgmt_led0: led-amber {
 			gpios = <&gpio_000_036 29 GPIO_ACTIVE_HIGH>;
 		};
-	};
 
-	/* Red: mgmt, bottom-right (GPIO222) — active-low; no full RGB PWM available */
-	gpioled4: gpioled4 {
-		compatible = "gpio-leds";
-		gpio_led4: led-4 {
+		/* Red: mgmt, bottom-right (GPIO222) — active-low; no full RGB PWM available */
+		mgmt_led1: led-red {
 			gpios = <&gpio_200_236 18 GPIO_ACTIVE_LOW>;
 		};
-	};
 
-	/* Green: mgmt, bottom-right (GPIO054) — active-low; no full RGB PWM available */
-	gpioled5: gpioled5 {
-		compatible = "gpio-leds";
-		gpio_led5: led-5 {
+		/* Green: mgmt, bottom-right (GPIO054) — active-low; no full RGB PWM available */
+		mgmt_led2: led-green {
 			gpios = <&gpio_040_076 12 GPIO_ACTIVE_LOW>;
 		};
-	};
 
-	/* Blue: mgmt, bottom-right (GPIO053) — active-low; no full RGB PWM available */
-	gpioled6: gpioled6 {
-		compatible = "gpio-leds";
-		gpio_led6: led-6 {
+		/* Blue: mgmt, bottom-right (GPIO053) — active-low; no full RGB PWM available */
+		mgmt_led3: led-blue {
 			gpios = <&gpio_040_076 11 GPIO_ACTIVE_LOW>;
 		};
 	};
