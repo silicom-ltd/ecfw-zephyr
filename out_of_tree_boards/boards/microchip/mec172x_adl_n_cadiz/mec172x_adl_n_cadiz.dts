@@ -257,12 +257,16 @@
 		fanctrl0: fanctrl@52 {
 			compatible = "maxim,max31785";
 			reg = <0x52>;
+			/* Held in reset at boot; initialized by fan_reset_hold */
+			zephyr,deferred-init;
 			reset-gpios = <&gpio_200_236 26 GPIO_ACTIVE_HIGH>;
 			ctrl-gpios = <&gpio_200_236 19 GPIO_ACTIVE_HIGH>;
 			fans {
 				compatible = "maxim,max31785-fan";
+				zephyr,deferred-init;
 
 				max31785_fan0: fan0 {
+					zephyr,deferred-init;
 					page = <0>;
 					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
@@ -273,6 +277,7 @@
 					pwm-frequency = <25000>;
 				};
 				max31785_fan1: fan1 {
+					zephyr,deferred-init;
 					page = <1>;
 					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
@@ -283,6 +288,7 @@
 					pwm-frequency = <25000>;
 				};
 				max31785_fan2: fan2 {
+					zephyr,deferred-init;
 					page = <2>;
 					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
@@ -293,6 +299,7 @@
 					pwm-frequency = <25000>;
 				};
 				max31785_fan3: fan3 {
+					zephyr,deferred-init;
 					page = <3>;
 					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
@@ -303,6 +310,7 @@
 					pwm-frequency = <25000>;
 				};
 				max31785_fan4: fan4 {
+					zephyr,deferred-init;
 					page = <4>;
 					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
@@ -313,6 +321,7 @@
 					pwm-frequency = <25000>;
 				};
 				max31785_fan5: fan5 {
+					zephyr,deferred-init;
 					page = <5>;
 					mode = "FAN_AUTO_RPM";
 					ppr = <2>;
@@ -327,10 +336,13 @@
 				compatible = "maxim,max31785-dts";
 
 				max31785_i2c0: i2c0 {
+					zephyr,deferred-init;
 				};
 				max31785_i2c1: i2c1 {
+					zephyr,deferred-init;
 				};
 				max31785_i2c3: i2c3 {
+					zephyr,deferred-init;
 					fans = <&max31785_fan0 &max31785_fan1 &max31785_fan2
 						&max31785_fan3 &max31785_fan4 &max31785_fan5>;
 				};
@@ -381,6 +393,15 @@
 		board-peci-temp-sensor = <&cputemp>;
 	};
 
+	/* Fans at 100% (fan controller in reset) until the LM75 the fan
+	 * controller reads is serving a real CPU temperature.
+	 */
+	fan_reset_hold: fan-reset-hold {
+		compatible = "silicom,fan-reset-hold";
+		fan-controller = <&fanctrl0>;
+		ready-sensors = <&lm75>;
+	};
+
 	zephyr,user {
 		pinctrl-0 = <&gpio101 &gpio102 &gpio172 &gpio173 &gpio_uc_2>;
 		pinctrl-names = "default";
@@ -388,10 +409,13 @@
 };
 
 &gpio_200_236 {
+	/* MAX31785 RST_N: held low (fans at 100%) from EC boot until
+	 * fan_reset_hold releases it (drivers/fan_reset_hold.c).
+	 */
 	fan-ctrl-rst {
 		gpio-hog;
 		gpios = <26 GPIO_ACTIVE_HIGH>;
-		output-high;
+		output-low;
 	};
 	fan-ctrl-ctrl {
 		gpio-hog;
