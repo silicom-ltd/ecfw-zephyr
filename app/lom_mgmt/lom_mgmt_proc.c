@@ -395,6 +395,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 
 	uint8_t *req_data = task->req->data;
 	uint8_t *res_data = task->res->data;
+	uint8_t  req_dlen = task->req->dlen;
 	struct func_ret_info fri = { .code = EC_RET_OK, .data_size = 0, .flag = 0 };
 
 	switch (task->req->func) {
@@ -402,7 +403,7 @@ static int lom_mgmt_handle_request(struct lom_mgmt_task *task)
 		do_get_ids(res_data, &fri);
 		break;
 	case FUNC_POWER_CTRL:
-		do_power_ctrl(req_data, task->req->dlen, &fri);
+		do_power_ctrl(req_data, req_dlen, &fri);
 		break;
 	case FUNC_GET_ACPI_POWER_STATE:
 		do_get_acpi(res_data, &fri);
@@ -550,7 +551,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		if (event.evt_data == 0) { /* power off sequence */
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Off]");
-				host_event_put(HOST_EVENT_SOFT_DN);
+				host_event_submit(HOST_EVENT_SOFT_DN);
 			}
 		}
 		break;
@@ -558,14 +559,14 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		if (event.evt_data == 1) { /* power on sequence */
 			if (pwr_sta == SYSTEM_G3_STATE) {
 				LOG_DBG_EVENT(">> [HOST Power Up]");
-				host_event_put(HOST_EVENT_POWER_UP);
+				host_event_submit(HOST_EVENT_POWER_UP);
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
 			}
 			else if (pwr_sta == SYSTEM_S4_STATE || pwr_sta == SYSTEM_S5_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Up]");
-				host_event_put(HOST_EVENT_SOFT_UP);
+				host_event_submit(HOST_EVENT_SOFT_UP);
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
@@ -579,7 +580,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		if (event.evt_data) {
 			if (pwr_sta == SYSTEM_S0_STATE) {
 				LOG_DBG_EVENT(">> [Host Reboot]");
-				host_event_put(HOST_EVENT_REBOOT);
+				host_event_submit(HOST_EVENT_REBOOT);
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
@@ -591,16 +592,10 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		lom_pwrctrl_on_signal(event.evt_details, event.evt_data);
 		break;
 #endif
-	case ESPI_VWIRE_SIGNAL_HOST_RST_WARN:
-		if (event.evt_data == 1) {
-			LOG_DBG_EVENT(">> [HOST RST]");
-			host_event_put(HOST_EVENT_HOST_RESET);
-		}
-		break;
 	case ESPI_VWIRE_SIGNAL_DNX_WARN:
 		if (event.evt_data == 1) {
 			LOG_DBG_EVENT(">> [DNX WARN]");
-			host_event_put(HOST_EVENT_DNX_WARN);
+			host_event_submit(HOST_EVENT_DNX_WARN);
 		}
 		break;
 	default:
@@ -608,16 +603,7 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 	}
 }
 
-static void espi_bus_reset_monitor(const struct device *dev, struct espi_callback *cb,
-	struct espi_event event)
-{
-	LOG_DBG_EVENT("eSPI BUS reset %d", event.evt_data);
-
-	host_event_put(HOST_EVENT_BUS_RESET);
-}
-
 static struct espi_callback espi_vwi_cb;
-static struct espi_callback espi_rst_cb;
 
 void init_espi_event_monitor(void)
 {
@@ -626,10 +612,8 @@ void init_espi_event_monitor(void)
 		return;
 	}
 
-	espi_init_callback(&espi_rst_cb, espi_bus_reset_monitor, ESPI_BUS_RESET);
 	espi_init_callback(&espi_vwi_cb, espi_vwire_monitor, ESPI_BUS_EVENT_VWIRE_RECEIVED);
 
-	espi_add_callback(espi_dev, &espi_rst_cb);
 	espi_add_callback(espi_dev, &espi_vwi_cb);
 }
 
@@ -637,11 +621,7 @@ static void pwrbtn_event_handler(uint8_t pwrbtn_sts)
 {
 	if (pwrbtn_sts == 0) {
 		LOG_DBG_EVENT("Power Button Pressed");
-		host_event_put(HOST_EVENT_PWRBTN_DN);
-	}
-	else {
-		LOG_DBG_EVENT("Power Button Released");
-		host_event_put(HOST_EVENT_PWRBTN_UP);
+		host_event_submit(HOST_EVENT_PWRBTN_PRESSED);
 	}
 }
 
@@ -649,11 +629,7 @@ static void rstbtn_event_handler(uint8_t rstbtn_sts)
 {
 	if (rstbtn_sts == 0) {
 		LOG_DBG_EVENT("Reset Button Pressed");
-		host_event_put(HOST_EVENT_RSTBTN_PRESSED);
-	}
-	else {
-		LOG_DBG_EVENT("Reset Button Released");
-		host_event_put(HOST_EVENT_RSTBTN_RELEASED);
+		host_event_submit(HOST_EVENT_RSTBTN_PRESSED);
 	}
 }
 
