@@ -596,6 +596,55 @@ static struct vwi_signal_info vwi_managed_sigs[] =
 };
 #endif
 
+#define EC_BOOT_BY_WDT 1
+#define EC_BOOT_BY_PWR 2
+
+#define PCR_PWR_RST_STS      (*(volatile uint32_t *)0x40080110)
+#define VBAT_PFR_STS         (*(volatile uint32_t *)0x4000A400)
+#define VBAT_RAM_MAGIC       (*(volatile uint32_t *)0x4000A800)
+
+#define MAGIC_EC_RUNNING     0x5A5AA5A5U
+#define MAGIC_EC_SOFT_REBOOT 0x12345678U
+
+int check_power_loss_on_boot(void)
+{
+	uint32_t pcr_sts  = PCR_PWR_RST_STS;
+	uint32_t vbat_sts = VBAT_PFR_STS;
+#if 0
+	uint32_t magic    = VBAT_RAM_MAGIC;
+#endif
+
+	LOG_DBG_EVENT(">> pcr_sts: 0x%x, vbat_sts: 0x%x", pcr_sts, vbat_sts);
+
+	// bit 7: VBAT_RST
+	if (vbat_sts & (1U << 7)) {
+		LOG_DBG_EVENT(">> VBAT LOST");
+		VBAT_PFR_STS = (1U << 7); /* clear this bit */
+		return EC_BOOT_BY_PWR;
+	}
+	// bit 5: WDT
+	else if (vbat_sts & (1U << 5)) {
+		LOG_DBG_EVENT(">> WDT RST");
+		VBAT_PFR_STS = (1U << 5); /* clear this bit */
+		return EC_BOOT_BY_WDT;
+	}
+#if 0
+	else if (magic == MAGIC_EC_SOFT_REBOOT) {
+	}
+	else if (magic == MAGIC_EC_RUNNING) {
+	}
+
+	VBAT_RAM_MAGIC = MAGIC_EC_RUNNING;
+#endif
+
+	// bit 6: RESET_SYS_STATUS, setted by watchdog
+	if (pcr_sts & (1U << 6)) {
+		PCR_PWR_RST_STS = (1U << 6); /* clear this bit */
+	}
+
+	return 0;
+}
+
 /*
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 1 : System Power UP
  * PLTRST, SLP_A, SLP_S5, SLP_S4, SLP_S3, SLP_WLAN = 0 : System Power Down
@@ -636,16 +685,18 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		break;
 	case ESPI_VWIRE_SIGNAL_SLP_S3:
 		if (event.evt_data == 1) { /* power on sequence */
-			if (pwr_sta == SYSTEM_G3_STATE) {
-				LOG_DBG_EVENT(">> [HOST Power Up]");
+			int reason = check_power_loss_on_boot();
+
+			if (reason == EC_BOOT_BY_PWR) {
+				LOG_DBG_EVENT(">> [HOST PowerSupply Restored]");
 				host_event_submit(HOST_EVENT_POWER_UP);
-#ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
-				boot_cycle_count++;
-#endif
 			}
-			else if (pwr_sta == SYSTEM_S4_STATE || pwr_sta == SYSTEM_S5_STATE) {
+
+			if (pwr_sta == SYSTEM_G3_STATE ||
+				pwr_sta == SYSTEM_S4_STATE || pwr_sta == SYSTEM_S5_STATE) {
 				LOG_DBG_EVENT(">> [HOST Soft Up]");
 				host_event_submit(HOST_EVENT_SOFT_UP);
+
 #ifdef CONFIG_LOM_MGMT_FUNC_POSTCODE
 				boot_cycle_count++;
 #endif
