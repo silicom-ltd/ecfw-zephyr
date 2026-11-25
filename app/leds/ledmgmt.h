@@ -41,7 +41,17 @@ void get_led_peripherals_status(uint8_t *hw_peripherals_sts);
 #endif
 
 void host_update_led_ownership(uint8_t idx);
-void host_clear_all_led_ownership(void);
+
+/**
+ * @brief Request a full reset of all LED state.
+ *
+ * Clears host ownership and zeroes color, brightness and blink (PWM) for
+ * every LED, then drives the hardware off. Safe to call from ISR context
+ * (eSPI VW callbacks): the work is deferred to the LED management thread.
+ *
+ * Called on PLTRST# assertion
+ */
+void ledmgmt_request_reset(void);
 void host_update_led_color(uint8_t idx, uint16_t color0, uint16_t color1);
 void host_update_led_brightness(uint8_t idx, uint8_t brightness);
 void host_update_led_blink(uint8_t idx, uint16_t on, uint16_t off );
