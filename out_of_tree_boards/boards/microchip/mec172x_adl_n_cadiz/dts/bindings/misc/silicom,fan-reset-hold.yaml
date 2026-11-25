@@ -1,0 +1,48 @@
+# Copyright (c) 2026 Silicom Connectivity Solutions, Ltd
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Keeps a fan controller in reset (fans at 100%) from EC boot until the
+  CPU temperature is being read, then releases and initializes it.
+  Driver: drivers/fan_reset_hold.c.
+
+  Why hold: boot-up always ends the same way. The fans stay at 100%
+  until there is a real CPU temperature, then the fan table takes over.
+  Later temperature errors are handled by the LM75 target (failsafe and
+  last good reading), not here.
+
+  Without the hold, the LM75 target serves its 32 C failsafe until PECI
+  answers, so the fans run at the 6300 RPM table step instead of 100%.
+  That also prevents the 0 C fan stop, but boot-up goes through more
+  steps (controller default, failsafe speed, real table speed).
+
+  Fan speed at standby:
+  - 100%: the host has not booted since the EC started (fault, or the
+    host was turned off in the first few seconds).
+  - 6300 RPM: normal S5 after a shutdown.
+
+  ec_reset() (host command 0xFF, DnX self-reset) also resets the host,
+  so the hold starts over as on a cold boot.
+
+  The fan controller node needs:
+  - reset-gpios, also hogged low (gpio-hog, output-low);
+  - zephyr,deferred-init on the controller and its child nodes.
+
+  Release happens once per EC boot, with no timeout. If an init fails
+  after release, the controller goes back into reset until the next EC
+  boot.
+
+compatible: "silicom,fan-reset-hold"
+
+properties:
+  fan-controller:
+    type: phandle
+    required: true
+    description: Fan controller to hold in reset (must have reset-gpios).
+
+  ready-sensors:
+    type: phandles
+    required: true
+    description: |
+      LM75 targets (zephyr,i2c-target-lm75) the fan controller reads. All
+      must have a real reading (e.g. from PECI) before release.

@@ -127,6 +127,11 @@ target_sources_ifdef(CONFIG_I2C_TARGET_LOM_MGMT app
   ${CMAKE_CURRENT_LIST_DIR}/lom_mgmt_i2c.h
 )
 
+target_sources_ifdef(CONFIG_FAN_RESET_HOLD app
+  PRIVATE
+  ${CMAKE_CURRENT_LIST_DIR}/fan_reset_hold.c
+)
+
 target_sources_ifdef(CONFIG_HOST_POWER_DOMAIN app
   PRIVATE
   ${CMAKE_CURRENT_LIST_DIR}/host_power_domain.c
