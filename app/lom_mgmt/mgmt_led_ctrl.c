@@ -72,13 +72,18 @@ int mgmt_led_blink(uint8_t led_id, uint32_t delay_on, uint32_t delay_off)
 #ifdef CONFIG_LED_GPIO_BLINK
 	int ret;
 
+	LOG_DBG_APP("mgmt_led[%d] blink: delay_on %u(ms), delay_off %u(ms)", led_id,
+		delay_on, delay_off);
+
 	if (led_id >= MGMT_LED_NUM) {
 		LOG_ERR("Invalid MGMT_LED_CTRL request");
 		return -EINVAL;
 	}
 
-	LOG_DBG_APP("mgmt_led[%d] blink: delay_on %u(ms), delay_off %u(ms)", led_id,
-		delay_on, delay_off);
+	if (delay_on == 0 || delay_off == 0 || delay_on != delay_off) {
+		LOG_ERR("Invalid MGMT_LED_CTRL request");
+		return -EINVAL;
+	}
 
 	ret = mgmt_led_off();
 	if (ret) {
