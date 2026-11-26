@@ -13,36 +13,32 @@
 #include <zephyr/net/net_ip.h>
 
 #include "lom_mgmt_proc_inc.h"
-#include "host_event.h"
+#include "host_event_inc.h"
 
 LOG_MODULE_DECLARE(lom_mgmt, CONFIG_LOM_MGMT_PROC_LOG_LEVEL);
 
-struct host_event_record_ent {
-	uint8_t  event;
-	uint32_t ticks;
-} __attribute__((__packed__));
-
-#define HOST_EVENT_ENT_SZ sizeof(struct host_event_record_ent)
+#define HOST_EVENT_ENT_SZ sizeof(struct host_event_record)
 
 RING_BUF_DECLARE(host_event_ring_buf,
 	CONFIG_HOST_EVENT_ENTRY_MAX * HOST_EVENT_ENT_SZ);
 
-int host_event_put(uint8_t event)
+int host_event_put(struct host_event_record *evt)
 {
-	struct host_event_record_ent e, dummy;
+	struct host_event_record dummy;
 	int ret;
 
-	if (event > HOST_EVENT_MAX) {
-		LOG_ERR("Host event number out of range");
-		return -1;
+	if (!evt) {
+		return -EINVAL;
 	}
 
-	uint32_t ts = k_uptime_get_32();
+	if (evt->event > HOST_EVENT_MAX) {
+		LOG_ERR("Host event number out of range");
+		return -EINVAL;
+	}
 
-	e.event = event;
-	e.ticks = htonl(ts);
+	evt->ticks = htonl(evt->ticks);
 
-	ret = ring_buf_put(&host_event_ring_buf, (const uint8_t *)&e, HOST_EVENT_ENT_SZ);
+	ret = ring_buf_put(&host_event_ring_buf, (const uint8_t *)evt, HOST_EVENT_ENT_SZ);
 	if (ret < HOST_EVENT_ENT_SZ) {
 		LOG_DBG_EVENT("Event ring buffer full!");
 
@@ -54,14 +50,14 @@ int host_event_put(uint8_t event)
 		}
 
 		/* re-enqueue the entry */
-		ret = ring_buf_put(&host_event_ring_buf, (const uint8_t *)&e, HOST_EVENT_ENT_SZ);
+		ret = ring_buf_put(&host_event_ring_buf, (const uint8_t *)evt, HOST_EVENT_ENT_SZ);
 		if (ret != HOST_EVENT_ENT_SZ) {
 			LOG_ERR("Re-add event error (%d)", ret);
 			return -EIO;
 		}
 	}
 
-	LOG_DBG_EVENT("Add Event %d, ALL %d", e.event,
+	LOG_DBG_EVENT("Add Event %d, ALL %d", evt->event,
 		ring_buf_size_get(&host_event_ring_buf)/HOST_EVENT_ENT_SZ);
 
 	avail_resource_set(AVAIL_RES_EVENT, 1);
@@ -71,29 +67,25 @@ int host_event_put(uint8_t event)
 
 int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 {
-	int ret;
-	int off = 0;
 	int event_size = ring_buf_size_get(&host_event_ring_buf);
 
 	if (event_size == 0) {
 		return 0;
 	}
 
-	while ((ret = ring_buf_get(&host_event_ring_buf, &buf[off], HOST_EVENT_ENT_SZ)) != 0) {
-		if (ret != HOST_EVENT_ENT_SZ) {
-			return -EIO;
-		}
+	uint16_t max_allowed_bytes = (buf_size / HOST_EVENT_ENT_SZ) * HOST_EVENT_ENT_SZ;
 
-		off += HOST_EVENT_ENT_SZ;
-
-		/* has space for next entry? */
-		if (off + HOST_EVENT_ENT_SZ > buf_size) {
-			LOG_DBG_EVENT("Event: res buff full quit");
-			break;
-		}
+	if (event_size > max_allowed_bytes) {
+		event_size = max_allowed_bytes;
+		LOG_WRN("Event: destination buffer full, truncating read size");
 	}
 
-	*ret_size = off;
+	int bytes_read = ring_buf_get(&host_event_ring_buf, buf, event_size);
+	if (bytes_read < 0) {
+		return -EIO;
+	}
+
+	*ret_size = (uint16_t)bytes_read;
 
 	if (!host_event_count()) {
 		avail_resource_set(AVAIL_RES_EVENT, 0);
@@ -102,15 +94,15 @@ int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size)
 	return 0;
 }
 
-int host_event_count()
+int host_event_count(void)
 {
 	return ring_buf_size_get(&host_event_ring_buf)/HOST_EVENT_ENT_SZ;
 }
 #else
 
-#include "host_event.h"
+#include "host_event_inc.h"
 
-int host_event_put(uint8_t event)
+int host_event_put(struct host_event_record *evt)
 {
 	return 0;
 }
@@ -124,4 +116,5 @@ int host_event_count(void)
 {
 	return 0;
 }
+
 #endif

@@ -28,7 +28,12 @@
 #include "mec172x_adl_n_cadiz.h"
 #include "hwmon.h"
 
+#ifdef CONFIG_FAULT_GPIO_MONITOR
+#include "host_event.h"
+#endif
+
 LOG_MODULE_DECLARE(board, CONFIG_BOARD_LOG_LEVEL);
+
 /** @brief EC FW app owned gpios list.
  *
  * This list is not exhaustive, it do not include driver-owned pins,
@@ -64,7 +69,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ GPIO_HOST_UC_2,	GPIO_INPUT },
 
 	{ EXPA_SLOT_SBY_PWREN,	GPIO_OUTPUT_HIGH },
-	{ CATERR_EC_N,		GPIO_INPUT },
+	{ CATERR_EC_N,		GPIO_INPUT | GPIO_ACTIVE_LOW },
 	{ SYS_PWROK,		GPIO_OUTPUT_LOW },
 
 	{ SCM_PRSNT_N,		GPIO_INPUT },
@@ -109,7 +114,7 @@ struct gpio_ec_config mecc172x_cfg[] = {
 	{ BTN_RECESSED,		GPIO_INPUT },
 
 	{ SLP_S4_N,		GPIO_INPUT },
-	{ THRMTRIP_3P3_N,	GPIO_INPUT },
+	{ THRMTRIP_3P3_N,	GPIO_INPUT | GPIO_ACTIVE_LOW },
 
 	{ SLP_S3_N,		GPIO_INPUT },
 	{ BOOT_MEDIA_PWR_CNTRL,	GPIO_INPUT },
@@ -144,6 +149,83 @@ struct gpio_ec_config mecc172x_cfg_host[] =  {
 };
 
 int num_gpios = ARRAY_SIZE(mecc172x_cfg_host);
+
+#ifdef CONFIG_FAULT_GPIO_MONITOR
+struct fault_gpio_info {
+        uint32_t pin;
+        char * name;
+        gpio_callback_handler_t cb;
+        struct gpio_callback cb_data;
+};
+
+static void gpio_caterr_handle(const struct device *dev,
+        struct gpio_callback *gpio_cb, gpio_port_pins_t pins)
+{
+        struct fault_gpio_info *fgi = CONTAINER_OF(gpio_cb, struct fault_gpio_info, cb_data);
+
+        k_busy_wait(2); /* To detect MCERR from CATERR# pulse */
+
+        int level = gpio_read_pin(fgi->pin); /* returns logical levels */
+        if (level < 0) {
+                LOG_ERR("read Fault GPIO CATERR fail: %d", level);
+                return;
+        }
+
+        if (level) { /* still active, is IERR */
+                host_event_submit(HOST_EVENT_IERR);
+        }
+        else {
+                host_event_submit(HOST_EVENT_MCERR);
+        }
+
+        //LOG_DBG("Fault GPIO CATERR triggered(%d)", level);
+}
+
+static void gpio_thrmtrip_handle(const struct device *dev,
+        struct gpio_callback *gpio_cb, gpio_port_pins_t pins)
+{
+        host_event_submit(HOST_EVENT_THERMTRIP);
+
+        //LOG_DBG("Fault GPIO THERMTRIP triggered");
+}
+
+static struct fault_gpio_info fault_gpios[] =
+{
+        {CATERR_EC_N,    "CATERR",   gpio_caterr_handle,  },
+        {THRMTRIP_3P3_N, "THRMTRIP", gpio_thrmtrip_handle,},
+};
+
+static void fault_gpio_monitor_setup(void)
+{
+        int ret;
+
+        for (unsigned i = 0; i < ARRAY_SIZE(fault_gpios); i++) {
+                struct fault_gpio_info *fgi = &fault_gpios[i];
+
+                ret = gpio_init_callback_pin(fgi->pin, &fgi->cb_data, fgi->cb);
+                if (ret) {
+                        LOG_ERR("Failed to init callback for Fault GPIO %s: %d", fgi->name, ret);
+                        continue;
+                }
+
+                ret = gpio_add_callback_pin(fgi->pin, &fgi->cb_data);
+                if (ret) {
+                        LOG_ERR("Failed to add callback for Fault GPIO %s: %d", fgi->name, ret);
+                        continue;
+                }
+
+                ret = gpio_interrupt_configure_pin(fgi->pin, GPIO_INT_EDGE_TO_ACTIVE);
+                if (ret) {
+                        gpio_remove_callback_pin(fgi->pin, &fgi->cb_data);
+
+                        LOG_ERR("Failed to enable ISR for Fault GPIO %s: %d", fgi->name, ret);
+                        continue;
+                }
+
+                LOG_INF("Enable ISR for Fault GPIO %s OK", fgi->name);
+        }
+}
+#endif
 
 #ifdef CONFIG_LED_MANAGEMENT
 #define DT_PWM_MC_LED_INST(x)	DT_NODELABEL(pwmmcled##x)
@@ -848,6 +930,10 @@ int board_init(void)
 		LOG_ERR("%s: %d", __func__, ret);
 		return ret;
 	}
+
+#ifdef CONFIG_FAULT_GPIO_MONITOR
+        fault_gpio_monitor_setup();
+#endif
 
 #ifdef CONFIG_BOARD_POST 
 	board_post();

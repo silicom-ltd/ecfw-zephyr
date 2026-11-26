@@ -9,22 +9,30 @@
 
 #include <stdint.h>
 
+/*
+ * The host event numbers are frozen: new events are appended, and
+ * removed ones stay reserved.
+ */
+
 enum host_event_type {
-	HOST_EVENT_POWER_UP = 1,
-	HOST_EVENT_SOFT_UP,
-	HOST_EVENT_SOFT_DN,
-	HOST_EVENT_REBOOT,
-	HOST_EVENT_HOST_RESET,
-	HOST_EVENT_BUS_RESET,
-	HOST_EVENT_PWRBTN_UP,
-	HOST_EVENT_PWRBTN_DN,
-	HOST_EVENT_RSTBTN_PRESSED,
-	HOST_EVENT_RSTBTN_RELEASED,
-	HOST_EVENT_DNX_WARN,
-	HOST_EVENT_MAX = HOST_EVENT_DNX_WARN,
+	HOST_EVENT_POWER_UP = 1,   /* 1 */ /* The POWER_UP is now followed by SOFT_UP for the same boot */
+	HOST_EVENT_SOFT_UP,        /* 2 */
+	HOST_EVENT_SOFT_DN,        /* 3 */
+	HOST_EVENT_REBOOT,         /* 4 */
+	HOST_EVENT_RSVD0,          /* 5 */
+	HOST_EVENT_RSVD1,          /* 6 */
+	HOST_EVENT_RSVD2,          /* 7 */
+	HOST_EVENT_PWRBTN_PRESSED, /* 8 */
+	HOST_EVENT_RSTBTN_PRESSED, /* 9 */
+	HOST_EVENT_RSVD3,          /* 10 */
+	HOST_EVENT_RSVD4,          /* 11 */
+	HOST_EVENT_IERR,           /* 12 */
+	HOST_EVENT_MCERR,          /* 13 */
+	HOST_EVENT_THERMTRIP,      /* 14 */
+	HOST_EVENT_MAX = HOST_EVENT_THERMTRIP,
 };
 
-int host_event_put(uint8_t event);
+int host_event_submit(uint8_t event);
 int host_event_get(uint8_t *buf, uint16_t buf_size, uint16_t * ret_size);
 int host_event_count(void);
 
