@@ -722,12 +722,6 @@ static void espi_vwire_monitor(const struct device *dev, struct espi_callback *c
 		lom_pwrctrl_on_signal(event.evt_details, event.evt_data);
 		break;
 #endif
-	case ESPI_VWIRE_SIGNAL_DNX_WARN:
-		if (event.evt_data == 1) {
-			LOG_DBG_EVENT(">> [DNX WARN]");
-			host_event_submit(HOST_EVENT_DNX_WARN);
-		}
-		break;
 	default:
 		break;
 	}

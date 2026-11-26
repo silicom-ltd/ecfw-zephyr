@@ -9,18 +9,23 @@
 
 #include <stdint.h>
 
+/*
+ * The host event numbers are frozen: new events are appended, and
+ * removed ones stay reserved.
+ */
+
 enum host_event_type {
-	HOST_EVENT_POWER_UP = 1,   /* 1 */
+	HOST_EVENT_POWER_UP = 1,   /* 1 */ /* The POWER_UP is now followed by SOFT_UP for the same boot */
 	HOST_EVENT_SOFT_UP,        /* 2 */
 	HOST_EVENT_SOFT_DN,        /* 3 */
 	HOST_EVENT_REBOOT,         /* 4 */
-	HOST_EVENT_HOST_RESET,     /* 5 */
+	HOST_EVENT_RSVD0,          /* 5 */
 	HOST_EVENT_RSVD1,          /* 6 */
 	HOST_EVENT_RSVD2,          /* 7 */
 	HOST_EVENT_PWRBTN_PRESSED, /* 8 */
 	HOST_EVENT_RSTBTN_PRESSED, /* 9 */
 	HOST_EVENT_RSVD3,          /* 10 */
-	HOST_EVENT_DNX_WARN,       /* 11 */
+	HOST_EVENT_RSVD4,          /* 11 */
 	HOST_EVENT_IERR,           /* 12 */
 	HOST_EVENT_MCERR,          /* 13 */
 	HOST_EVENT_THERMTRIP,      /* 14 */
