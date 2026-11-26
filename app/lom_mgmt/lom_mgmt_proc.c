@@ -10,6 +10,7 @@
 #include <zephyr/drivers/eeprom.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/ring_buffer.h>
+#include <soc.h>
 
 #include "board_config.h"
 #include "smchost.h"
@@ -599,47 +600,34 @@ static struct vwi_signal_info vwi_managed_sigs[] =
 #define EC_BOOT_BY_WDT 1
 #define EC_BOOT_BY_PWR 2
 
-#define PCR_PWR_RST_STS      (*(volatile uint32_t *)0x40080110)
-#define VBAT_PFR_STS         (*(volatile uint32_t *)0x4000A400)
-#define VBAT_RAM_MAGIC       (*(volatile uint32_t *)0x4000A800)
-
-#define MAGIC_EC_RUNNING     0x5A5AA5A5U
-#define MAGIC_EC_SOFT_REBOOT 0x12345678U
-
-int check_power_loss_on_boot(void)
+static int check_power_loss_on_boot(void)
 {
-	uint32_t pcr_sts  = PCR_PWR_RST_STS;
-	uint32_t vbat_sts = VBAT_PFR_STS;
-#if 0
-	uint32_t magic    = VBAT_RAM_MAGIC;
-#endif
+	struct pcr_regs *const pcr =
+	(struct pcr_regs *)DT_REG_ADDR(DT_NODELABEL(pcr));
+	struct vbatr_regs *const vbatr =
+	(struct vbatr_regs *)DT_REG_ADDR_BY_NAME(DT_NODELABEL(pcr), vbatr);
+
+	uint32_t pcr_sts  = pcr->PWR_RST_STS;
+	uint32_t vbat_sts = vbatr->PFRS;
 
 	LOG_DBG_EVENT(">> pcr_sts: 0x%x, vbat_sts: 0x%x", pcr_sts, vbat_sts);
 
-	// bit 7: VBAT_RST
-	if (vbat_sts & (1U << 7)) {
+	/* VBAT_RST */
+	if (vbat_sts & MCHP_VBATR_PFRS_VBAT_RST) {
 		LOG_DBG_EVENT(">> VBAT LOST");
-		VBAT_PFR_STS = (1U << 7); /* clear this bit */
+		vbatr->PFRS = MCHP_VBATR_PFRS_VBAT_RST; /* clear this bit */
 		return EC_BOOT_BY_PWR;
 	}
-	// bit 5: WDT
-	else if (vbat_sts & (1U << 5)) {
+	/* WDT */
+	else if (vbat_sts & MCHP_VBATR_PFRS_WDT) {
 		LOG_DBG_EVENT(">> WDT RST");
-		VBAT_PFR_STS = (1U << 5); /* clear this bit */
+		vbatr->PFRS = MCHP_VBATR_PFRS_WDT; /* clear this bit */
 		return EC_BOOT_BY_WDT;
 	}
-#if 0
-	else if (magic == MAGIC_EC_SOFT_REBOOT) {
-	}
-	else if (magic == MAGIC_EC_RUNNING) {
-	}
 
-	VBAT_RAM_MAGIC = MAGIC_EC_RUNNING;
-#endif
-
-	// bit 6: RESET_SYS_STATUS, setted by watchdog
-	if (pcr_sts & (1U << 6)) {
-		PCR_PWR_RST_STS = (1U << 6); /* clear this bit */
+	/* RST_SYS, set by watchdog */
+	if (pcr_sts & MCHP_PCR_PRS_RST_SYS_RWC) {
+		pcr->PWR_RST_STS = MCHP_PCR_PRS_RST_SYS_RWC; /* clear this bit */
 	}
 
 	return 0;
