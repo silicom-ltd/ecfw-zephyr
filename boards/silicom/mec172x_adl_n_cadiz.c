@@ -222,7 +222,7 @@ static void fault_gpio_monitor_setup(void)
                         continue;
                 }
 
-                LOG_WRN("Enable ISR for Fault GPIO %s OK", fgi->name);
+                LOG_INF("Enable ISR for Fault GPIO %s OK", fgi->name);
         }
 }
 #endif
